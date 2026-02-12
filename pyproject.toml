@@ -1,0 +1,96 @@
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+name = "mini-arcade-monorepo"
+version = "0.0.0"
+description = "Dev tooling for the Mini Arcade monorepo (not published)."
+authors = [
+    { name = "Santiago Rincon", email = "rincores@gmail.com" },
+]
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9,<3.12"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest~=8.3",
+    "pytest-cov~=6.0.0",
+    "black~=24.10",
+    "isort~=5.13",
+    "mypy~=1.5",
+    "pylint~=3.3",
+    "pre-commit~=4.0",
+]
+
+docs = [
+    "furo~=2024.8",
+    "myst-parser~=3.0",
+    "sphinx~=7.0",
+    "sphinx-autoapi~=3.4",
+    "sphinx-autobuild~=2024.10",
+    "sphinx-copybutton~=0.5",
+    "sphinx-design~=0.6",
+    "sphinx-inline-tabs~=2023.4"
+]
+
+[tool.black]
+line-length = 79
+target-version = ["py39"]
+force-exclude = '''(
+^\.venv
+|^venv
+|^env
+|^\.env
+|^build
+|^dist
+|^docs
+)'''
+
+[tool.isort]
+profile = "black"
+line_length = 79
+known_first_party = [
+    "mini_arcade",
+    "mini_arcade_core",
+    "mini_arcade_native_backend",
+    "mini_arcade_pygame_backend",
+]
+skip = [".venv", "venv", "env", "build", "dist", "docs"]
+
+[tool.pytest.ini_options]
+testpaths = ["packages"]
+addopts = "-v --color=yes"
+
+[tool.mypy]
+python_version = "3.9"
+ignore_missing_imports = true
+strict = false
+
+[tool.pylint.messages_control]
+disable = [
+    "too-few-public-methods",
+    "logging-fstring-interpolation",
+    "fixme",
+    "duplicate-code",
+]
+
+[tool.pylint.TYPECHECK]
+ignored-modules = [
+  "pygame",
+  "deja_bounce",
+  "space_invaders",
+]
+
+[tool.pylint.MAIN]
+ignore-paths = [
+    "^\\.venv",
+    "^venv",
+    "^env",
+    "^build",
+    "^dist",
+    "^docs",
+    ".*[\\\\/]tests[\\\\/].*",
+]

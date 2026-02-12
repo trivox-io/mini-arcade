@@ -1,0 +1,83 @@
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+name = "mini-arcade"
+version = "1.0.0"
+description = "Mini Arcade product package: CLI/GUI + runtime orchestration for the mini-arcade ecosystem."
+authors = [
+    { name = "Santiago Rincon", email = "rincores@gmail.com" },
+]
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9,<3.12"
+dependencies = [
+    "tomli>=2.0.1; python_version < '3.11'",
+    "mini-arcade-core (>=1.4.0,<2.0.0)",
+    "mini-arcade-native-backend (>=1.0.0,<2.0.0)",
+    "mini-arcade-pygame-backend (>=1.0.0,<2.0.0)",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest~=8.3",
+    "pytest-cov~=6.0",
+    "black~=24.10",
+    "isort~=5.13",
+    "mypy~=1.5",
+    "pylint~=3.3",
+]
+
+[project.scripts]
+mini-arcade = "mini_arcade.cli:main"
+
+[tool.black]
+line-length = 79
+target-version = ["py39"]
+force-exclude = '''(
+^\.venv
+|^venv
+|^env
+|^\.env
+|^build
+|^dist
+|^docs
+)'''
+
+[tool.isort]
+profile = "black"
+line_length = 79
+known_first_party = ["mini_arcade"]
+skip = [".venv", "venv", "env", "build", "dist", "docs"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --color=yes"
+
+[tool.mypy]
+python_version = "3.9"
+packages = ["mini_arcade"]
+ignore_missing_imports = true
+strict = false
+
+[tool.pylint.messages_control]
+disable = [
+    "too-few-public-methods",
+    "logging-fstring-interpolation",
+    "fixme",
+]
+
+[tool.pylint.MAIN]
+ignore-paths = [
+    "^\\.venv",
+    "^venv",
+    "^tests",
+    "^env",
+    "^build",
+    "^dist",
+    "^docs",
+]
+
+[tool.poetry]
+packages = [{ include = "mini_arcade", from = "src" }]
