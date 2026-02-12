@@ -41,26 +41,16 @@ class MinTickContext(BaseTickContext[MinWorld, MinIntent]):
 
 
 @register_scene("min")
-class MinScene(SimScene):
+class MinScene(SimScene[MinTickContext, MinWorld]):
     """
     Minimal scene:
     """
 
-    def __init__(self, ctx: RuntimeContext):
-        super().__init__(ctx)
-        self.systems = SystemPipeline[MinTickContext]()
-        self.world: MinWorld
+    tick_context_type = MinTickContext
+
+    def on_enter(self) -> None:
+        self.world = MinWorld()
 
     def tick(self, input_frame: InputFrame, dt: float) -> None:  # type: ignore[override]
         # dt: your engine likely provides dt seconds. If not, approximate.
         logger.info("tick")
-
-    def _get_tick_context(
-        self, input_frame: InputFrame, dt: float
-    ) -> MinTickContext:
-        return MinTickContext(
-            input_frame=input_frame,
-            dt=dt,
-            world=self.world,
-            commands=self.context.command_queue,
-        )

@@ -167,32 +167,15 @@ class MinRenderSystem(BaseRenderSystem):
 # Scene
 # --------------------------------------------------------------------------------------
 @register_scene("min")
-class MinScene(SimScene[MinTickContext]):
+class MinScene(SimScene[MinTickContext, MinWorld]):
     """
     Minimal scene that draws a debug overlay (scene name, backend name, FPS/frame time).
     """
 
-    def __init__(self, ctx: RuntimeContext):
-        super().__init__(ctx)
-        self.systems = SystemPipeline[MinTickContext]()
-        self.world: MinWorld = MinWorld()
+    tick_context_type = MinTickContext
 
-    def on_enter(self):
-        # Register systems (match your Pong pattern)
+    def on_enter(self) -> None:
+        self.world = MinWorld()
         self.systems.extend(
-            [
-                MinInputSystem(),
-                DebugOverlaySystem(),
-                MinRenderSystem(),
-            ]
-        )
-
-    def _get_tick_context(
-        self, input_frame: InputFrame, dt: float
-    ) -> MinTickContext:
-        return MinTickContext(
-            input_frame=input_frame,
-            dt=dt,
-            world=self.world,
-            commands=self.context.command_queue,
+            [MinInputSystem(), DebugOverlaySystem(), MinRenderSystem()]
         )

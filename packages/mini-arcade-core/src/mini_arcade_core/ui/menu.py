@@ -697,7 +697,7 @@ class MenuRenderSystem(BaseRenderSystem):
         super().step(ctx)
 
 
-class BaseMenuScene(SimScene[MenuTickContext]):
+class BaseMenuScene(SimScene[MenuTickContext, MenuWorld]):
     """
     Base scene class for menu-based scenes.
 
@@ -706,12 +706,8 @@ class BaseMenuScene(SimScene[MenuTickContext]):
 
     menu: Menu
 
-    def __init__(self, ctx: RuntimeContext):
-        super().__init__(ctx)
-        self.systems = SystemPipeline[MenuTickContext]()
-        self.world = MenuWorld()
-
     def on_enter(self):
+        self.world = MenuWorld()
         self.menu = Menu(
             self._build_display_items(),
             viewport=self.menu_viewport(),
