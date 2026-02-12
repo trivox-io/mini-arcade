@@ -1,0 +1,61 @@
+name: Finalize Release
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_branch_suffix:
+        description: "Release suffix (e.g. 1.0 for branch release/1.0)"
+        required: true
+        type: string
+
+jobs:
+  finalize-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge release branch into main and develop
+        env:
+          SUFFIX: ${{ inputs.release_branch_suffix }}
+        run: |
+          set -e
+
+          RELEASE_BRANCH="release/${SUFFIX}"
+
+          echo "Finalizing release from branch ${RELEASE_BRANCH}"
+
+          git fetch origin
+
+          # Sanity check
+          if ! git ls-remote --exit-code --heads origin "${RELEASE_BRANCH}" > /dev/null; then
+            echo "ERROR: Branch ${RELEASE_BRANCH} does not exist on origin."
+            exit 1
+          fi
+
+          # Merge release -> main
+          git checkout main
+          git pull origin main
+          echo "Merging ${RELEASE_BRANCH} into main..."
+          git merge --no-ff "origin/${RELEASE_BRANCH}" -m "Merge ${RELEASE_BRANCH} into main"
+          git push origin main
+
+          # Merge release -> develop
+          git checkout develop
+          git pull origin develop
+          echo "Merging ${RELEASE_BRANCH} into develop..."
+          git merge --no-ff "origin/${RELEASE_BRANCH}" -m "Merge ${RELEASE_BRANCH} into develop"
+          git push origin develop
+
+          echo "Finalize release completed for ${RELEASE_BRANCH}."

@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+      - "release/**"
+      - "hotfix/**"
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  python-ci:
+    uses: trivox-io/trivox-ci/.github/workflows/python-ci.yml@main
+    with:
+      project-name: "mini-arcade-core"
+      lint-path: "src/mini_arcade_core"
+    secrets:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+

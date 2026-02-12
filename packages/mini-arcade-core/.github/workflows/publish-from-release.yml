@@ -1,0 +1,397 @@
+name: Publish from Release Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_branch:
+        description: "Release branch name (e.g. release/1.0)"
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    outputs:
+      start_unix: ${{ steps.start.outputs.start_unix }}
+      version: ${{ steps.bump_and_tag.outputs.version }}
+      changelog_section: ${{ steps.bump_and_tag.outputs.changelog_section }}
+
+    steps:
+      - name: Mark start time
+        id: start
+        run: |
+          ts=$(date +%s)
+          echo "start_unix=$ts" >> "$GITHUB_OUTPUT"
+
+      - name: Validate release branch name
+        run: |
+          if [[ "${{ inputs.release_branch }}" != release/* ]]; then
+            echo "ERROR: You can only publish from release/* branches."
+            exit 1
+          fi
+
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_branch }}
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump patch if needed, update changelog, create tag
+        id: bump_and_tag
+        run: |
+          set -e
+
+          python - << 'PY'
+          from pathlib import Path
+          from datetime import date
+          import subprocess
+          import re
+
+          # --- Version bump logic ---
+          pyproject = Path("pyproject.toml")
+          text = pyproject.read_text(encoding="utf-8")
+
+          m = re.search(r'^version\s*=\s*"(?P<ver>\d+\.\d+\.\d+)"', text, re.MULTILINE)
+          if not m:
+              raise SystemExit("Could not find version in pyproject.toml")
+
+          current_version = m.group("ver")
+          major, minor, patch = map(int, current_version.split("."))
+          current_tag = f"v{current_version}"
+
+          # Get all tags
+          tags = subprocess.check_output(["git", "tag"], text=True).splitlines()
+
+          if current_tag in tags:
+              # Tag already exists -> bump patch
+              patch += 1
+              new_version = f"{major}.{minor}.{patch}"
+
+              print(f"Current version {current_version} already tagged; bumping to {new_version}")
+
+              new_text = re.sub(
+                  r'^version\s*=\s*"\d+\.\d+\.\d+"',
+                  f'version = "{new_version}"',
+                  text,
+                  count=1,
+                  flags=re.MULTILINE,
+              )
+              pyproject.write_text(new_text, encoding="utf-8")
+              version_to_tag = new_version
+          else:
+              # First publish from this branch -> use current version
+              print(f"Using current version {current_version} for first publish.")
+              version_to_tag = current_version
+
+          # --- Prepare / read existing CHANGELOG.md ---
+          changelog = Path("CHANGELOG.md")
+          if changelog.exists():
+              old = changelog.read_text(encoding="utf-8")
+          else:
+              old = (
+                  "# Changelog\n\n"
+                  "All notable changes to this project will be documented in this file.\n\n"
+                  "This project adheres to [Semantic Versioning](https://semver.org/).\n\n"
+                  "## [Unreleased]\n\n"
+              )
+
+          # --- Compute git log range ---
+          try:
+              prev_tag = subprocess.check_output(
+                  ["git", "describe", "--tags", "--abbrev=0", "--match", "v*.*.*", "HEAD^"],
+                  text=True,
+              ).strip()
+          except subprocess.CalledProcessError:
+              prev_tag = None
+
+          if prev_tag:
+              log_range = f"{prev_tag}..HEAD"
+          else:
+              log_range = "HEAD"
+
+          # Get commit subjects (no bullets, we’ll format them)
+          raw_log = subprocess.check_output(
+              ["git", "log", log_range, "--pretty=format:%s"],
+              text=True,
+          )
+          lines = [l.strip() for l in raw_log.splitlines() if l.strip()]
+
+          # --- Group commits by type ---
+          type_to_section = {
+              "feat": "Added",
+              "fix": "Fixed",
+              "refactor": "Changed",
+              "refactore": "Changed",  # typo-friendly
+          }
+
+          sections = {
+              "Added": [],
+              "Fixed": [],
+              "Changed": [],
+          }
+          other = []
+
+          for subj in lines:
+              lower = subj.lower()
+              prefix, sep, rest = lower.partition(":")
+
+              if sep:  # "type: message"
+                  commit_type = prefix.strip()
+                  message = subj.split(":", 1)[1].strip() or subj
+              else:
+                  commit_type = ""
+                  message = subj
+
+              # Ignore chores (CI tweaks, formatting, etc.)
+              if commit_type == "chore":
+                  continue
+
+              heading = type_to_section.get(commit_type)
+              if heading:
+                  sections[heading].append(f"- {message}")
+              else:
+                  other.append(f"- {subj}")
+
+          today = date.today().isoformat()
+          header = f"## [{version_to_tag}] - {today}"
+
+          if not any(sections.values()) and not other:
+              body = "- Internal changes only."
+          else:
+              parts = []
+              for heading in ("Added", "Fixed", "Changed"):
+                  items = sections[heading]
+                  if items:
+                      parts.append(f"### {heading}")
+                      parts.extend(items)
+                      parts.append("")
+              if other:
+                  parts.append("### Other")
+                  parts.extend(other)
+                  parts.append("")
+              body = "\n".join(parts).strip()
+
+          new_section = f"{header}\n\n{body}\n\n"
+
+          text = old
+
+          # --- Insert new section under [Unreleased], controlling blank lines ---
+          unreleased_match = re.search(r"^## \[Unreleased\].*$", text, flags=re.MULTILINE)
+          if unreleased_match:
+              start_after_unrel = unreleased_match.end()
+              rest = text[start_after_unrel:]
+              # Find the next "## [" header after Unreleased; insert before that
+              next_header = re.search(r"^## \[.*\]", rest, flags=re.MULTILINE)
+              if next_header:
+                  insert_pos = start_after_unrel + next_header.start()
+              else:
+                  insert_pos = len(text)
+          else:
+              # No [Unreleased] header, append at end
+              insert_pos = len(text.rstrip())
+
+          before = text[:insert_pos].rstrip("\n")
+          after = text[insert_pos:].lstrip("\n")
+          new_changelog = before + "\n\n" + new_section + after
+
+          changelog.write_text(new_changelog, encoding="utf-8")
+
+          # Persist values for shell steps
+          Path(".version_to_tag").write_text(version_to_tag, encoding="utf-8")
+          Path(".changelog_section").write_text(new_section, encoding="utf-8")
+          PY
+
+          VERSION_TO_TAG=$(cat .version_to_tag)
+          TAG="v${VERSION_TO_TAG}"
+
+          echo "Version to tag: ${VERSION_TO_TAG}"
+          echo "Tag: ${TAG}"
+
+          # Expose as step outputs (version as plain string, changelog as JSON string)
+          CHANGELOG_SECTION_JSON=$(cat .changelog_section | jq -Rs .)
+          echo "version=${VERSION_TO_TAG}" >> "$GITHUB_OUTPUT"
+          echo "changelog_section=${CHANGELOG_SECTION_JSON}" >> "$GITHUB_OUTPUT"
+
+          git status
+          git add pyproject.toml CHANGELOG.md || true
+
+          # Commit only if there are changes (e.g. patch bump / changelog)
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: release ${VERSION_TO_TAG}"
+            git push origin "${{ inputs.release_branch }}"
+          else
+            echo "No changes to commit."
+          fi
+
+          # Create & push tag
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists; aborting."
+            exit 1
+          fi
+
+          git tag "${TAG}"
+          git push origin "${TAG}"
+
+      # ---- Build & publish to PyPI (inline, after tag push) ----
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        run: |
+          python -m pip install --upgrade pip
+          pip install "poetry>=2.0.0"
+
+      - name: Build distributions
+        run: poetry build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+
+  notify:
+    needs: [publish]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      # 1) Duration
+      - name: Calculate pipeline duration
+        id: duration
+        run: |
+          end=$(date +%s)
+          seconds=$((end - ${{ needs.publish.outputs.start_unix }}))
+          if [ "$seconds" -lt 60 ]; then
+            formatted="${seconds}s"
+          elif [ "$seconds" -lt 3600 ]; then
+            minutes=$((seconds / 60)); secs=$((seconds % 60))
+            formatted="${minutes}m"; [ "$secs" -ne 0 ] && formatted="${formatted} ${secs}s"
+          else
+            hours=$((seconds / 3600)); minutes=$(((seconds % 3600) / 60))
+            formatted="${hours}h"; [ "$minutes" -ne 0 ] && formatted="${formatted} ${minutes}m"
+          fi
+          echo "time=${formatted}" >> "$GITHUB_OUTPUT"
+
+      # 2) Icon & status word based on publish result
+      - name: Set pipeline status icon
+        id: icon
+        run: |
+          if [[ "${{ needs.publish.result }}" != "success" ]]; then
+            echo "icon=x" >> "$GITHUB_OUTPUT"
+          else
+            echo "icon=white_check_mark" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set pipeline status word
+        id: word
+        run: |
+          if [[ "${{ needs.publish.result }}" != "success" ]]; then
+            echo "word=failed" >> "$GITHUB_OUTPUT"
+          else
+            echo "word=passed" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 3) Get GitHub user full name
+      - name: Get GitHub user full name
+        id: ghname
+        run: |
+          name=$(curl -s https://api.github.com/users/${{ github.actor }} | jq -r .name)
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+
+      # 4) Build payload JSON (show version + changelog)
+      - name: Build payload JSON
+        id: payload
+        env:
+          SERVER_URL:   ${{ github.server_url }}
+          REPO:         ${{ github.repository }}
+          RUN_ID:       ${{ github.run_id }}
+          ACTOR:        ${{ github.actor }}
+          BRANCH:       ${{ github.head_ref || github.ref_name }}
+          COMMIT:       ${{ github.sha }}
+          COMMIT_MSG:   ${{ github.event.head_commit.message || github.event.pull_request.title || 'Commit message not available' }}
+          DURATION:     ${{ steps.duration.outputs.time }}
+          ICON:         ${{ steps.icon.outputs.icon }}
+          WORD:         ${{ steps.word.outputs.word }}
+          NAME:         ${{ steps.ghname.outputs.name }}
+          VERSION:      ${{ needs.publish.outputs.version }}
+          CHANGELOG_SECTION_JSON: ${{ needs.publish.outputs.changelog_section }}
+        run: |
+          # Decode the changelog section JSON string back to text
+          CHANGELOG_SECTION=$(printf '%s' "$CHANGELOG_SECTION_JSON" | jq -r .)
+
+          blocks=$(jq -cn \
+            --arg icon   "$ICON" \
+            --arg name   "$NAME" \
+            --arg server "$SERVER_URL" \
+            --arg repo   "$REPO" \
+            --arg runid  "$RUN_ID" \
+            --arg actor  "$ACTOR" \
+            --arg branch "$BRANCH" \
+            --arg commit "$COMMIT" \
+            --arg cmsg   "$COMMIT_MSG" \
+            --arg dur    "$DURATION" \
+            --arg word   "$WORD" \
+            --arg version "$VERSION" \
+            --arg chlog "$CHANGELOG_SECTION" '
+            [
+              {
+                "type":"section",
+                "text":{
+                  "type":"mrkdwn",
+                  "text": (":\($icon): *Release pipeline \((if ($name|length)>0 then $name else $actor end))* " +
+                          "(<\($server)/\($actor)|@\($actor)>)\n" +
+                          "Pipeline <\($server)/\($repo)/actions/runs/\($runid)|#\($runid)> has *\($word)* in `\($dur)`.")
+                }
+              },
+              {
+                "type":"section",
+                "fields":[
+                  { "type":"mrkdwn", "text":"*Branch:*\n<\($server)/\($repo)/tree/\($branch)|`\($branch)`>" },
+                  { "type":"mrkdwn", "text":"*Commit:*\n<\($server)/\($repo)/commit/\($commit)|`\($commit)`> - `\($cmsg)`" }
+                ]
+              },
+              {
+                "type":"section",
+                "text":{
+                  "type":"mrkdwn",
+                  "text":"*Release:* `v\($version)`\n\n\($chlog)"
+                }
+              }
+            ]')
+
+          payload=$(jq -cn \
+            --arg icon "$ICON" \
+            --arg server "$SERVER_URL" \
+            --arg repo "$REPO" \
+            --arg runid "$RUN_ID" \
+            --arg word "$WORD" \
+            --arg dur "$DURATION" \
+            --argjson blocks "$blocks" '
+            {
+              "text": (":\($icon): Release pipeline <\($server)/\($repo)/actions/runs/\($runid)|#\($runid)> has *\($word)* in `\($dur)`."),
+              "blocks": $blocks
+            }')
+
+          echo "payload=$(echo "$payload" | jq -c .)" >> "$GITHUB_OUTPUT"
+
+      # 5) Send Slack
+      - name: Slack Notification
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID_RELEASE }}
+          payload: ${{ steps.payload.outputs.payload }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

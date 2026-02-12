@@ -1,0 +1,48 @@
+name: Sync develop from main
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync-develop:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch main
+        run: |
+          git fetch origin main
+
+      - name: Check if develop is behind main
+        id: check_diff
+        run: |
+          if git merge-base --is-ancestor HEAD origin/main; then
+            echo "develop is behind or equal to main (safe to merge or noop)."
+            echo "needs_merge=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "develop is ahead of main (normal for feature work)."
+            echo "needs_merge=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Merge main into develop
+        if: steps.check_diff.outputs.needs_merge == 'true'
+        run: |
+          set -e
+          echo "Merging origin/main into develop..."
+          git merge --no-ff origin/main -m "chore: sync develop with main"
+          git push origin develop
