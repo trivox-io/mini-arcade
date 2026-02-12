@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+      - "release/**"
+      - "hotfix/**"
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  python-ci:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project-name: "mini-arcade"
+            lint-path: "src/mini_arcade"
+            working-directory: "packages/mini-arcade"
+
+          - project-name: "mini-arcade-core"
+            lint-path: "src/mini_arcade_core"
+            working-directory: "packages/mini-arcade-core"
+
+          - project-name: "mini-arcade-pygame-backend"
+            lint-path: "src/mini_arcade_pygame_backend"
+            working-directory: "packages/mini-arcade-pygame-backend"
+
+          - project-name: "mini-arcade-native-backend"
+            lint-path: "src/mini_arcade_native_backend"
+            working-directory: "packages/mini-arcade-native-backend"
+
+    uses: trivox-io/trivox-ci/.github/workflows/python-ci.yml@main
+    with:
+      project-name: ${{ matrix.project-name }}
+      lint-path: ${{ matrix.lint-path }}
+      working-directory: ${{ matrix.working-directory }}
+    secrets:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
