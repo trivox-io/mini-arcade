@@ -1,5 +1,5 @@
 """
-Example: 001_min_scene
+Example: 002_hello_overlay
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from examples._shared.spec import ExampleSpec
 
 def build_example(**_kwargs) -> ExampleSpec:
     discover = [
-        "examples.scenes.001_min_scene",
+        "examples.scenes.002_hello_overlay",
         "mini_arcade_core.scenes",
     ]
 
@@ -20,6 +20,6 @@ def build_example(**_kwargs) -> ExampleSpec:
         initial_scene="min",
         fps=60,
         backend_factory=make_default_backend_factory(
-            title="Example: 001_min_scene"
+            title="Example: 002_hello_overlay"
         ),
     )

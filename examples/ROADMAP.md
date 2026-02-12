@@ -20,7 +20,7 @@
 
 ### E00.2 Hello Overlay
 
-- **Status:** TODO
+- **Status:** Done
 - **Goal:** Show text/UI drawing and basic debug overlay.
 - **User sees:** Scene name, backend name, FPS / frame time.
 - **Teaches:** UI pass vs world pass, text drawing, debug toggles.

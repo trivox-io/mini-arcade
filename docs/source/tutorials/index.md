@@ -6,10 +6,13 @@ Tutorials map 1:1 with the `examples/` folder. Each tutorial is intended to be b
 :caption: Tutorials
 :maxdepth: 1
 
-e01_single_shape
-e02_input_and_intents
-e03_collisions_2d
-e04_sprites_and_animation
-e05_capture_screenshots
-e06_determinism_basics
+001_min_scene
+002_hello_overlay
+```
+
+```{toctree}
+:hidden:
+:caption: Examples Roadmap
+
+Roadmap <roadmap>
 ```
