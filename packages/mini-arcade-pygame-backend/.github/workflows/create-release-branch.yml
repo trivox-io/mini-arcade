@@ -1,0 +1,105 @@
+name: Create Release Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: "Version bump type (major or minor)"
+        required: true
+        type: choice
+        options:
+          - minor
+          - major
+
+jobs:
+  create-release-branch:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Compute next version and create release branch
+        id: version
+        env:
+          BUMP_TYPE: ${{ inputs.bump_type }}
+        run: |
+          set -e
+
+          python - << 'PY'
+          from pathlib import Path
+          import os
+          import re
+          import subprocess
+
+          bump_type = os.environ["BUMP_TYPE"]
+
+          pyproject = Path("pyproject.toml")
+          text = pyproject.read_text(encoding="utf-8")
+
+          m = re.search(r'^version\s*=\s*"(?P<ver>\d+\.\d+\.\d+)"', text, re.MULTILINE)
+          if not m:
+              raise SystemExit("Could not find version in pyproject.toml")
+
+          current_version = m.group("ver")
+          major, minor, patch = map(int, current_version.split("."))
+
+          if bump_type == "major":
+              major += 1
+              minor = 0
+              patch = 0
+          elif bump_type == "minor":
+              minor += 1
+              patch = 0
+          else:
+              raise SystemExit(f"Unsupported bump type: {bump_type}")
+
+          new_version = f"{major}.{minor}.{patch}"
+          release_branch = f"release/{major}.{minor}"
+
+          print(f"Current version: {current_version}")
+          print(f"New version: {new_version}")
+          print(f"Release branch: {release_branch}")
+
+          # Create release branch from develop
+          subprocess.run(["git", "checkout", "-b", release_branch], check=True)
+
+          # Update version only in the release branch
+          new_text = re.sub(
+              r'^version\s*=\s*"\d+\.\d+\.\d+"',
+              f'version = "{new_version}"',
+              text,
+              count=1,
+              flags=re.MULTILINE,
+          )
+          pyproject.write_text(new_text, encoding="utf-8")
+
+          # Export for later steps as step outputs
+          out_path = os.environ["GITHUB_OUTPUT"]
+          with open(out_path, "a", encoding="utf-8") as fh:
+              fh.write(f"new_version={new_version}\n")
+              fh.write(f"release_branch={release_branch}\n")
+          PY
+
+      - name: Commit version bump & push release branch
+        env:
+          NEW_VERSION: ${{ steps.version.outputs.new_version }}
+          RELEASE_BRANCH: ${{ steps.version.outputs.release_branch }}
+        run: |
+          set -e
+
+          git status
+          git add pyproject.toml
+          git commit -m "chore: start release ${NEW_VERSION} on ${RELEASE_BRANCH}"
+          git push origin "${RELEASE_BRANCH}"

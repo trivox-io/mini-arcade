@@ -1,0 +1,82 @@
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+name = "mini-arcade-pygame-backend"
+version = "1.0.1"
+description = "Tiny arcade game framework backend using Pygame."
+authors = [
+    { name = "Santiago Rincon", email = "rincores@gmail.com" },
+]
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9,<3.12"
+dependencies = [
+    "pygame (>=2.6.1,<3.0.0)",
+    "mini-arcade-core~=1.1"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest~=8.3",
+    "pytest-cov~=6.0",
+    "black~=24.10",
+    "isort~=5.13",
+    "mypy~=1.5",
+    "pylint~=3.3",
+]
+
+[tool.black]
+line-length = 79
+target-version = ["py39"]
+force-exclude = '''(
+^\.venv
+|^venv
+|^env
+|^\.env
+|^build
+|^dist
+|^docs
+)'''
+
+[tool.isort]
+profile = "black"
+line_length = 79
+known_first_party = ["mini_arcade_pygame_backend"]
+skip = [".venv", "venv", "env", "build", "dist", "docs"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --color=yes"
+
+[tool.mypy]
+python_version = "3.9"
+packages = ["mini_arcade_pygame_backend"]
+ignore_missing_imports = true
+strict = false
+
+[tool.pylint.messages_control]
+disable = [
+    # Justification: Allow classes with few public methods for simplicity.
+    "too-few-public-methods",
+    # Justification: TODOs are acceptable during development.
+    "fixme",
+    # Justification: Dynamic attributes are common in Pygame.
+    "no-member",
+]
+
+[tool.pylint.MAIN]
+ignore-paths = [
+    "^\\.venv",
+    "^venv",
+    "^tests",
+    "^examples",
+    "^env",
+    "^build",
+    "^dist",
+    "^docs",
+]
+
+[tool.poetry]
+packages = [{ include = "mini_arcade_pygame_backend", from = "src" }]
