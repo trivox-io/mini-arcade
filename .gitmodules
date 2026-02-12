@@ -1,0 +1,6 @@
+[submodule "games/deja-bounce"]
+	path = games/deja-bounce
+	url = https://github.com/alexsc6955/deja-bounce.git
+[submodule "games/space-invaders"]
+	path = games/space-invaders
+	url = https://github.com/alexsc6955/space-invaders.git
