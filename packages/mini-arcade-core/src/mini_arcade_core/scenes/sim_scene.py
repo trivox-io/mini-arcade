@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Generic, TypeVar, Type
+from typing import TYPE_CHECKING, Generic, Type, TypeVar
 
 from mini_arcade_core.backend.backend import Backend
 from mini_arcade_core.engine.render.packet import DrawOp, RenderPacket
@@ -146,6 +146,8 @@ class SimScene(Generic[TContext, TWorld]):
         :rtype: SystemPipeline[TContext]
         """
         return SystemPipeline[TContext]()
+
+    def make_world(self) -> TWorld: ...
 
     def on_enter(self):
         """Called when the scene becomes active (safe place to create world & add systems)."""

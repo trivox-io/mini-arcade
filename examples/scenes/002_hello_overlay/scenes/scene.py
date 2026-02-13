@@ -20,19 +20,11 @@ from mini_arcade_core.scenes.sim_scene import (  # type: ignore[import-not-found
     SimScene,
 )
 from mini_arcade_core.scenes.systems.builtins import (  # type: ignore[import-not-found]
-    BaseInputSystem,
+    InputIntentSystem,
     BaseRenderSystem,
 )
 
 from .models import MinIntent, MinTickContext, MinWorld
-
-
-# --------------------------------------------------------------------------------------
-# Helpers
-# --------------------------------------------------------------------------------------
-def _ema(prev: float, cur: float, alpha: float = 0.15) -> float:
-    """Exponential moving average for stable display."""
-    return cur if prev <= 0.0 else (prev * (1.0 - alpha) + cur * alpha)
 
 
 # --------------------------------------------------------------------------------------
@@ -68,13 +60,13 @@ class DrawDebugOverlay(Drawable[MinTickContext]):
 # Systems
 # --------------------------------------------------------------------------------------
 @dataclass
-class MinInputSystem(BaseInputSystem):
+class MinInputSystem(InputIntentSystem):
     """Reads input and sets intent."""
 
     name: str = "min_input"
     order: int = 10
 
-    def step(self, ctx: MinTickContext):
+    def build_intent(self, ctx: MinTickContext):
         pressed = ctx.input_frame.keys_pressed
         ctx.intent = MinIntent(toggle_overlay=Key.F1 in pressed)
 
@@ -87,6 +79,11 @@ class DebugOverlaySystem:
 
     name: str = "debug_overlay"
     order: int = 20  # after input
+
+    @staticmethod
+    def _ema(prev: float, cur: float, alpha: float = 0.15) -> float:
+        """Exponential moving average for stable display."""
+        return cur if prev <= 0.0 else (prev * (1.0 - alpha) + cur * alpha)
 
     def step(self, ctx: MinTickContext):
         ov = ctx.world.overlay
@@ -103,8 +100,8 @@ class DebugOverlaySystem:
         if ctx.dt > 0.0:
             fps = 1.0 / ctx.dt
             frame_ms = ctx.dt * 1000.0
-            ov.fps_smoothed = _ema(ov.fps_smoothed, fps)
-            ov.frame_ms_smoothed = _ema(ov.frame_ms_smoothed, frame_ms)
+            ov.fps_smoothed = self._ema(ov.fps_smoothed, fps)
+            ov.frame_ms_smoothed = self._ema(ov.frame_ms_smoothed, frame_ms)
 
 
 @dataclass

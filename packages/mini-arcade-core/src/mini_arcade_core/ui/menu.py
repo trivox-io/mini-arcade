@@ -12,7 +12,6 @@ from mini_arcade_core.backend.events import Event, EventType
 from mini_arcade_core.backend.keys import Key
 from mini_arcade_core.backend.types import Color
 from mini_arcade_core.engine.commands import Command, QuitCommand
-from mini_arcade_core.runtime.context import RuntimeContext
 from mini_arcade_core.runtime.input_frame import InputFrame
 from mini_arcade_core.scenes.sim_scene import (
     BaseIntent,
@@ -23,10 +22,9 @@ from mini_arcade_core.scenes.sim_scene import (
     SimScene,
 )
 from mini_arcade_core.scenes.systems.builtins import (
-    BaseInputSystem,
     BaseRenderSystem,
+    InputIntentSystem,
 )
-from mini_arcade_core.scenes.systems.system_pipeline import SystemPipeline
 from mini_arcade_core.spaces.d2.geometry2d import Size2D
 
 
@@ -609,15 +607,14 @@ class MenuTickContext(BaseTickContext[MenuWorld, MenuIntent]):
 
 
 @dataclass
-class MenuInputSystem(BaseInputSystem):
+class MenuInputSystem(InputIntentSystem):
     """Converts InputFrame -> MenuIntent."""
 
     name: str = "menu_input"
 
-    def step(self, ctx: MenuTickContext):
-        """Step the input system to extract menu intent."""
+    def build_intent(self, ctx: MenuTickContext):
         pressed = ctx.input_frame.keys_pressed
-        ctx.intent = MenuIntent(
+        return MenuIntent(
             move_up=Key.UP in pressed,
             move_down=Key.DOWN in pressed,
             select=(Key.ENTER in pressed) or (Key.SPACE in pressed),

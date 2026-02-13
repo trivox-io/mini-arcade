@@ -18,7 +18,8 @@ class BaseSystem(Protocol, Generic[TSystemContext]):
     """Protocol for a system that operates within a given context."""
 
     name: str
-    order: int
+    phase: int = 0
+    order: int = 0
 
     def enabled(self, ctx: TSystemContext) -> bool:
         """
@@ -30,6 +31,7 @@ class BaseSystem(Protocol, Generic[TSystemContext]):
         :return: True if the system is enabled, False otherwise.
         :rtype: bool
         """
+        return True
 
     def step(self, ctx: TSystemContext):
         """

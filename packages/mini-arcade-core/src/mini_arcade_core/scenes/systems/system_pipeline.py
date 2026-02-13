@@ -24,6 +24,24 @@ class SystemPipeline(Generic[TSystemContext]):
 
     systems: List[BaseSystem[TSystemContext]] = field(default_factory=list)
 
+    # TODO: Implement this for sorting
+    @staticmethod
+    def insertion_sort(arr):
+        """
+        Sorts a list of elements using the Insertion Sort algorithm.
+        """
+        # Traverse through 1 to len(arr)
+        for i in range(1, len(arr)):
+            key = arr[i]
+            # Move elements of arr[0..i-1], that are greater than key,
+            # to one position ahead of their current position
+            j = i - 1
+            while j >= 0 and key < arr[j]:
+                arr[j + 1] = arr[j]
+                j -= 1
+            arr[j + 1] = key
+        return arr
+
     def add(self, system: BaseSystem[TSystemContext]):
         """
         Add a system to the pipeline and sort by order.
@@ -32,7 +50,7 @@ class SystemPipeline(Generic[TSystemContext]):
         :type system: BaseSystem[TSystemContext]
         """
         self.systems.append(system)
-        self.systems.sort(key=lambda s: getattr(s, "order", 0))
+        self.systems.sort(key=self._sort_key)
 
     def extend(self, systems: Iterable[BaseSystem[TSystemContext]]):
         """
@@ -55,3 +73,11 @@ class SystemPipeline(Generic[TSystemContext]):
             if hasattr(system, "enabled") and not system.enabled(ctx):
                 continue
             system.step(ctx)
+
+    def _sort_key(self, s: BaseSystem):
+        return (
+            getattr(s, "phase", 0),
+            getattr(s, "order", 0),
+            getattr(s, "name", s.__class__.__name__),
+            s.__class__.__name__,
+        )

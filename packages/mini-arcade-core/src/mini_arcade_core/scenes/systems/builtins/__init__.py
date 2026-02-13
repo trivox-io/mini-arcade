@@ -5,11 +5,14 @@ Built-in systems for scenes.
 from dataclasses import dataclass
 
 from mini_arcade_core.engine.render.packet import RenderPacket
-from mini_arcade_core.scenes.sim_scene import BaseTickContext
+from mini_arcade_core.scenes.sim_scene import BaseIntent, BaseTickContext
+from mini_arcade_core.scenes.systems.base_system import (
+    BaseSystem,
+)
 
 
 @dataclass
-class BaseInputSystem:
+class InputIntentSystem(BaseSystem):
     """
     Converts InputFrame -> MenuIntent.
 
@@ -18,10 +21,16 @@ class BaseInputSystem:
     """
 
     name: str = "base_input"
+    # phase: int = 10
     order: int = 10
+
+    def build_intent(self, ctx: BaseTickContext) -> BaseIntent:
+        """Build the intent"""
+        raise NotImplementedError
 
     def step(self, ctx: BaseTickContext):
         """Step the input system to extract menu intent."""
+        ctx.intent = self.build_intent(ctx)
 
 
 @dataclass
