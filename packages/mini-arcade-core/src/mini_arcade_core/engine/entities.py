@@ -1,8 +1,11 @@
+"""
+Engine entities for mini-arcade-core.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from mini_arcade.utils.logging import logger
 from mini_arcade_core.engine.animation import Animation
 from mini_arcade_core.engine.components import Anim2D, Life, Sprite2D
 from mini_arcade_core.engine.render.style import RenderStyle
@@ -50,6 +53,9 @@ class EntityIdAllocator:
         return eid
 
 
+# Justification: BaseEntity has a lot of attributes but it's mostly data and optional
+# components, hard to break down more without overcomplicating it.
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class BaseEntity:
     """
@@ -259,6 +265,11 @@ class BaseEntity:
 
         return None
 
+    # TODO: Think about refactoring this method later, it's a bit long but it does a lot
+    # of parsing and construction of the entity from a dict.
+    # Justification: A bit long but it's mostly data parsing and construction
+    # hard to break down more without overcomplicating it.
+    # pylint: disable=too-many-instance-attributes,too-many-locals
     @classmethod
     def from_dict(cls, data: dict) -> BaseEntity:
         """

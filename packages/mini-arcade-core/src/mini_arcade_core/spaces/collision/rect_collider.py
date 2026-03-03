@@ -44,4 +44,10 @@ class RectCollider:
         :return: True if the rectangles intersect, False otherwise.
         :rtype: bool
         """
-        return self.rect.overlaps(other.rect, inclusive=inclusive)
+        # TODO: Check how is this actually working, because the rect property returns
+        # a Rect object, which has the overlaps method.
+        # Justification: Disabling no-member because rect is a property that returns
+        # a Rect object, which has the overlaps method.
+        return self.rect.overlaps(  # pylint: disable=no-member
+            other.rect, inclusive=inclusive
+        )

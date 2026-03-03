@@ -23,6 +23,18 @@ from mini_arcade_core.scenes.systems.base_system import (
 )
 from mini_arcade_core.spaces.math.vec2 import Vec2
 
+from .actions import (  # noqa: E402  (re-export)
+    ActionIntentSystem,
+    ActionMap,
+    ActionSnapshot,
+    AxisActionBinding,
+    DigitalActionBinding,
+)
+from .capture_hotkeys import (  # noqa: E402  (re-export)
+    CaptureHotkeysConfig,
+    CaptureHotkeysSystem,
+)
+
 
 class RenderSystemContext(Protocol):
     """
@@ -37,8 +49,10 @@ class RenderSystemContext(Protocol):
     packet: RenderPacket | None
 
 
+# pylint: disable=invalid-name
 # Generic tick-context type used by render systems.
 TTickContext = TypeVar("TTickContext", bound=RenderSystemContext)
+# pylint: enable=invalid-name
 
 
 @dataclass
@@ -117,8 +131,9 @@ class BaseQueuedRenderSystem(
         for entity in ctx.world.entities or []:
             self.emit_entity(ctx, rq, entity)
 
+    # pylint: disable=too-many-locals
     def emit_entity(
-        self, ctx: TTickContext, rq: RenderQueue, entity: BaseEntity
+        self, _ctx: TTickContext, rq: RenderQueue, entity: BaseEntity
     ) -> None:
         """
         Emit a single entity into the render queue.
@@ -282,16 +297,3 @@ class BaseQueuedRenderSystem(
             )
         ctx.draw_ops = draw_ops
         ctx.packet = RenderPacket.from_ops(draw_ops, pass_ops=pass_ops)
-
-
-from .actions import (  # noqa: E402  (re-export)
-    ActionIntentSystem,
-    ActionMap,
-    ActionSnapshot,
-    AxisActionBinding,
-    DigitalActionBinding,
-)
-from .capture_hotkeys import (  # noqa: E402  (re-export)
-    CaptureHotkeysConfig,
-    CaptureHotkeysSystem,
-)

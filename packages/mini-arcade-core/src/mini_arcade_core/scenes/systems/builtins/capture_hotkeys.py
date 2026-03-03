@@ -29,6 +29,7 @@ class CaptureContext(Protocol):
     commands: object
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass(frozen=True)
 class CaptureHotkeysConfig:
     """

@@ -156,11 +156,21 @@ class DrawOperation:
 
 @dataclass
 class RenderQueue:
+    """
+    A queue of draw operations to be rendered this tick.
+    Scenes/systems can push draw operations to this queue during the tick,
+    and the engine will sort and render them after the tick.
+    This is a more flexible alternative to building a full RenderPacket for simple
+    scenes that just want to emit draw calls.
+    """
 
     _ops: list[DrawOperation] = field(default_factory=list)
     _seq: int = 0
 
     def clear(self) -> None:
+        """
+        Clear all draw operations from the queue.
+        """
         self._ops.clear()
         self._seq = 0
 
@@ -175,6 +185,7 @@ class RenderQueue:
         self._seq += 1
 
     # helpers
+    # pylint: disable=too-many-arguments
     def rect(
         self,
         *,
@@ -185,6 +196,22 @@ class RenderQueue:
         layer: Layer = "world",
         z: int = 0,
     ) -> None:
+        """
+        Push a rectangle draw operation.
+
+        :param center: Center position of the rectangle.
+        :type center: Vec2
+        :param size: Size of the rectangle (width, height).
+        :type size: Vec2
+        :param color: Color of the rectangle.
+        :type color: Color
+        :param radius: Optional corner radius for rounded rectangles (default 0).
+        :type radius: float
+        :param layer: The layer to draw on (default "world").
+        :type layer: Layer
+        :param z: The z-index for sorting within the layer (default 0).
+        :type z: int
+        """
         self._push("draw_rect", layer, z, (center, size, color, radius))
 
     def line(
@@ -199,6 +226,26 @@ class RenderQueue:
         layer: Layer = "world",
         z: int = 0,
     ) -> None:
+        """
+        Push a line draw operation, with optional dashed line parameters.
+
+        :param a: Starting point of the line.
+        :type a: Vec2
+        :param b: Ending point of the line.
+        :type b: Vec2
+        :param color: Color of the line.
+        :type color: Color
+        :param thickness: Thickness of the line (default 1.0).
+        :type thickness: float
+        :param dash_length: Length of dashes for dashed line (None for solid line).
+        :type dash_length: float | None
+        :param dash_gap: Length of gaps for dashed line (None for solid line).
+        :type dash_gap: float | None
+        :param layer: The layer to draw on (default "world").
+        :type layer: Layer
+        :param z: The z-index for sorting within the layer (default 0).
+        :type z: int
+        """
         self._push(
             "draw_line",
             layer,
@@ -215,6 +262,20 @@ class RenderQueue:
         layer: Layer = "world",
         z: int = 0,
     ) -> None:
+        """
+        Push a circle draw operation.
+
+        :param center: Center position of the circle.
+        :type center: Vec2
+        :param radius: Radius of the circle.
+        :type radius: float
+        :param color: Color of the circle.
+        :type color: Color
+        :param layer: The layer to draw on (default "world").
+        :type layer: Layer
+        :param z: The z-index for sorting within the layer (default 0).
+        :type z: int
+        """
         self._push("draw_circle", layer, z, (center, radius, color))
 
     def poly(
@@ -228,6 +289,24 @@ class RenderQueue:
         layer: Layer = "world",
         z: int = 0,
     ) -> None:
+        """
+        Push a polygon draw operation.
+
+        :param points: List of points defining the polygon vertices.
+        :type points: list[Vec2]
+        :param fill: Fill color for the polygon (None for no fill).
+        :type fill: Color | None
+        :param stroke: Stroke color for the polygon edges (None for no stroke).
+        :type stroke: Color | None
+        :param thickness: Thickness of the stroke (default 1).
+        :type thickness: int
+        :param closed: Whether the polygon should be closed (default True).
+        :type closed: bool
+        :param layer: The layer to draw on (default "world").
+        :type layer: Layer
+        :param z: The z-index for sorting within the layer (default 0).
+        :type z: int
+        """
         self._push(
             "draw_poly", layer, z, (points, fill, stroke, thickness, closed)
         )
@@ -244,6 +323,26 @@ class RenderQueue:
         layer: Layer = "world",
         z: int = 0,
     ) -> None:
+        """
+        Push a texture draw operation.
+
+        :param tex_id: The texture ID to draw.
+        :type tex_id: int
+        :param x: X position to draw the texture.
+        :type x: float
+        :param y: Y position to draw the texture.
+        :type y: float
+        :param w: Width to draw the texture.
+        :type w: float
+        :param h: Height to draw the texture.
+        :type h: float
+        :param angle_deg: Rotation angle in degrees (default 0).
+        :type angle_deg: float
+        :param layer: The layer to draw on (default "world").
+        :type layer: Layer
+        :param z: The z-index for sorting within the layer (default 0).
+        :type z: int
+        """
         self._push("draw_texture", layer, z, (tex_id, x, y, w, h, angle_deg))
 
     def text(
@@ -258,6 +357,26 @@ class RenderQueue:
         layer: Layer = "ui",
         z: int = 0,
     ) -> None:
+        """
+        Push a text draw operation.
+
+        :param x: X position of the text.
+        :type x: float
+        :param y: Y position of the text.
+        :type y: float
+        :param text: The text string to draw.
+        :type text: str
+        :param color: The color of the text (default white).
+        :type color: Color
+        :param font_size: Optional font size (default None for backend default).
+        :type font_size: int | None
+        :param align: Text alignment: "left", "center", or "right" (default "left").
+        :type align: Literal["left", "center", "right"]
+        :param layer: The layer to draw on (default "ui").
+        :type layer: Layer
+        :param z: The z-index for sorting within the layer (default 0).
+        :type z: int
+        """
         self._push(
             "draw_text",
             layer,
@@ -272,11 +391,29 @@ class RenderQueue:
         layer: Layer = "debug",
         z: int = 0,
     ) -> None:
+        """
+        Push a custom draw operation defined by a callable that takes the backend.
+
+        :param op: A callable that takes a Backend and performs custom drawing.
+        :type op: Callable[[Backend], None]
+        :param layer: The layer to draw on (default "debug").
+        :type layer: Layer
+        :param z: The z-index for sorting within the layer (default 0).
+        :type z: int
+        """
         self._push("custom", layer, z, op)
 
     def iter_sorted(
         self, layers: tuple[Layer, ...] | list[Layer] | None = None
     ) -> list[DrawOperation]:
+        """
+        Get draw operations sorted by layer/z/seq, optionally filtered by layers.
+
+        :param layers: Optional tuple or list of layers to include (default all).
+        :type layers: tuple[Layer, ...] | list[Layer] | None
+        :return: Sorted list of draw operations for the specified layers.
+        :rtype: list[DrawOperation]
+        """
         if layers is None:
             ops = self._ops
         else:
@@ -285,6 +422,7 @@ class RenderQueue:
         return sorted(ops, key=lambda o: (_LAYER_ORDER[o.layer], o.z, o.seq))
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class BaseTickContext(Generic[TWorld, TIntent]):
     """
@@ -315,9 +453,19 @@ class BaseTickContext(Generic[TWorld, TIntent]):
 
 @dataclass(frozen=True)
 class SubmitRenderQueue(Drawable[BaseTickContext]):
+    """
+    Drawable that submits a RenderQueue from the tick context.
+    This is a utility for simple scenes that want to build a RenderQueue directly
+    in their tick context and have it rendered without needing a full RenderPacket.
+
+    :ivar layers: (tuple[Layer, ...] | None): Optional tuple of layers to
+        render from the RenderQueue (default all).
+    """
+
     layers: tuple[Layer, ...] | None = None
 
     @staticmethod
+    # pylint: disable=too-many-arguments
     def _draw_line(
         backend: Backend,
         *,
@@ -334,6 +482,7 @@ class SubmitRenderQueue(Drawable[BaseTickContext]):
         except TypeError:
             backend.render.draw_line(x1, y1, x2, y2, color=color)
 
+    # pylint: disable=too-many-arguments
     @classmethod
     def _draw_dashed_line(
         cls,
@@ -380,6 +529,10 @@ class SubmitRenderQueue(Drawable[BaseTickContext]):
             )
             traveled += step
 
+    # TODO: Refactor this method later.
+    # Justification: This method is a bit long but it's mostly parsing the draw operations
+    # and dispatching them, hard to break down more without overcomplicating it.
+    # pylint: disable=too-many-branches,too-many-statements,too-many-locals
     def draw(self, backend: Backend, ctx: BaseTickContext):
         rq = ctx.render_queue
         for op in rq.iter_sorted(self.layers):
@@ -558,7 +711,14 @@ class SimScene(Generic[TContext, TWorld]):
         """
         return SystemPipeline[TContext]()
 
-    def make_world(self) -> TWorld: ...
+    def make_world(self) -> TWorld:
+        """
+        Construct the initial world state for this scene. Called during on_enter.
+
+        :return: Initial world state
+        :rtype: TWorld
+        """
+        raise NotImplementedError("Subclasses must implement make_world()")
 
     def on_enter(self):
         """Called when the scene becomes active (safe place to create world & add systems)."""

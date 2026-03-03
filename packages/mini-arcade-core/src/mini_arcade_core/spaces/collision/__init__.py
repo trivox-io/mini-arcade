@@ -1,3 +1,9 @@
+"""
+Collision space utilities.
+"""
+
+from __future__ import annotations
+
 from .intersections import intersects, intersects_entities, rect_rect
 from .specs import (
     CircleColliderSpec,

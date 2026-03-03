@@ -681,7 +681,10 @@ class MenuRenderSystem(BaseQueuedRenderSystem[MenuTickContext]):
     merge_existing_draw_ops: bool = False
 
     def emit(self, ctx: MenuTickContext, rq):
-        rq.custom(op=lambda backend: ctx.menu.draw(backend), layer="ui", z=100)
+        def draw_menu(backend: Backend):
+            ctx.menu.draw(backend)
+
+        rq.custom(op=draw_menu, layer="ui", z=100)
 
 
 class BaseMenuScene(SimScene[MenuTickContext, MenuWorld]):
@@ -773,6 +776,7 @@ class BaseMenuScene(SimScene[MenuTickContext, MenuWorld]):
         :rtype: tuple[int, int]
         """
         # UI pass is screen-space, so menu layout should use window size.
+        # pylint: disable=assignment-from-no-return
         vp = self.context.services.window.get_viewport()
         return (int(vp.window_w), int(vp.window_h))
 

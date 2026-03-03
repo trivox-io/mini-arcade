@@ -11,7 +11,6 @@ from mini_arcade_core.backend.utils import (  # pyright: ignore[reportMissingImp
     rgba,
 )
 from mini_arcade_core.backend.viewport import ViewportTransform
-from mini_arcade_core.spaces.math.vec2 import Vec2
 from mini_arcade_pygame_backend.ports.window import WindowPort  # type: ignore
 
 
@@ -283,6 +282,14 @@ class RenderPort:
                 break
 
     def draw_circle(self, x: int, y: int, radius: int, color=(255, 255, 255)):
+        """
+        Draw a filled circle.
+
+        :param x: Center x
+        :param y: Center y
+        :param radius: Radius in pixels
+        :param color: (R,G,B) or (R,G,B,A)
+        """
         r, g, b, _ = rgba(color)
 
         # Map center via viewport
@@ -303,6 +310,17 @@ class RenderPort:
         color=(255, 255, 255),
         filled: bool = True,
     ):
+        """
+        Draw a polygon defined by a list of points.
+
+        :param points: A list of (x, y) tuples defining the vertices of the polygon.
+        :type points: list[tuple[int, int]]
+        :param color: The color of the polygon as an (R, G, B)
+            or (R, G, B, A) tuple.
+        :type color: tuple[int, int, int] | tuple[int, int, int, int]
+        :param filled: Whether to fill the polygon (True) or draw only the outline (False).
+        :type filled: bool
+        """
         r, g, b, _ = rgba(color)
         if len(points) < 3:
             return

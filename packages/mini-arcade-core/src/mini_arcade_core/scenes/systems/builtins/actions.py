@@ -12,8 +12,10 @@ from mini_arcade_core.runtime.input_frame import ButtonState, InputFrame
 from mini_arcade_core.scenes.sim_scene import BaseIntent
 from mini_arcade_core.scenes.systems.base_system import BaseSystem
 
+# pylint: disable=invalid-name
 TContext = TypeVar("TContext")
 TIntent = TypeVar("TIntent", bound=BaseIntent)
+# pylint: enable=invalid-name
 
 
 @dataclass(frozen=True)
@@ -37,18 +39,60 @@ class ActionSnapshot:
     _states: Mapping[str, ActionState] = field(default_factory=dict)
 
     def state(self, action: str) -> ActionState:
+        """
+        Get the ActionState for the given action, or a default if not found.
+
+        :param action: The name of the action to get the state for.
+        :type action: str
+        :return: The ActionState for the given action, or a default if not found.
+        :rtype: ActionState
+        """
         return self._states.get(action, ActionState())
 
     def value(self, action: str, default: float = 0.0) -> float:
+        """
+        Get the normalized value of the action, or a default if not found.
+
+        :param action: The name of the action to get the value for.
+        :type action: str
+        :param default: The default value to return if the action is not found (default 0.0).
+        :type default: float
+        :return: The normalized value of the action, or the default if not found.
+        :rtype: float
+        """
         return self._states.get(action, ActionState(value=default)).value
 
     def down(self, action: str) -> bool:
+        """
+        Check if the action is currently held down.
+
+        :param action: The name of the action to check.
+        :type action: str
+        :return: True if the action is currently held down, False otherwise.
+        :rtype: bool
+        """
         return self.state(action).down
 
     def pressed(self, action: str) -> bool:
+        """
+        Check if the action was pressed this frame.
+
+        :param action: The name of the action to check.
+        :type action: str
+        :return: True if the action was pressed this frame, False otherwise.
+        :rtype: bool
+        """
         return self.state(action).pressed
 
     def released(self, action: str) -> bool:
+        """
+        Check if the action was released this frame.
+
+        :param action: The name of the action to check.
+        :type action: str
+        :return: True if the action was released this frame, False otherwise.
+        :rtype: bool
+        """
         return self.state(action).released
 
 
@@ -57,7 +101,15 @@ class ActionBinding(Protocol):
     Strategy contract for one logical action binding.
     """
 
-    def read(self, frame: InputFrame) -> ActionState: ...
+    def read(self, frame: InputFrame) -> ActionState:
+        """
+        Read the current state of this action from the input frame.
+
+        :param frame: The input frame containing raw input states.
+        :type frame: InputFrame
+        :return: The current ActionState for this binding.
+        :rtype: ActionState
+        """
 
 
 def _button_state(frame: InputFrame, name: str) -> ButtonState:
@@ -163,6 +215,14 @@ class ActionMap:
     bindings: Mapping[str, ActionBinding] = field(default_factory=dict)
 
     def read(self, frame: InputFrame) -> ActionSnapshot:
+        """
+        Read the current state of all actions from the input frame.
+
+        :param frame: The input frame containing raw input states.
+        :type frame: InputFrame
+        :return: An ActionSnapshot containing the state of all actions.
+        :rtype: ActionSnapshot
+        """
         states = {
             name: binding.read(frame)
             for name, binding in self.bindings.items()

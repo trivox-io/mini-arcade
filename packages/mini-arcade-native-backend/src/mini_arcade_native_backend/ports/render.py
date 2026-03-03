@@ -9,7 +9,6 @@ from mini_arcade_core.backend.utils import (  # pyright: ignore[reportMissingImp
     rgba,
 )
 from mini_arcade_core.backend.viewport import ViewportTransform
-from mini_arcade_core.spaces.math.vec2 import Vec2
 
 # Justification: native is a compiled extension module.
 # pylint: disable=no-name-in-module
@@ -130,6 +129,17 @@ class RenderPort:
         color=(255, 255, 255),
         filled: bool = True,
     ):
+        """
+        Draw a polygon defined by a list of points.
+
+        :param points: A list of (x, y) tuples defining the vertices of the polygon.
+        :type points: list[tuple[int, int]]
+        :param color: The color of the polygon as an (R, G, B)
+            or (R, G, B, A) tuple.
+        :type color: tuple[int, int, int] | tuple[int, int, int, int]
+        :param filled: Whether to draw a filled polygon (True) or an outline (False
+        :type filled: bool
+        """
         r, g, b, a = rgba(color)
 
         if len(points) < 3:
@@ -142,6 +152,9 @@ class RenderPort:
             return
 
         # outline-only fallback (since C++ draw_poly is filled)
+        # Justification: Disabling consider-using-enumerate because we need to access
+        # the next point in the list for drawing lines.
+        # pylint: disable=consider-using-enumerate
         for i in range(len(mapped)):
             x1, y1 = mapped[i]
             x2, y2 = mapped[(i + 1) % len(mapped)]
@@ -207,6 +220,10 @@ class RenderPort:
         """
         self._b.destroy_texture(int(tex))
 
+    # TODO: Implement draw_texture with rotation support in the native backend.
+    # Justification: Rotation is not currently supported by the native backend,
+    # but we want to keep the API consistent for future support.
+    # pylint: disable=unused-argument
     def draw_texture(
         self,
         tex: int,

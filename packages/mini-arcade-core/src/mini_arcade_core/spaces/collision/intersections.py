@@ -1,3 +1,7 @@
+"""
+Collision intersection utilities.
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -12,6 +16,7 @@ if TYPE_CHECKING:
     from mini_arcade_core.engine.entities import BaseEntity
 
 
+# pylint: disable=too-many-arguments
 def rect_rect(
     *,
     ax: float,
