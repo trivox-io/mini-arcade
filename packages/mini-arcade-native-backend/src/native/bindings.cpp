@@ -135,8 +135,8 @@ PYBIND11_MODULE(_native, m) {
         .def("draw_rect", [](Backend& b,int x,int y,int w,int h,int r,int g,int bb,int a){
             b.render().draw_rect(x,y,w,h, ColorRGBA{(uint8_t)r,(uint8_t)g,(uint8_t)bb,(uint8_t)a});
         })
-        .def("draw_line", [](Backend& b,int x1,int y1,int x2,int y2,int r,int g,int bb,int a){
-            b.render().draw_line(x1,y1,x2,y2, ColorRGBA{(uint8_t)r,(uint8_t)g,(uint8_t)bb,(uint8_t)a});
+        .def("draw_line", [](Backend& b,int x1,int y1,int x2,int y2,int r,int g,int bb,int a,int thickness){
+            b.render().draw_line(x1,y1,x2,y2, ColorRGBA{(uint8_t)r,(uint8_t)g,(uint8_t)bb,(uint8_t)a}, thickness);
         })
         .def("set_clip_rect", [](Backend& b,int x,int y,int w,int h){
             b.render().set_clip_rect(x,y,w,h);

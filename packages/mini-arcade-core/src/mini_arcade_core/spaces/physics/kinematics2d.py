@@ -6,9 +6,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from mini_arcade_core.spaces.collision.rect_collider import RectCollider
-from mini_arcade_core.spaces.geometry.rect import Rect
-from mini_arcade_core.spaces.geometry.size import Size2D
 from mini_arcade_core.spaces.geometry.transform import Transform2D
 from mini_arcade_core.spaces.math.vec2 import Vec2
 
@@ -17,43 +14,46 @@ from mini_arcade_core.spaces.math.vec2 import Vec2
 class Kinematic2D:
     """
     Simple 2D kinematic body.
+
+    :ivar velocity: The velocity of the body.
+    :ivar accel: The acceleration of the body.
+    :ivar max_speed: The maximum speed of the body.
     """
 
-    transform: Transform2D
     velocity: Vec2 = field(default_factory=lambda: Vec2(0.0, 0.0))
-    collider: RectCollider = field(init=False)
-    speed: float = 0.0
+    accel: Vec2 = field(default_factory=lambda: Vec2(0.0, 0.0))
+    max_speed: float = 0.0
 
-    def __post_init__(self):
-        self.collider = RectCollider(
-            self.transform.position, self.transform.size
-        )
+    def step(self, transform: Transform2D, dt: float) -> None:
+        """
+        Move the body according to its velocity and acceleration.
 
-    def step(self, dt: float) -> None:
-        """Move the body according to its velocity and speed."""
-        self.transform.move_center_scaled(self.velocity, dt)
+        :param transform: The transform of the body to update.
+        :type transform: Transform2D
+        :param dt: The time delta to step the body.
+        :type dt: float
+        """
+        self.velocity.x += self.accel.x * dt
+        self.velocity.y += self.accel.y * dt
 
-    @property
-    def rect(self) -> Rect:
-        """Get the bounding rectangle of the body."""
-        return self.transform.rect
+        # max_speed <= 0 means "no speed cap"
+        if self.max_speed is not None and self.max_speed > 0.0:
+            mag2 = (
+                self.velocity.x * self.velocity.x
+                + self.velocity.y * self.velocity.y
+            )
+            if mag2 > (self.max_speed * self.max_speed):
+                mag = mag2**0.5
+                s = self.max_speed / mag
+                self.velocity.x *= s
+                self.velocity.y *= s
 
-    @property
-    def center(self) -> Vec2:
-        """Get the center position of the body."""
-        return self.transform.center
+        transform.center.x += self.velocity.x * dt
+        transform.center.y += self.velocity.y * dt
 
-    @property
-    def size(self) -> Size2D:
-        """Get the size of the body."""
-        return self.transform.size
-
-    @property
-    def position(self) -> Vec2:
-        """Get the top-left position of the body."""
-        return self.transform.position
-
-    @position.setter
-    def position(self, pos: Vec2) -> None:
-        """Set the top-left position of the body."""
-        self.transform.position = pos
+    def stop(self) -> None:
+        """
+        Stop the body by setting its velocity to zero.
+        """
+        self.velocity.x = 0.0
+        self.velocity.y = 0.0

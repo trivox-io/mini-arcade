@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from .collision2d import Collider2D
-from .geometry2d import Position2D, Size2D
+from ..geometry.bounds import Position2D, Size2D
 from .physics2d import Velocity2D
 
 

@@ -1,5 +1,9 @@
 """
 Boundary behaviors for 2D rectangular objects.
+
+This module is transitional:
+- Supports the legacy d2 model (`position`, `size`, `velocity`)
+- Supports the new model (`transform`, `kinematic`)
 """
 
 from __future__ import annotations
@@ -7,20 +11,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-from .geometry2d import Bounds2D, Position2D, Size2D
+from mini_arcade_core.spaces.geometry.transform import Transform2D
+from mini_arcade_core.spaces.physics.kinematics2d import Kinematic2D
+
+from ..geometry.bounds import Bounds2D, Position2D, Size2D
 from .physics2d import Velocity2D
 
 
-class RectKinematic(Protocol):
+class LegacyRectKinematic(Protocol):
     """
-    Minimal contract for something that can bounce:
-    - position: Position2D
-    - size: Size2D
-    - velocity: Velocity2D
-
-    :ivar position (Position2D): Top-left position of the object.
-    :ivar size (Size2D): Size of the object.
-    :ivar velocity (Velocity2D): Velocity of the object.
+    Legacy contract for something that can bounce.
     """
 
     position: Position2D
@@ -28,39 +28,62 @@ class RectKinematic(Protocol):
     velocity: Velocity2D
 
 
+class RectKinematic(Protocol):
+    """
+    New contract for something that can bounce.
+
+    Note:
+    - In the current engine usage, `transform.center` is treated as top-left.
+    """
+
+    transform: Transform2D
+    kinematic: Kinematic2D
+
+
 @dataclass
 class VerticalBounce:
     """
-    Bounce an object off the top/bottom bounds by inverting vy
-    and clamping its position inside the bounds.
-
-    :ivar bounds (Bounds2D): The boundary rectangle.
+    Bounce an object off the top/bottom bounds by inverting vertical velocity
+    and clamping its position inside bounds.
     """
 
     bounds: Bounds2D
 
-    def apply(self, obj: RectKinematic) -> bool:
+    def apply(self, obj: RectKinematic | LegacyRectKinematic) -> bool:
         """
         Apply vertical bounce to the given object.
-
-        :param obj: The object to apply the bounce to.
-        :type obj: RectKinematic
-
-        :return: True if a bounce occurred, False otherwise.
-        :rtype: bool
         """
         top = self.bounds.top
         bottom = self.bounds.bottom
-
         bounced = False
 
-        # Top collision
+        # New model
+        if hasattr(obj, "transform") and hasattr(obj, "kinematic"):
+            if obj.kinematic is None:
+                return False
+
+            y = obj.transform.center.y
+            h = obj.transform.size.height
+
+            if y <= top:
+                y = top
+                obj.kinematic.velocity.y *= -1
+                bounced = True
+
+            if y + h >= bottom:
+                y = bottom - h
+                obj.kinematic.velocity.y *= -1
+                bounced = True
+
+            obj.transform.center.y = y
+            return bounced
+
+        # Legacy model
         if obj.position.y <= top:
             obj.position.y = top
             obj.velocity.vy *= -1
             bounced = True
 
-        # Bottom collision
         if obj.position.y + obj.size.height >= bottom:
             obj.position.y = bottom - obj.size.height
             obj.velocity.vy *= -1
@@ -69,48 +92,51 @@ class VerticalBounce:
         return bounced
 
 
-class RectSprite(Protocol):
+class LegacyRectSprite(Protocol):
     """
-    Minimal contract for something that can wrap:
-    - position: Position2D
-    - size: Size2D
-    (no velocity required)
-
-    :ivar position (Position2D): Top-left position of the object.
-    :ivar size (Size2D): Size of the object.
+    Legacy contract for something that can wrap.
     """
 
     position: Position2D
     size: Size2D
 
 
+class RectSprite(Protocol):
+    """
+    New contract for something that can wrap.
+    """
+
+    transform: Transform2D
+
+
 @dataclass
 class VerticalWrap:
     """
     Wrap an object top <-> bottom.
-
-    If it leaves above the top, it reappears at the bottom.
-    If it leaves below the bottom, it reappears at the top.
-
-    :ivar bounds (Bounds2D): The boundary rectangle.
     """
 
     bounds: Bounds2D
 
-    def apply(self, obj: RectSprite):
+    def apply(self, obj: RectSprite | LegacyRectSprite) -> None:
         """
         Apply vertical wrap to the given object.
-
-        :param obj: The object to apply the wrap to.
-        :type obj: RectSprite
         """
         top = self.bounds.top
         bottom = self.bounds.bottom
 
-        # Completely above top → appear at bottom
+        # New model
+        if hasattr(obj, "transform"):
+            y = obj.transform.center.y
+            h = obj.transform.size.height
+
+            if y + h < top:
+                obj.transform.center.y = bottom
+            elif y > bottom:
+                obj.transform.center.y = top - h
+            return
+
+        # Legacy model
         if obj.position.y + obj.size.height < top:
             obj.position.y = bottom
-
-        # Completely below bottom → appear at top
         elif obj.position.y > bottom:
             obj.position.y = top - obj.size.height

@@ -16,7 +16,9 @@ class SdlRenderer final : public IRenderer {
         void end_frame() override;
 
         void draw_rect(int x,int y,int w,int h, ColorRGBA c) override;
-        void draw_line(int x1,int y1,int x2,int y2, ColorRGBA c) override;
+        void draw_line(int x1,int y1,int x2,int y2, ColorRGBA c, int thickness) override;
+        void draw_circle(int x, int y, int radius, ColorRGBA c) override;
+        void draw_poly(const std::pair<int,int>* points, size_t count, ColorRGBA c) override;
 
         void set_clip_rect(int x,int y,int w,int h) override;
         void clear_clip_rect() override;

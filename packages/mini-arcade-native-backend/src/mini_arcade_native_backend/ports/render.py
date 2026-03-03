@@ -9,6 +9,7 @@ from mini_arcade_core.backend.utils import (  # pyright: ignore[reportMissingImp
     rgba,
 )
 from mini_arcade_core.backend.viewport import ViewportTransform
+from mini_arcade_core.spaces.math.vec2 import Vec2
 
 # Justification: native is a compiled extension module.
 # pylint: disable=no-name-in-module
@@ -75,7 +76,13 @@ class RenderPort:
         self._b.draw_rect(sx, sy, sw, sh, r, g, b, a)
 
     def draw_line(
-        self, x1: int, y1: int, x2: int, y2: int, color=(255, 255, 255)
+        self,
+        x1: int,
+        y1: int,
+        x2: int,
+        y2: int,
+        color=(255, 255, 255),
+        thickness: int = 1,
     ):
         """
         Draw a line between two points.
@@ -94,7 +101,60 @@ class RenderPort:
         r, g, b, a = rgba(color)
         sx1, sy1 = self._vp.map_xy(x1, y1)
         sx2, sy2 = self._vp.map_xy(x2, y2)
-        self._b.draw_line(sx1, sy1, sx2, sy2, r, g, b, a)
+        self._b.draw_line(sx1, sy1, sx2, sy2, r, g, b, a, thickness)
+
+    def draw_circle(self, x: int, y: int, radius: int, color=(255, 255, 255)):
+        """
+        Draw a filled circle.
+
+        :param x: Center x
+        :param y: Center y
+        :param radius: Radius in pixels
+        :param color: (R,G,B) or (R,G,B,A)
+        """
+        r, g, b, a = rgba(color)
+
+        sx, sy = self._vp.map_xy(int(x), int(y))
+
+        d = int(radius) * 2
+        sw, sh = self._vp.map_wh(d, d)
+        sr = max(1, int(min(sw, sh) // 2))
+
+        self._b.draw_circle(
+            int(sx), int(sy), int(sr), int(r), int(g), int(b), int(a)
+        )
+
+    def draw_poly(
+        self,
+        points: list[tuple[int, int]],
+        color=(255, 255, 255),
+        filled: bool = True,
+    ):
+        r, g, b, a = rgba(color)
+
+        if len(points) < 3:
+            return
+
+        mapped = [self._vp.map_xy(int(x), int(y)) for (x, y) in points]
+
+        if filled:
+            self._b.draw_poly(mapped, r, g, b, a)
+            return
+
+        # outline-only fallback (since C++ draw_poly is filled)
+        for i in range(len(mapped)):
+            x1, y1 = mapped[i]
+            x2, y2 = mapped[(i + 1) % len(mapped)]
+            self._b.draw_line(
+                int(x1),
+                int(y1),
+                int(x2),
+                int(y2),
+                int(r),
+                int(g),
+                int(b),
+                int(a),
+            )
 
     def set_clip_rect(self, x: int, y: int, w: int, h: int):
         """
@@ -147,7 +207,15 @@ class RenderPort:
         """
         self._b.destroy_texture(int(tex))
 
-    def draw_texture(self, tex: int, x: int, y: int, w: int, h: int):
+    def draw_texture(
+        self,
+        tex: int,
+        x: int,
+        y: int,
+        w: int,
+        h: int,
+        angle_deg: float = 0.0,
+    ):
         """
         Draw a texture at the specified position and size.
 
@@ -161,6 +229,9 @@ class RenderPort:
         :type w: int
         :param h: The height to draw the texture.
         :type h: int
+        :param angle_deg: Clockwise rotation angle in degrees around texture center.
+            The native backend currently ignores non-zero rotation.
+        :type angle_deg: float
         """
         sx, sy = self._vp.map_xy(x, y)
         sw, sh = self._vp.map_wh(w, h)

@@ -4,7 +4,7 @@ Menu system for mini arcade core.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable, Optional, Sequence
 
 from mini_arcade_core.backend import Backend
@@ -17,15 +17,12 @@ from mini_arcade_core.scenes.sim_scene import (
     BaseIntent,
     BaseTickContext,
     BaseWorld,
-    Drawable,
-    DrawCall,
     SimScene,
 )
 from mini_arcade_core.scenes.systems.builtins import (
-    BaseRenderSystem,
+    BaseQueuedRenderSystem,
     InputIntentSystem,
 )
-from mini_arcade_core.spaces.d2.geometry2d import Size2D
 
 
 @dataclass(frozen=True)
@@ -143,7 +140,7 @@ class Menu:
         self,
         items: Sequence[MenuItem],
         *,
-        viewport: Size2D | None = None,
+        viewport: tuple[int, int] | None = None,
         title: str | None = None,
         style: MenuStyle | None = None,
         on_select: Optional[Callable[[MenuItem], None]] = None,
@@ -153,7 +150,7 @@ class Menu:
         :type items: Sequence[MenuItem]
 
         :param viewport: Viewport size for the menu's layout and centering.
-        :type viewport: Size2D | None
+        :type viewport: tuple[int, int] | None
 
         :param title: Optional title text for the menu.
         :type title: str | None
@@ -272,7 +269,7 @@ class Menu:
         """
         if self.viewport is None:
             raise ValueError(
-                "Menu requires viewport=Size2D for centering/layout"
+                "Menu requires viewport=(width, height) for centering/layout"
             )
 
         vw, vh = self.viewport
@@ -502,12 +499,12 @@ class Menu:
 
     # pylint: enable=too-many-arguments
 
-    def set_viewport(self, viewport: Size2D):
+    def set_viewport(self, viewport: tuple[int, int]):
         """
         Set the viewport size for the menu.
 
         :param viewport: New viewport size.
-        :type viewport: Size2D
+        :type viewport: tuple[int, int]
         """
         if self.viewport is None:
             self.viewport = viewport
@@ -536,6 +533,7 @@ class MenuWorld(BaseWorld):
     :ivar _cooldown_timer (float): Internal timer for move cooldown.
     """
 
+    entities: list = field(default_factory=list)
     selected: int = 0
     move_cooldown: float = 0.12
     _cooldown_timer: float = 0.0
@@ -675,23 +673,15 @@ class MenuActionSystem:
                 ctx.commands.push(cmd)
 
 
-class DrawMenu(Drawable[MenuTickContext]):
-    """Draw the menu."""
-
-    def draw(self, backend: Backend, ctx: MenuTickContext):
-        ctx.menu.draw(backend)
-
-
 @dataclass
-class MenuRenderSystem(BaseRenderSystem):
+class MenuRenderSystem(BaseQueuedRenderSystem[MenuTickContext]):
     """Menu rendering system."""
 
     name: str = "menu_render"
+    merge_existing_draw_ops: bool = False
 
-    def step(self, ctx: MenuTickContext):
-        """Set the render packet to draw the menu."""
-        ctx.draw_ops = [DrawCall(drawable=DrawMenu(), ctx=ctx)]
-        super().step(ctx)
+    def emit(self, ctx: MenuTickContext, rq):
+        rq.custom(op=lambda backend: ctx.menu.draw(backend), layer="ui", z=100)
 
 
 class BaseMenuScene(SimScene[MenuTickContext, MenuWorld]):
@@ -737,30 +727,6 @@ class BaseMenuScene(SimScene[MenuTickContext, MenuWorld]):
             quit_cmd_factory=self.quit_command,
         )
 
-    # def tick(self, input_frame: InputFrame, dt: float) -> RenderPacket:
-    #     self.menu.set_viewport(self.menu_viewport())
-    #     items = self.menu_items()
-    #     if not items:
-    #         return RenderPacket()
-
-    #     self.world.step_timer(dt)
-
-    #     self.menu.set_items(self._build_display_items())
-    #     self.menu.set_selected_index(self.world.selected)
-
-    #     ctx = MenuTickContext(
-    #         input_frame=input_frame,
-    #         dt=dt,
-    #         menu=self.menu,
-    #         commands=self.context.command_queue,
-    #         quit_cmd_factory=self.quit_command,
-    #     )
-
-    #     self.systems.step(ctx)
-
-    #     # always return packet from pipeline
-    #     return ctx.packet or RenderPacket()
-
     @property
     def menu_title(self) -> str | None:
         """
@@ -799,12 +765,12 @@ class BaseMenuScene(SimScene[MenuTickContext, MenuWorld]):
         # default behavior: quit game
         return QuitCommand()
 
-    def menu_viewport(self) -> Size2D:
+    def menu_viewport(self) -> tuple[int, int]:
         """
         Get the viewport size for the menu.
 
-        :return: The Size2D representing the menu viewport.
-        :rtype: Size2D
+        :return: The viewport size tuple (width, height).
+        :rtype: tuple[int, int]
         """
         # default: virtual space (fits your UI layout)
         return self.context.services.window.get_virtual_size()

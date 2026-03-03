@@ -7,7 +7,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from .geometry2d import Position2D, Size2D
+from ..geometry.bounds import Position2D, Size2D
 
 
 class Collider2D(ABC):

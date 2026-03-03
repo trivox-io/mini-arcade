@@ -327,6 +327,7 @@ class Backend:
         g: int,
         b: int,
         a: int,
+        thickness: int = 1,
     ):
         """
         Draw a line.
@@ -339,6 +340,51 @@ class Backend:
         :type x2: int
         :param y2: Y coordinate of the end point.
         :type y2: int
+        :param r: Red component (0-255).
+        :type r: int
+        :param g: Green component (0-255).
+        :type g: int
+        :param b: Blue component (0-255).
+        :type b: int
+        :param a: Alpha component (0-255).
+        :type a: int
+        """
+
+    def draw_circle(
+        self, x: int, y: int, radius: int, r: int, g: int, b: int, a: int
+    ):
+        """
+        Draw a filled circle.
+
+        :param x: Center x
+        :type x: int
+        :param y: Center y
+        :type y: int
+        :param radius: Radius of the circle.
+        :type radius: int
+        :param r: Red component (0-255).
+        :type r: int
+        :param g: Green component (0-255).
+        :type g: int
+        :param b: Blue component (0-255).
+        :type b: int
+        :param a: Alpha component (0-255).
+        :type a: int
+        """
+
+    def draw_poly(
+        self,
+        points: Tuple[Tuple[int, int], ...],
+        r: int,
+        g: int,
+        b: int,
+        a: int,
+    ):
+        """
+        Draw a filled polygon.
+
+        :param points: A tuple of (x, y) coordinates for the vertices of the polygon.
+        :type points: Tuple[Tuple[int, int], ...]
         :param r: Red component (0-255).
         :type r: int
         :param g: Green component (0-255).

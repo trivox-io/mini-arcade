@@ -16,7 +16,9 @@ class IRenderer {
         virtual void end_frame() = 0;
 
         virtual void draw_rect(int x,int y,int w,int h, ColorRGBA c) = 0;
-        virtual void draw_line(int x1,int y1,int x2,int y2, ColorRGBA c) = 0;
+        virtual void draw_line(int x1,int y1,int x2,int y2, ColorRGBA c, int thickness) = 0;
+        virtual void draw_circle(int x, int y, int radius, ColorRGBA c) = 0;
+        virtual void draw_poly(const std::pair<int,int>* points, size_t count, ColorRGBA c) = 0;
 
         virtual void set_clip_rect(int x,int y,int w,int h) = 0;
         virtual void clear_clip_rect() = 0;

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from mini_arcade_core.spaces.geometry.rect import Rect
+from mini_arcade_core.spaces.geometry.shapes import Rect
 from mini_arcade_core.spaces.geometry.size import Size2D
 from mini_arcade_core.spaces.math.vec2 import Vec2
 

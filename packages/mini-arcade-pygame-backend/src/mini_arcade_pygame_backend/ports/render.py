@@ -10,6 +10,7 @@ from mini_arcade_core.backend.utils import (  # pyright: ignore[reportMissingImp
     rgba,
 )
 from mini_arcade_core.backend.viewport import ViewportTransform
+from mini_arcade_core.spaces.math.vec2 import Vec2
 
 from mini_arcade_pygame_backend.ports.window import WindowPort  # type: ignore
 
@@ -71,9 +72,9 @@ class RenderPort:
         :param h: The height of the clipping rectangle.
         :type h: int
         """
-        # IMPORTANT: the pipeline passes viewport_w/h and assumes viewport
-        # transform has been applied.
-        self._w.screen.set_clip(pygame.Rect(int(x), int(y), int(w), int(h)))
+        sx, sy = self._vp.map_xy(int(x), int(y))
+        sw, sh = self._vp.map_wh(int(w), int(h))
+        self._w.screen.set_clip(pygame.Rect(int(sx), int(sy), int(sw), int(sh)))
 
     def clear_clip_rect(self):
         """Clear the clipping rectangle."""
@@ -106,7 +107,13 @@ class RenderPort:
         )
 
     def draw_line(
-        self, x1: int, y1: int, x2: int, y2: int, color=(255, 255, 255)
+        self,
+        x1: int,
+        y1: int,
+        x2: int,
+        y2: int,
+        color=(255, 255, 255),
+        thickness=5,
     ):
         """
         Draw a line between two points.
@@ -125,7 +132,9 @@ class RenderPort:
         r, g, b, _ = rgba(color)
         sx1, sy1 = self._vp.map_xy(int(x1), int(y1))
         sx2, sy2 = self._vp.map_xy(int(x2), int(y2))
-        pygame.draw.line(self._w.screen, (r, g, b), (sx1, sy1), (sx2, sy2))
+        pygame.draw.line(
+            self._w.screen, (r, g, b), (sx1, sy1), (sx2, sy2), int(thickness)
+        )
 
     def create_texture_rgba(
         self,
@@ -185,7 +194,15 @@ class RenderPort:
         self._textures[tex_id] = surf
         return tex_id
 
-    def draw_texture(self, tex: int, x: int, y: int, w: int, h: int):
+    def draw_texture(
+        self,
+        tex: int,
+        x: int,
+        y: int,
+        w: int,
+        h: int,
+        angle_deg: float = 0.0,
+    ):
         """
         Draw a texture at the specified position and size.
 
@@ -199,6 +216,8 @@ class RenderPort:
         :type w: int
         :param h: The height to draw the texture.
         :type h: int
+        :param angle_deg: Clockwise rotation angle in degrees around texture center.
+        :type angle_deg: float
         """
         surf = self._textures.get(int(tex))
         if surf is None:
@@ -210,11 +229,19 @@ class RenderPort:
         if sw <= 0 or sh <= 0:
             return
 
+        draw_surf = surf
         if surf.get_width() != sw or surf.get_height() != sh:
-            scaled = pygame.transform.scale(surf, (sw, sh))
-            self._w.screen.blit(scaled, (sx, sy))
-        else:
-            self._w.screen.blit(surf, (sx, sy))
+            draw_surf = pygame.transform.scale(surf, (sw, sh))
+
+        if abs(float(angle_deg)) > 0.001:
+            rotated = pygame.transform.rotate(draw_surf, -float(angle_deg))
+            rect = rotated.get_rect(
+                center=(int(sx + (sw / 2)), int(sy + (sh / 2)))
+            )
+            self._w.screen.blit(rotated, rect.topleft)
+            return
+
+        self._w.screen.blit(draw_surf, (sx, sy))
 
     def destroy_texture(self, tex: int) -> None:
         """
@@ -252,3 +279,35 @@ class RenderPort:
                 )
                 self._w.screen.blit(partial, (int(x), cur_y))
                 break
+
+    def draw_circle(self, x: int, y: int, radius: int, color=(255, 255, 255)):
+        r, g, b, _ = rgba(color)
+
+        # Map center via viewport
+        sx, sy = self._vp.map_xy(int(x), int(y))
+
+        # Scale radius using map_wh on diameter (works with your current vp API)
+        d = int(radius) * 2
+        sw, sh = self._vp.map_wh(d, d)
+        sr = max(1, int(min(sw, sh) // 2))
+
+        pygame.draw.circle(
+            self._w.screen, (r, g, b), (int(sx), int(sy)), int(sr)
+        )
+
+    def draw_poly(
+        self,
+        points: list[tuple[int, int]],
+        color=(255, 255, 255),
+        filled: bool = True,
+    ):
+        r, g, b, _ = rgba(color)
+        if len(points) < 3:
+            return
+
+        mapped_points = [self._vp.map_xy(int(x), int(y)) for (x, y) in points]
+
+        width = 0 if filled else 1
+        pygame.draw.polygon(
+            self._w.screen, (r, g, b), mapped_points, width=width
+        )

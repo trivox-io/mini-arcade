@@ -111,7 +111,13 @@ class RenderProtocol(Protocol):
         """
 
     def draw_line(
-        self, x1: int, y1: int, x2: int, y2: int, color=(255, 255, 255)
+        self,
+        x1: int,
+        y1: int,
+        x2: int,
+        y2: int,
+        color=(255, 255, 255),
+        thickness: int = 1,
     ):
         """
         Draw a line between two points.
@@ -169,7 +175,15 @@ class RenderProtocol(Protocol):
         :type tex: int
         """
 
-    def draw_texture(self, tex: int, x: int, y: int, w: int, h: int):
+    def draw_texture(
+        self,
+        tex: int,
+        x: int,
+        y: int,
+        w: int,
+        h: int,
+        angle_deg: float = 0.0,
+    ):
         """
         Draw a texture at the specified position and size.
 
@@ -183,6 +197,8 @@ class RenderProtocol(Protocol):
         :type w: int
         :param h: The height to draw the texture.
         :type h: int
+        :param angle_deg: Clockwise rotation angle in degrees around texture center.
+        :type angle_deg: float
         """
 
     def draw_texture_tiled_y(
@@ -202,6 +218,33 @@ class RenderProtocol(Protocol):
         :type w: int
         :param h: The height to draw the texture.
         :type h: int
+        """
+
+    def draw_circle(self, x: int, y: int, radius: int, color=(255, 255, 255)):
+        """
+        Draw a filled circle.
+
+        :param x: Center x
+        :param y: Center y
+        :param radius: Radius in pixels
+        :param color: (R,G,B) or (R,G,B,A)
+        """
+
+    def draw_poly(
+        self,
+        points: list[tuple[int, int]],
+        color=(255, 255, 255),
+        filled: bool = True,
+    ):
+        """
+        Draw a polygon defined by a list of points.
+
+        :param points: List of (x, y) tuples defining the vertices of the polygon.
+        :type points: list[tuple[int, int]]
+        :param color: The color of the polygon as an (R, G, B) or (R, G, B, A) tuple.
+        :type color: tuple[int, int, int] | tuple[int, int, int, int]
+        :param filled: Whether to draw a filled polygon or just the outline.
+        :type filled: bool
         """
 
 

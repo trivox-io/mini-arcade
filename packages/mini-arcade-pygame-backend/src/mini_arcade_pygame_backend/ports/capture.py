@@ -40,5 +40,7 @@ class CapturePort:
         :rtype: tuple[int, int, bytes]
         """
         w, h = self._w.screen.get_size()
-        data = pygame.image.tostring(self._w.screen, "ARGB")
+        # CaptureWorker currently decodes raw bytes as BGRA for async video frames.
+        # Export BGRA here so recorded PNG frames keep correct alpha/colors.
+        data = pygame.image.tostring(self._w.screen, "BGRA")
         return int(w), int(h), data
