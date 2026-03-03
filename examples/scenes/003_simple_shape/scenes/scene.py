@@ -15,7 +15,7 @@ from mini_arcade_core.scenes.sim_scene import (  # type: ignore[import-not-found
     Drawable,
     SimScene,
 )
-from mini_arcade_core.scenes.systems.builtins import (  # type: ignore[import-not-found]; InputIntentSystem,
+from mini_arcade_core.scenes.systems.builtins import (  # type: ignore[import-not-found]
     BaseQueuedRenderSystem,
 )
 from mini_arcade_core.spaces.math.vec2 import Vec2
@@ -47,6 +47,9 @@ class MinRenderSystem(BaseQueuedRenderSystem):
     name: str = "min_render"
     order: int = 100
 
+    # Justification: This example is outdated and will be replaced by a more comprehensive
+    # one soon. It's not worth the effort to refactor it right now.
+    # pylint: disable=too-many-locals
     def emit(self, ctx: MinTickContext, rq):
         for e in ctx.world.entities or []:
             t = e.transform

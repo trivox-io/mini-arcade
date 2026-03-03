@@ -30,4 +30,3 @@ def find_assets_root(anchor: str) -> Path:
         if candidate.is_dir():
             return candidate
     raise FileNotFoundError("Could not locate 'assets' directory.")
-

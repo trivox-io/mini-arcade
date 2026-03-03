@@ -7,8 +7,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from .collision2d import Collider2D
 from ..geometry.bounds import Position2D, Size2D
+from .collision2d import Collider2D
 from .physics2d import Velocity2D
 
 

@@ -79,7 +79,9 @@ class DigitalActionBinding(ActionBinding):
         key_released = any(k in frame.keys_released for k in self.keys)
 
         btn_down = any(_button_state(frame, b).down for b in self.buttons)
-        btn_pressed = any(_button_state(frame, b).pressed for b in self.buttons)
+        btn_pressed = any(
+            _button_state(frame, b).pressed for b in self.buttons
+        )
         btn_released = any(
             _button_state(frame, b).released for b in self.buttons
         )
@@ -112,12 +114,12 @@ class AxisActionBinding(ActionBinding):
         for axis in self.axes:
             analog += float(frame.axes.get(axis, 0.0))
 
-        pos_down = any(k in frame.keys_down for k in self.positive_keys) or any(
-            _button_state(frame, b).down for b in self.positive_buttons
-        )
-        neg_down = any(k in frame.keys_down for k in self.negative_keys) or any(
-            _button_state(frame, b).down for b in self.negative_buttons
-        )
+        pos_down = any(
+            k in frame.keys_down for k in self.positive_keys
+        ) or any(_button_state(frame, b).down for b in self.positive_buttons)
+        neg_down = any(
+            k in frame.keys_down for k in self.negative_keys
+        ) or any(_button_state(frame, b).down for b in self.negative_buttons)
 
         digital = (1.0 if pos_down else 0.0) - (1.0 if neg_down else 0.0)
         value = (analog + digital) * self.scale
@@ -126,14 +128,22 @@ class AxisActionBinding(ActionBinding):
         pressed = (
             any(k in frame.keys_pressed for k in self.positive_keys)
             or any(k in frame.keys_pressed for k in self.negative_keys)
-            or any(_button_state(frame, b).pressed for b in self.positive_buttons)
-            or any(_button_state(frame, b).pressed for b in self.negative_buttons)
+            or any(
+                _button_state(frame, b).pressed for b in self.positive_buttons
+            )
+            or any(
+                _button_state(frame, b).pressed for b in self.negative_buttons
+            )
         )
         released = (
             any(k in frame.keys_released for k in self.positive_keys)
             or any(k in frame.keys_released for k in self.negative_keys)
-            or any(_button_state(frame, b).released for b in self.positive_buttons)
-            or any(_button_state(frame, b).released for b in self.negative_buttons)
+            or any(
+                _button_state(frame, b).released for b in self.positive_buttons
+            )
+            or any(
+                _button_state(frame, b).released for b in self.negative_buttons
+            )
         )
         down = abs(value) > self.deadzone or pos_down or neg_down
         return ActionState(
@@ -153,7 +163,10 @@ class ActionMap:
     bindings: Mapping[str, ActionBinding] = field(default_factory=dict)
 
     def read(self, frame: InputFrame) -> ActionSnapshot:
-        states = {name: binding.read(frame) for name, binding in self.bindings.items()}
+        states = {
+            name: binding.read(frame)
+            for name, binding in self.bindings.items()
+        }
         return ActionSnapshot(states)
 
 
@@ -174,4 +187,3 @@ class ActionIntentSystem(BaseSystem[TContext], Generic[TContext, TIntent]):
             return
         snapshot = self.action_map.read(frame)
         setattr(ctx, "intent", self.intent_factory(snapshot, ctx))
-

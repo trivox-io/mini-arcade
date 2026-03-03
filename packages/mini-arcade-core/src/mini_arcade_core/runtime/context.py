@@ -1,4 +1,4 @@
-""" 
+"""
 Runtime context module.
 Defines the RuntimeContext dataclass for game runtime context.
 """

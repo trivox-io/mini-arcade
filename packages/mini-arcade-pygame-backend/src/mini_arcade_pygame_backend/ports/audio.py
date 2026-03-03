@@ -5,6 +5,7 @@ Audio port for the Mini Arcade pygame backend.
 from __future__ import annotations
 
 import pygame
+
 from mini_arcade_core.backend.utils import (  # pyright: ignore[reportMissingImports]
     validate_file_exists,
 )

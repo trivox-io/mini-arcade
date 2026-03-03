@@ -10,6 +10,12 @@ from examples._shared.spec import ExampleSpec
 
 
 def build_example(**_kwargs) -> ExampleSpec:
+    """
+    Build the example spec.
+
+    :return: the example spec
+    :rtype: ExampleSpec
+    """
     discover = [
         "examples.scenes.003_simple_shape",
         "mini_arcade_core.scenes",

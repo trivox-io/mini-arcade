@@ -11,6 +11,11 @@ def make_default_backend_factory(*, title: str):
 
     For now: pygame backend (like your current examples).
     Later: choose backend based on kwargs/passthrough.
+
+    :param title: The title of the window.
+    :type title: str
+    :return: A backend factory function.
+    :rtype: Callable[[], Backend]
     """
 
     def backend_factory():

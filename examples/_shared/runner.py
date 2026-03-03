@@ -28,7 +28,7 @@ def _import_example_main(example_id: str) -> Any:
     Import examples.scenes.<example_id>.main
 
     Example id:
-      - "001_min_scene"
+        - "001_min_scene"
     """
     mod_name = f"examples.scenes.{example_id}.main"
     try:
@@ -70,11 +70,19 @@ def run_example(example_id: str, **kwargs) -> int:
     Run an example by id.
 
     kwargs can include things like:
-      - backend="native"|"pygame"
-      - window_size=(w,h)
-      - title="..."
-      - enable_audio=True
-      - etc (each example can accept what it wants)
+        - backend="native"|"pygame"
+        - window_size=(w,h)
+        - title="..."
+        - enable_audio=True
+        - etc (each example can accept what it wants)
+
+    :param example_id: Example id to run (e.g. "001_min_scene")
+    :type example_id: str
+    :param kwargs: Keyword arguments to pass to the example spec builder
+    :type kwargs: dict
+    :return: Exit code (0 for success)
+    :rtype: int
+    :raises ExampleLoadError: If there is an error loading the example or its spec
     """
     spec = load_example_spec(example_id, **kwargs)
 

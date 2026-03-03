@@ -6,7 +6,6 @@ from typing import Literal
 from mini_arcade_core.spaces.geometry.size import Size2D
 from mini_arcade_core.spaces.math.vec2 import Vec2
 
-
 ColliderKind = Literal["rect", "circle", "poly", "line"]
 
 

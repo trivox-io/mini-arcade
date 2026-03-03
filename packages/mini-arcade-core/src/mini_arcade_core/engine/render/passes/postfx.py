@@ -62,7 +62,9 @@ class PostFXPass:
                 backend.render.clear_clip_rect()
                 backend.clear_viewport_transform()
 
-    def _apply_screen_effects(self, backend: Backend, ctx: RenderContext) -> None:
+    def _apply_screen_effects(
+        self, backend: Backend, ctx: RenderContext
+    ) -> None:
         stack = ctx.meta.get("effects_stack")
         if stack is None or not stack.is_active():
             return
@@ -82,7 +84,9 @@ class PostFXPass:
             effect.apply(backend, ctx)
 
     @staticmethod
-    def _layer_ops(packet: RenderPacket, key: str) -> tuple[DrawOp, ...] | None:
+    def _layer_ops(
+        packet: RenderPacket, key: str
+    ) -> tuple[DrawOp, ...] | None:
         raw = packet.meta.get("pass_ops")
         if not isinstance(raw, dict):
             return None

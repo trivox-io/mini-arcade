@@ -4,7 +4,7 @@ Base command module
 
 from __future__ import annotations
 
-from typing import List, Optional, Tuple, Protocol
+from typing import List, Optional, Protocol, Tuple
 
 from mini_arcade.cli.argument_type import ArgumentType
 

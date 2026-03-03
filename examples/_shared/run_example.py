@@ -26,8 +26,6 @@ def main(argv: list[str] | None = None) -> int:
         print("Usage: run_example.py <example_id> [args...]")
         return 2
     example_id = argv[0]
-    passthrough = argv[1:]  # pylint: disable=unused-variable
-    # You can decide how to parse passthrough later; for now forward nothing.
     return run_example(example_id)
 
 

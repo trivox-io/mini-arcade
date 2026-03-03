@@ -1,3 +1,7 @@
+"""
+Example entities for 004_shape_gallery.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

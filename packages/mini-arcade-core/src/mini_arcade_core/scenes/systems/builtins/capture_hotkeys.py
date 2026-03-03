@@ -63,8 +63,13 @@ class CaptureHotkeysSystem(BaseSystem[CaptureContext]):
         snap = self.action_map.read(ctx.input_frame)
         cap = self.services.capture
 
-        if snap.pressed(self.cfg.action_screenshot) and self.cfg.screenshot_label:
-            ctx.commands.push(ScreenshotCommand(label=self.cfg.screenshot_label))
+        if (
+            snap.pressed(self.cfg.action_screenshot)
+            and self.cfg.screenshot_label
+        ):
+            ctx.commands.push(
+                ScreenshotCommand(label=self.cfg.screenshot_label)
+            )
 
         if snap.pressed(self.cfg.action_toggle_video):
             ctx.commands.push(ToggleVideoRecordCommand())
@@ -96,4 +101,3 @@ class CaptureHotkeysSystem(BaseSystem[CaptureContext]):
                 ctx.commands.push(
                     StartReplayPlayCommand(path=self.cfg.replay_file)
                 )
-

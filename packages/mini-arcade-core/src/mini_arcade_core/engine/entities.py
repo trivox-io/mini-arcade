@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from mini_arcade.utils.logging import logger
-
 from mini_arcade_core.engine.animation import Animation
 from mini_arcade_core.engine.components import Anim2D, Life, Sprite2D
 from mini_arcade_core.engine.render.style import RenderStyle

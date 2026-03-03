@@ -12,8 +12,6 @@ from mini_arcade_core.scenes.sim_scene import (  # type: ignore[import-not-found
     BaseWorld,
 )
 
-from ..entities import MyEntity
-
 
 @dataclass
 class MinWorld(BaseWorld):

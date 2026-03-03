@@ -20,8 +20,8 @@ from mini_arcade_core.scenes.sim_scene import (  # type: ignore[import-not-found
     SimScene,
 )
 from mini_arcade_core.scenes.systems.builtins import (  # type: ignore[import-not-found]
-    InputIntentSystem,
     BaseRenderSystem,
+    InputIntentSystem,
 )
 
 from .models import MinIntent, MinTickContext, MinWorld
@@ -86,6 +86,12 @@ class DebugOverlaySystem:
         return cur if prev <= 0.0 else (prev * (1.0 - alpha) + cur * alpha)
 
     def step(self, ctx: MinTickContext):
+        """
+        Update overlay state:
+
+        :param ctx: the tick context
+        :type ctx: MinTickContext
+        """
         ov = ctx.world.overlay
 
         # toggle (edge-triggered by keys_pressed via intent)
@@ -137,7 +143,7 @@ class MinScene(SimScene[MinTickContext, MinWorld]):
     tick_context_type = MinTickContext
 
     def on_enter(self) -> None:
-        self.world = MinWorld()
+        self.world = MinWorld(entities=[])
         self.systems.extend(
             [MinInputSystem(), DebugOverlaySystem(), MinRenderSystem()]
         )

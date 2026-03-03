@@ -6,12 +6,12 @@ Provides functionality to draw shapes and manage rendering state.
 from __future__ import annotations
 
 import pygame
+
 from mini_arcade_core.backend.utils import (  # pyright: ignore[reportMissingImports]
     rgba,
 )
 from mini_arcade_core.backend.viewport import ViewportTransform
 from mini_arcade_core.spaces.math.vec2 import Vec2
-
 from mini_arcade_pygame_backend.ports.window import WindowPort  # type: ignore
 
 
@@ -74,7 +74,9 @@ class RenderPort:
         """
         sx, sy = self._vp.map_xy(int(x), int(y))
         sw, sh = self._vp.map_wh(int(w), int(h))
-        self._w.screen.set_clip(pygame.Rect(int(sx), int(sy), int(sw), int(sh)))
+        self._w.screen.set_clip(
+            pygame.Rect(int(sx), int(sy), int(sw), int(sh))
+        )
 
     def clear_clip_rect(self):
         """Clear the clipping rectangle."""

@@ -1,3 +1,7 @@
+"""
+Engine components for mini-arcade-core.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
