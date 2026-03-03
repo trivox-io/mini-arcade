@@ -8,7 +8,7 @@
         "editor.formatOnType": false,
         "editor.wordBasedSuggestions": "off",
         "editor.codeActionsOnSave": {
-            "source.organizeImports": "explicit"
+            "source.organizeImports": "always"
         }
     },
     "isort.args": [
