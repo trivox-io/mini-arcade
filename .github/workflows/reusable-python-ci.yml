@@ -81,9 +81,17 @@ jobs:
 
           dep_paths = json.loads(os.environ["LOCAL_DEPENDENCY_PATHS"])
           for dep_path in dep_paths:
-              print(f"Installing local dependency: {dep_path}")
+              resolved_path = os.path.abspath(
+                  os.path.expandvars(os.path.expanduser(dep_path))
+              )
+              if not os.path.exists(resolved_path):
+                  raise FileNotFoundError(
+                      f"Local dependency path does not exist: {dep_path} -> "
+                      f"{resolved_path}"
+                  )
+              print(f"Installing local dependency: {resolved_path}")
               subprocess.run(
-                  [sys.executable, "-m", "pip", "install", "-e", dep_path],
+                  [sys.executable, "-m", "pip", "install", "-e", resolved_path],
                   check=True,
               )
           PY
