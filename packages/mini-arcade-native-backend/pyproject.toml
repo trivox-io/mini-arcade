@@ -8,7 +8,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "mini-arcade-native-backend"
-version = "1.5.0"
+version = "1.5.1"
 description = "Native SDL2 backend for mini-arcade-core using SDL2 + pybind11."
 authors = [
   { name = "Santiago Rincon", email = "rincores@gmail.com" },
@@ -17,7 +17,7 @@ readme = "README.md"
 requires-python = ">=3.9,<3.12"
 license = { file = "LICENSE" }
 dependencies = [
-  "mini-arcade-core (>=1.5.0,<2.0.0)",
+  "mini-arcade-core (>=1.5.1,<2.0.0)",
 ]
 
 [project.optional-dependencies]
