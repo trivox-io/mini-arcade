@@ -130,7 +130,8 @@ class Game:
         )
         hooks = DefaultGameHooks(self, effects_stack)
 
-        self.services.window.set_virtual_resolution(800, 600)
+        vw, vh = self.config.virtual_resolution
+        self.services.window.set_virtual_resolution(int(vw), int(vh))
         runner = EngineRunner(
             self,
             pipeline=pipeline,

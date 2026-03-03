@@ -30,11 +30,13 @@ class GameConfig:
     :ivar initial_scene (str): Identifier of the initial scene to load.
     :ivar fps (int): Target frames per second.
     :ivar backend (Backend | None): Optional Backend instance to use for rendering and input.
+    :ivar virtual_resolution (tuple[int, int]): Virtual render resolution.
     :ivar postfx (PostFXConfig): Configuration for post-processing effects.
     """
 
     initial_scene: str = "main"
     fps: int = 60
     backend: Backend | None = None
+    virtual_resolution: tuple[int, int] = (800, 600)
     postfx: PostFXConfig = field(default_factory=PostFXConfig)
     enable_profiler: bool = False

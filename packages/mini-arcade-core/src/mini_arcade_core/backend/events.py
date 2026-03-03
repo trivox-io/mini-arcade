@@ -33,6 +33,11 @@ class EventType(Enum):
     KEYDOWN = auto()
     KEYUP = auto()
 
+    # Generic logical/controller inputs.
+    ACTIONDOWN = auto()
+    ACTIONUP = auto()
+    AXISMOTION = auto()
+
     # Mouse
     MOUSEMOTION = auto()
     MOUSEBUTTONDOWN = auto()
@@ -69,6 +74,9 @@ class Event:
     :ivar wheel (Tuple[int, int] | None): Mouse wheel scroll (x, y), if any.
     :ivar size (Tuple[int, int] | None): New window size (width, height), if any.
     :ivar text (str | None): Text input, if any.
+    :ivar action (str | None): Logical action/button id (controller/CV/etc).
+    :ivar axis (str | None): Logical axis id.
+    :ivar value (float | None): Axis value for AXISMOTION events.
     """
 
     type: EventType
@@ -93,6 +101,11 @@ class Event:
 
     # Text input (optional)
     text: Optional[str] = None
+
+    # Generic logical input channels (optional)
+    action: Optional[str] = None
+    axis: Optional[str] = None
+    value: Optional[float] = None
 
 
 # pylint: enable=too-many-instance-attributes

@@ -772,8 +772,9 @@ class BaseMenuScene(SimScene[MenuTickContext, MenuWorld]):
         :return: The viewport size tuple (width, height).
         :rtype: tuple[int, int]
         """
-        # default: virtual space (fits your UI layout)
-        return self.context.services.window.get_virtual_size()
+        # UI pass is screen-space, so menu layout should use window size.
+        vp = self.context.services.window.get_viewport()
+        return (int(vp.window_w), int(vp.window_h))
 
     def _build_display_items(self) -> list[MenuItem]:
         """

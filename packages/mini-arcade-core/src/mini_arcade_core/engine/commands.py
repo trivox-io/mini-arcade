@@ -174,6 +174,45 @@ class ChangeSceneCommand(Command):
 
 
 @dataclass(frozen=True)
+class PushSceneIfMissingCommand(Command):
+    """
+    Push a scene only if it is not already in the stack.
+    """
+
+    scene_id: str
+    as_overlay: bool = False
+    policy: ScenePolicy | None = None
+
+    def execute(
+        self,
+        context: CommandContext,
+    ):
+        scenes = context.managers.scenes
+        if scenes.has_scene(self.scene_id):
+            return
+        scenes.push(
+            self.scene_id,
+            as_overlay=self.as_overlay,
+            policy=self.policy,
+        )
+
+
+@dataclass(frozen=True)
+class RemoveSceneCommand(Command):
+    """
+    Remove a specific scene instance from the scene stack.
+    """
+
+    scene_id: str
+
+    def execute(
+        self,
+        context: CommandContext,
+    ):
+        context.managers.scenes.remove_scene(self.scene_id)
+
+
+@dataclass(frozen=True)
 class ToggleDebugOverlayCommand(Command):
     """
     Toggle the debug overlay scene.
