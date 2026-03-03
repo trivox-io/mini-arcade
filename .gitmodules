@@ -4,3 +4,6 @@
 [submodule "games/space-invaders"]
 	path = games/space-invaders
 	url = https://github.com/alexsc6955/space-invaders.git
+[submodule "games/asteroids"]
+	path = games/asteroids
+	url = https://github.com/alexsc6955/asteroids.git
