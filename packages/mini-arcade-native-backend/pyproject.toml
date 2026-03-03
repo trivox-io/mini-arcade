@@ -8,7 +8,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "mini-arcade-native-backend"
-version = "1.0.3"
+version = "1.4.0"
 description = "Native SDL2 backend for mini-arcade-core using SDL2 + pybind11."
 authors = [
   { name = "Santiago Rincon", email = "rincores@gmail.com" },

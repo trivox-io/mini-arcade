@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "mini-arcade"
-version = "1.0.0"
+version = "1.4.0"
 description = "Mini Arcade product package: CLI/GUI + runtime orchestration for the mini-arcade ecosystem."
 authors = [
     { name = "Santiago Rincon", email = "rincores@gmail.com" },
