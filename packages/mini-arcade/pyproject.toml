@@ -14,7 +14,7 @@ license = { file = "LICENSE" }
 requires-python = ">=3.9,<3.12"
 dependencies = [
     "tomli>=2.0.1; python_version < '3.11'",
-    "mini-arcade-core (>=1.4.0,<2.0.0)",
+    "mini-arcade-core (>=1.0.0,<2.0.0)",
     "mini-arcade-native-backend (>=1.0.0,<2.0.0)",
     "mini-arcade-pygame-backend (>=1.0.0,<2.0.0)",
 ]
