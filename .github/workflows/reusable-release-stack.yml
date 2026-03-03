@@ -61,7 +61,7 @@ jobs:
 
       - name: Fetch branches and tags
         run: |
-          git fetch origin "${{ inputs.stable_branch }}" "${{ inputs.develop_branch }}" --tags
+          git fetch origin "${{ inputs.stable_branch }}" --tags
 
       - name: Ensure stable branch is current
         run: |
@@ -518,6 +518,30 @@ jobs:
             git push origin "$tag"
           done
 
+      - name: Build zip assets and create GitHub Releases
+        env:
+          VERSION: ${{ needs.prepare_release.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+
+          assets_dir="$(mktemp -d)"
+
+          create_release_with_zip() {
+            local tag="$1"
+            local prefix="$2"
+            local pathspec="$3"
+            local zip_path="${assets_dir}/${tag}.zip"
+
+            git archive --format=zip --output="$zip_path" --prefix="${prefix}/" "HEAD:${pathspec}"
+            gh release create "$tag" "$zip_path" --title "$tag" --generate-notes --verify-tag
+          }
+
+          create_release_with_zip "mini-arcade-core-v${VERSION}" "mini-arcade-core" "packages/mini-arcade-core"
+          create_release_with_zip "mini-arcade-pygame-backend-v${VERSION}" "mini-arcade-pygame-backend" "packages/mini-arcade-pygame-backend"
+          create_release_with_zip "mini-arcade-native-backend-v${VERSION}" "mini-arcade-native-backend" "packages/mini-arcade-native-backend"
+          create_release_with_zip "mini-arcade-v${VERSION}" "mini-arcade" "packages/mini-arcade"
+
   sync_develop:
     needs: [prepare_release, tag_release]
     runs-on: ubuntu-latest
@@ -541,7 +565,14 @@ jobs:
         run: |
           set -e
 
-          git fetch origin "$STABLE_BRANCH" "$DEVELOP_BRANCH"
+          git fetch origin "$STABLE_BRANCH"
+
+          if ! git ls-remote --exit-code --heads origin "$DEVELOP_BRANCH" >/dev/null 2>&1; then
+            echo "Branch '$DEVELOP_BRANCH' does not exist on origin. Skipping sync."
+            exit 0
+          fi
+
+          git fetch origin "$DEVELOP_BRANCH"
 
           git checkout "$DEVELOP_BRANCH"
           git pull origin "$DEVELOP_BRANCH"
