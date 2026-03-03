@@ -11,6 +11,11 @@ on:
           - patch
           - minor
           - major
+      subtree_repo_owner:
+        description: "Owner for subtree mirror repos (leave empty to use current repo owner)"
+        required: false
+        default: "alexsc6955"
+        type: string
 
 permissions:
   contents: write
@@ -22,5 +27,6 @@ jobs:
       bump_type: ${{ inputs.bump_type }}
       stable_branch: main
       develop_branch: develop
+      subtree_repo_owner: ${{ inputs.subtree_repo_owner }}
     secrets: inherit
 

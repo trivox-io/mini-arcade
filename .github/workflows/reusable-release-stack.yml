@@ -14,6 +14,10 @@ on:
         required: false
         type: string
         default: "develop"
+      subtree_repo_owner:
+        required: false
+        type: string
+        default: ""
       python_version:
         required: false
         type: string
@@ -607,34 +611,37 @@ jobs:
       - name: Push subtree mirrors
         env:
           SUBTREE_PUSH_TOKEN: ${{ secrets.SUBTREE_PUSH_TOKEN }}
+          SUBTREE_REPO_OWNER: ${{ inputs.subtree_repo_owner != '' && inputs.subtree_repo_owner || github.repository_owner }}
         run: |
-          set -e
+          set -euo pipefail
 
-          push_subtree_if_available() {
+          push_subtree() {
             local remote_name="$1"
-            local repo_url="$2"
+            local repo_name="$2"
             local prefix_path="$3"
+            local repo_url="https://x-access-token:${SUBTREE_PUSH_TOKEN}@github.com/${SUBTREE_REPO_OWNER}/${repo_name}.git"
 
             if ! git ls-remote --heads "$repo_url" >/dev/null 2>&1; then
-              echo "::warning::Skipping ${remote_name}. Cannot access ${repo_url}. Verify repository exists and SUBTREE_PUSH_TOKEN has access."
-              return 0
+              echo "::error::Cannot access ${SUBTREE_REPO_OWNER}/${repo_name}. Verify repository exists and SUBTREE_PUSH_TOKEN has write access (and SSO authorization if required)."
+              return 1
             fi
 
+            git remote remove "$remote_name" >/dev/null 2>&1 || true
             git remote add "$remote_name" "$repo_url"
             git subtree push --prefix="$prefix_path" "$remote_name" main
           }
 
-          push_subtree_if_available \
+          push_subtree \
             "pkg-core" \
-            "https://x-access-token:${SUBTREE_PUSH_TOKEN}@github.com/trivox-io/mini-arcade-core.git" \
+            "mini-arcade-core" \
             "packages/mini-arcade-core"
-          push_subtree_if_available \
+          push_subtree \
             "pkg-pygame" \
-            "https://x-access-token:${SUBTREE_PUSH_TOKEN}@github.com/trivox-io/mini-arcade-pygame-backend.git" \
+            "mini-arcade-pygame-backend" \
             "packages/mini-arcade-pygame-backend"
-          push_subtree_if_available \
+          push_subtree \
             "pkg-native" \
-            "https://x-access-token:${SUBTREE_PUSH_TOKEN}@github.com/trivox-io/mini-arcade-native-backend.git" \
+            "mini-arcade-native-backend" \
             "packages/mini-arcade-native-backend"
 
   notify:
