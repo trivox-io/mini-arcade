@@ -1,116 +1,54 @@
-﻿name: Reusable Release Package
+﻿name: Reusable Release Stack
 
 on:
   workflow_call:
     inputs:
-      project_name:
-        description: "Package/project name"
-        required: true
-        type: string
-      working_directory:
-        description: "Project root directory"
-        required: false
-        type: string
-        default: "."
-      version_file:
-        description: "Version file path relative to working-directory"
-        required: false
-        type: string
-        default: "pyproject.toml"
       bump_type:
-        description: "Semver bump type"
         required: true
         type: string
       stable_branch:
-        description: "Branch that represents the releasable state"
         required: false
         type: string
         default: "main"
       develop_branch:
-        description: "Feature branch"
         required: false
         type: string
         default: "develop"
-      merge_develop_into_main:
-        description: "Merge develop into main before releasing"
-        required: false
-        type: boolean
-        default: false
-      sync_develop_from_main:
-        description: "Merge main back into develop after successful release"
-        required: false
-        type: boolean
-        default: true
-      publish_to_pypi:
-        description: "Publish artifacts to PyPI"
-        required: false
-        type: boolean
-        default: true
-      apt_deps:
-        description: "Space-separated apt packages to install"
-        required: false
-        type: string
-        default: ""
       python_version:
-        description: "Python version for build/publish"
         required: false
         type: string
         default: "3.11"
-      build_command:
-        description: "Build command to run from working-directory"
-        required: false
-        type: string
-        default: "python -m build"
-      packages_dir:
-        description: "Artifacts directory relative to working-directory"
-        required: false
-        type: string
-        default: "dist"
-      tag_prefix:
-        description: "Tag prefix (default: project-name)"
-        required: false
-        type: string
-        default: ""
-      build_windows_wheels:
-        description: "Build Windows wheels with cibuildwheel"
-        required: false
-        type: boolean
-        default: false
-      windows_vcpkg_packages:
-        description: "vcpkg packages for Windows wheel build"
-        required: false
-        type: string
-        default: "sdl2 sdl2-ttf sdl2-mixer"
-      cibw_build:
-        description: "cibuildwheel build selector"
-        required: false
-        type: string
-        default: "cp39-win_amd64 cp310-win_amd64 cp311-win_amd64"
     secrets:
       PYPI_API_TOKEN:
+        required: true
+      SUBTREE_PUSH_TOKEN:
+        required: true
+      SLACK_BOT_TOKEN:
+        required: false
+      SLACK_CHANNEL_ID_RELEASE:
         required: false
 
 permissions:
   contents: write
 
-outputs:
-  version:
-    value: ${{ jobs.prepare.outputs.version }}
-  tag:
-    value: ${{ jobs.prepare.outputs.tag }}
-  ref:
-    value: ${{ jobs.prepare.outputs.ref }}
+concurrency:
+  group: release-stack-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  prepare:
+  prepare_release:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.bump.outputs.version }}
-      tag: ${{ steps.tag.outputs.tag }}
       ref: ${{ steps.ref.outputs.ref }}
+      start_unix: ${{ steps.start.outputs.start_unix }}
 
     steps:
-      - name: Checkout repository
+      - name: Mark start time
+        id: start
+        run: echo "start_unix=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout stable branch
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.stable_branch }}
@@ -125,60 +63,57 @@ jobs:
         run: |
           git fetch origin "${{ inputs.stable_branch }}" "${{ inputs.develop_branch }}" --tags
 
-      - name: Merge develop into main
-        if: ${{ inputs.merge_develop_into_main }}
-        env:
-          STABLE_BRANCH: ${{ inputs.stable_branch }}
-          DEVELOP_BRANCH: ${{ inputs.develop_branch }}
+      - name: Ensure stable branch is current
         run: |
-          set -e
+          git checkout "${{ inputs.stable_branch }}"
+          git pull origin "${{ inputs.stable_branch }}"
 
-          git checkout "$STABLE_BRANCH"
-          git pull origin "$STABLE_BRANCH"
-          git merge --no-ff "origin/$DEVELOP_BRANCH" -m "chore(release): merge $DEVELOP_BRANCH into $STABLE_BRANCH"
-          git push origin "$STABLE_BRANCH"
-
-      - name: Ensure stable branch is checked out
-        env:
-          STABLE_BRANCH: ${{ inputs.stable_branch }}
-        run: |
-          set -e
-          git checkout "$STABLE_BRANCH"
-          git pull origin "$STABLE_BRANCH"
-
-      - name: Bump version
+      - name: Bump lockstep version, align deps, update changelog
         id: bump
         env:
           BUMP_TYPE: ${{ inputs.bump_type }}
-          WORKING_DIRECTORY: ${{ inputs.working_directory }}
-          VERSION_FILE: ${{ inputs.version_file }}
-          STABLE_BRANCH: ${{ inputs.stable_branch }}
-          PROJECT_NAME: ${{ inputs.project_name }}
         run: |
           set -e
 
           python - << 'PY'
           from pathlib import Path
+          from datetime import date
           import os
           import re
           import subprocess
 
           bump_type = os.environ["BUMP_TYPE"].strip().lower()
-          working_directory = Path(os.environ["WORKING_DIRECTORY"])
-          version_file = working_directory / os.environ["VERSION_FILE"]
-          stable_branch = os.environ["STABLE_BRANCH"]
-          project_name = os.environ["PROJECT_NAME"]
-
           if bump_type not in {"major", "minor", "patch"}:
-              raise SystemExit(f"Unsupported bump type: {bump_type}")
+              raise SystemExit(f"Unsupported bump_type: {bump_type}")
 
-          text = version_file.read_text(encoding="utf-8")
-          match = re.search(r'^version\s*=\s*"(?P<ver>\d+\.\d+\.\d+)"', text, re.MULTILINE)
-          if not match:
-              raise SystemExit(f"Could not find version in {version_file}")
+          pyprojects = {
+              "mini-arcade-core": Path("packages/mini-arcade-core/pyproject.toml"),
+              "mini-arcade-pygame-backend": Path("packages/mini-arcade-pygame-backend/pyproject.toml"),
+              "mini-arcade-native-backend": Path("packages/mini-arcade-native-backend/pyproject.toml"),
+              "mini-arcade": Path("packages/mini-arcade/pyproject.toml"),
+          }
 
-          current = match.group("ver")
-          major, minor, patch = map(int, current.split("."))
+          version_re = re.compile(r'^version\s*=\s*"(?P<ver>\d+\.\d+\.\d+)"', re.MULTILINE)
+
+          versions = {}
+          texts = {}
+          for name, path in pyprojects.items():
+              text = path.read_text(encoding="utf-8")
+              texts[name] = text
+              match = version_re.search(text)
+              if not match:
+                  raise SystemExit(f"Could not find version in {path}")
+              versions[name] = match.group("ver")
+
+          unique_versions = set(versions.values())
+          if len(unique_versions) != 1:
+              raise SystemExit(
+                  "Lockstep versioning expected, but versions differ:\n"
+                  + "\n".join(f"{k}: {v}" for k, v in versions.items())
+              )
+
+          current_version = next(iter(unique_versions))
+          major, minor, patch = map(int, current_version.split("."))
 
           if bump_type == "major":
               major += 1
@@ -191,75 +126,245 @@ jobs:
               patch += 1
 
           new_version = f"{major}.{minor}.{patch}"
+          upper_major = major + 1
+          dep_spec = f">={new_version},<{upper_major}.0.0"
 
-          new_text = re.sub(
-              r'^version\s*=\s*"\d+\.\d+\.\d+"',
-              f'version = "{new_version}"',
-              text,
-              count=1,
-              flags=re.MULTILINE,
-          )
-          version_file.write_text(new_text, encoding="utf-8")
+          def set_version(text: str) -> str:
+              new_text, count = version_re.subn(
+                  f'version = "{new_version}"',
+                  text,
+                  count=1,
+              )
+              if count != 1:
+                  raise SystemExit("Failed to replace version")
+              return new_text
 
-          subprocess.run(["git", "add", str(version_file)], check=True)
-          subprocess.run(
-              [
-                  "git",
-                  "commit",
-                  "-m",
-                  f"chore(release): {project_name} {bump_type} -> {new_version}",
-              ],
-              check=True,
+          def set_dep(text: str, dep_name: str) -> str:
+              pattern = re.compile(rf'("{re.escape(dep_name)}\s*\()([^"]+)(\)")')
+              new_text, count = pattern.subn(
+                  lambda m: f'{m.group(1)}{dep_spec}{m.group(3)}',
+                  text,
+              )
+              if count == 0:
+                  raise SystemExit(f"Could not update dependency '{dep_name}'")
+              return new_text
+
+          # Update versions
+          for name in texts:
+              texts[name] = set_version(texts[name])
+
+          # Backends depend on core
+          texts["mini-arcade-pygame-backend"] = set_dep(
+              texts["mini-arcade-pygame-backend"],
+              "mini-arcade-core",
           )
-          subprocess.run(["git", "push", "origin", stable_branch], check=True)
+          texts["mini-arcade-native-backend"] = set_dep(
+              texts["mini-arcade-native-backend"],
+              "mini-arcade-core",
+          )
+
+          # Umbrella depends on all three
+          for dep in (
+              "mini-arcade-core",
+              "mini-arcade-pygame-backend",
+              "mini-arcade-native-backend",
+          ):
+              texts["mini-arcade"] = set_dep(texts["mini-arcade"], dep)
+
+          # Write pyprojects
+          for name, path in pyprojects.items():
+              path.write_text(texts[name], encoding="utf-8")
+
+          # Root changelog
+          changelog = Path("CHANGELOG.md")
+          if changelog.exists():
+              old = changelog.read_text(encoding="utf-8")
+          else:
+              old = (
+                  "# Changelog\n\n"
+                  "All notable changes to this project will be documented in this file.\n\n"
+                  "This project adheres to [Semantic Versioning](https://semver.org/).\n\n"
+                  "## [Unreleased]\n\n"
+              )
+
+          tags = subprocess.check_output(
+              ["git", "tag", "--list", "mini-arcade-v*", "--sort=-v:refname"],
+              text=True,
+          ).splitlines()
+          prev_tag = tags[0].strip() if tags else None
+
+          log_range = f"{prev_tag}..HEAD" if prev_tag else "HEAD"
+          raw_log = subprocess.check_output(
+              ["git", "log", log_range, "--pretty=format:%s"],
+              text=True,
+          )
+          lines = [l.strip() for l in raw_log.splitlines() if l.strip()]
+
+          type_to_section = {
+              "feat": "Added",
+              "fix": "Fixed",
+              "refactor": "Changed",
+              "perf": "Changed",
+          }
+
+          sections = {"Added": [], "Fixed": [], "Changed": []}
+          other = []
+
+          for subj in lines:
+              lower = subj.lower()
+
+              if lower.startswith("chore(release):"):
+                  continue
+
+              prefix, sep, _ = lower.partition(":")
+              if sep:
+                  commit_type = prefix.strip()
+                  message = subj.split(":", 1)[1].strip() or subj
+              else:
+                  commit_type = ""
+                  message = subj
+
+              if commit_type == "chore":
+                  continue
+
+              heading = type_to_section.get(commit_type)
+              if heading:
+                  sections[heading].append(f"- {message}")
+              else:
+                  other.append(f"- {subj}")
+
+          today = date.today().isoformat()
+          header = f"## [{new_version}] - {today}"
+
+          if not any(sections.values()) and not other:
+              body = "- Internal changes only."
+          else:
+              parts = []
+              for heading in ("Added", "Fixed", "Changed"):
+                  items = sections[heading]
+                  if items:
+                      parts.append(f"### {heading}")
+                      parts.extend(items)
+                      parts.append("")
+              if other:
+                  parts.append("### Other")
+                  parts.extend(other)
+                  parts.append("")
+              body = "\n".join(parts).strip()
+
+          new_section = f"{header}\n\n{body}\n\n"
+
+          unreleased_match = re.search(r"^## \[Unreleased\].*$", old, flags=re.MULTILINE)
+          if unreleased_match:
+              start_after = unreleased_match.end()
+              rest = old[start_after:]
+              next_header = re.search(r"^## \[.*\]", rest, flags=re.MULTILINE)
+              if next_header:
+                  insert_pos = start_after + next_header.start()
+              else:
+                  insert_pos = len(old)
+          else:
+              insert_pos = len(old.rstrip())
+
+          before = old[:insert_pos].rstrip("\n")
+          after = old[insert_pos:].lstrip("\n")
+          new_changelog = before + "\n\n" + new_section + after
+          changelog.write_text(new_changelog, encoding="utf-8")
 
           out = Path(os.environ["GITHUB_OUTPUT"])
           with out.open("a", encoding="utf-8") as fh:
               fh.write(f"version={new_version}\n")
           PY
 
-      - name: Create and push release tag
-        id: tag
+      - name: Commit release changes
         env:
           VERSION: ${{ steps.bump.outputs.version }}
-          TAG_PREFIX: ${{ inputs.tag_prefix }}
-          PROJECT_NAME: ${{ inputs.project_name }}
         run: |
           set -e
+          git add \
+            CHANGELOG.md \
+            packages/mini-arcade-core/pyproject.toml \
+            packages/mini-arcade-pygame-backend/pyproject.toml \
+            packages/mini-arcade-native-backend/pyproject.toml \
+            packages/mini-arcade/pyproject.toml
 
-          prefix="$TAG_PREFIX"
-          if [ -z "$prefix" ]; then
-            prefix="$PROJECT_NAME"
-          fi
-
-          tag="${prefix}-v${VERSION}"
-
-          git fetch --tags
-          if git rev-parse "$tag" >/dev/null 2>&1; then
-            echo "Tag $tag already exists"
-            exit 1
-          fi
-
-          git tag "$tag"
-          git push origin "$tag"
-
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          git commit -m "chore(release): v${VERSION}"
+          git push origin "${{ inputs.stable_branch }}"
 
       - name: Resolve release ref
         id: ref
         run: |
           echo "ref=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-  wheels_windows:
-    if: ${{ inputs.build_windows_wheels }}
-    needs: [prepare]
+  publish_core:
+    needs: [prepare_release]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout release ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare_release.outputs.ref }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Build core
+        working-directory: packages/mini-arcade-core
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+          python -m build
+
+      - name: Publish core
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages-dir: packages/mini-arcade-core/dist
+
+  publish_pygame:
+    needs: [prepare_release, publish_core]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout release ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare_release.outputs.ref }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Build pygame backend
+        working-directory: packages/mini-arcade-pygame-backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+          python -m build
+
+      - name: Publish pygame backend
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages-dir: packages/mini-arcade-pygame-backend/dist
+
+  build_native_windows_wheels:
+    needs: [prepare_release, publish_pygame]
     runs-on: windows-latest
 
     steps:
       - name: Checkout release ref
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.prepare.outputs.ref }}
+          ref: ${{ needs.prepare_release.outputs.ref }}
           fetch-depth: 0
 
       - name: Set up Python
@@ -267,106 +372,155 @@ jobs:
         with:
           python-version: ${{ inputs.python_version }}
 
-      - name: Install vcpkg dependencies
+      - name: Install vcpkg and SDL dependencies
         shell: pwsh
-        env:
-          VCPKG_PACKAGES: ${{ inputs.windows_vcpkg_packages }}
         run: |
           git clone https://github.com/microsoft/vcpkg "$env:GITHUB_WORKSPACE\vcpkg"
           & "$env:GITHUB_WORKSPACE\vcpkg\bootstrap-vcpkg.bat"
-
-          foreach ($pkg in $env:VCPKG_PACKAGES.Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)) {
-            & "$env:GITHUB_WORKSPACE\vcpkg\vcpkg.exe" install $pkg --triplet x64-windows
-          }
+          & "$env:GITHUB_WORKSPACE\vcpkg\vcpkg.exe" install sdl2 sdl2-ttf sdl2-mixer --triplet x64-windows
 
           $ws = $env:GITHUB_WORKSPACE -replace '\\','/'
           "VCPKG_ROOT_CMAKE=$ws/vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
           "VCPKG_TOOLCHAIN_CMAKE=$ws/vcpkg/scripts/buildsystems/vcpkg.cmake" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Install cibuildwheel
-        run: python -m pip install --upgrade pip cibuildwheel
+        run: |
+          python -m pip install --upgrade pip
+          pip install cibuildwheel
 
-      - name: Build wheels
-        working-directory: ${{ inputs.working_directory }}
+      - name: Build native Windows wheels
+        working-directory: packages/mini-arcade-native-backend
         env:
           CIBW_ARCHS_WINDOWS: "AMD64"
-          CIBW_BUILD: ${{ inputs.cibw_build }}
+          CIBW_BUILD: "cp39-win_amd64 cp310-win_amd64 cp311-win_amd64"
           CIBW_SKIP: "*-musllinux_*"
           CIBW_ENVIRONMENT_WINDOWS: >-
             VCPKG_ROOT=${{ env.VCPKG_ROOT_CMAKE }}
             CMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_TOOLCHAIN_CMAKE }}
             SKBUILD_CMAKE_ARGS=-DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_TOOLCHAIN_CMAKE }} -DVCPKG_TARGET_TRIPLET=x64-windows
-        run: python -m cibuildwheel --output-dir dist
+        run: |
+          python -m cibuildwheel --output-dir dist
 
-      - name: Upload Windows wheels
+      - name: Upload native Windows wheels
         uses: actions/upload-artifact@v4
         with:
-          name: windows-wheels-${{ inputs.project_name }}
-          path: ${{ inputs.working_directory }}/dist/*.whl
+          name: native-windows-wheels
+          path: packages/mini-arcade-native-backend/dist/*.whl
 
-  publish:
-    needs: [prepare, wheels_windows]
+  publish_native:
+    needs: [prepare_release, build_native_windows_wheels]
     runs-on: ubuntu-latest
-    if: ${{ always() && needs.prepare.result == 'success' && (!inputs.build_windows_wheels || needs.wheels_windows.result == 'success') && inputs.publish_to_pypi }}
 
     steps:
       - name: Checkout release ref
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.prepare.outputs.ref }}
+          ref: ${{ needs.prepare_release.outputs.ref }}
           fetch-depth: 0
 
-      - name: Install system dependencies (apt)
-        if: ${{ inputs.apt_deps != '' }}
+      - name: Install SDL dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ${{ inputs.apt_deps }}
+          sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev libsdl2-mixer-dev
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python_version }}
 
-      - name: Install build tools
+      - name: Build native sdist
+        working-directory: packages/mini-arcade-native-backend
         run: |
           python -m pip install --upgrade pip
-          pip install build poetry
+          pip install build
+          python -m build --sdist
 
-      - name: Build distributions
-        working-directory: ${{ inputs.working_directory }}
-        env:
-          BUILD_COMMAND: ${{ inputs.build_command }}
-        run: |
-          set -e
-          eval "$BUILD_COMMAND"
-
-      - name: Download Windows wheels
-        if: ${{ inputs.build_windows_wheels }}
+      - name: Download native Windows wheels
         uses: actions/download-artifact@v4
         with:
-          name: windows-wheels-${{ inputs.project_name }}
-          path: ${{ inputs.working_directory }}/${{ inputs.packages_dir }}
+          name: native-windows-wheels
+          path: packages/mini-arcade-native-backend/dist
 
-      - name: Validate PyPI token
-        env:
-          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          if [ -z "$PYPI_API_TOKEN" ]; then
-            echo "Missing PYPI_API_TOKEN"
-            exit 1
-          fi
-
-      - name: Publish to PyPI
+      - name: Publish native backend
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
-          packages-dir: ${{ inputs.working_directory }}/${{ inputs.packages_dir }}
+          packages-dir: packages/mini-arcade-native-backend/dist
+
+  publish_mini:
+    needs: [prepare_release, publish_core, publish_pygame, publish_native]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout release ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare_release.outputs.ref }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Build mini-arcade
+        working-directory: packages/mini-arcade
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+          python -m build
+
+      - name: Publish mini-arcade
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages-dir: packages/mini-arcade/dist
+
+  tag_release:
+    needs: [prepare_release, publish_mini]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout release ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare_release.outputs.ref }}
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and push tags
+        env:
+          VERSION: ${{ needs.prepare_release.outputs.version }}
+        run: |
+          set -e
+
+          tags=(
+            "mini-arcade-core-v${VERSION}"
+            "mini-arcade-pygame-backend-v${VERSION}"
+            "mini-arcade-native-backend-v${VERSION}"
+            "mini-arcade-v${VERSION}"
+          )
+
+          git fetch --tags
+
+          for tag in "${tags[@]}"; do
+            if git rev-parse "$tag" >/dev/null 2>&1; then
+              echo "Tag $tag already exists"
+              exit 1
+            fi
+            git tag -a "$tag" -m "$tag"
+            git push origin "$tag"
+          done
 
   sync_develop:
-    needs: [prepare, publish]
+    needs: [prepare_release, tag_release]
     runs-on: ubuntu-latest
-    if: ${{ inputs.sync_develop_from_main && needs.prepare.result == 'success' && (!inputs.publish_to_pypi || needs.publish.result == 'success') }}
 
     steps:
       - name: Checkout repository
@@ -383,6 +537,7 @@ jobs:
         env:
           STABLE_BRANCH: ${{ inputs.stable_branch }}
           DEVELOP_BRANCH: ${{ inputs.develop_branch }}
+          VERSION: ${{ needs.prepare_release.outputs.version }}
         run: |
           set -e
 
@@ -396,5 +551,130 @@ jobs:
             exit 0
           fi
 
-          git merge --no-ff "origin/$STABLE_BRANCH" -m "chore: sync $DEVELOP_BRANCH with $STABLE_BRANCH"
+          git merge --no-ff "origin/$STABLE_BRANCH" -m "chore: sync $DEVELOP_BRANCH with $STABLE_BRANCH after release v${VERSION}"
           git push origin "$DEVELOP_BRANCH"
+
+  sync_subtrees:
+    needs: [prepare_release, sync_develop]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout release ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare_release.outputs.ref }}
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Push subtree mirrors
+        env:
+          SUBTREE_PUSH_TOKEN: ${{ secrets.SUBTREE_PUSH_TOKEN }}
+        run: |
+          set -e
+
+          git remote add pkg-core   "https://x-access-token:${SUBTREE_PUSH_TOKEN}@github.com/trivox-io/mini-arcade-core.git"
+          git remote add pkg-pygame "https://x-access-token:${SUBTREE_PUSH_TOKEN}@github.com/trivox-io/mini-arcade-pygame-backend.git"
+          git remote add pkg-native "https://x-access-token:${SUBTREE_PUSH_TOKEN}@github.com/trivox-io/mini-arcade-native-backend.git"
+
+          git subtree push --prefix=packages/mini-arcade-core pkg-core main
+          git subtree push --prefix=packages/mini-arcade-pygame-backend pkg-pygame main
+          git subtree push --prefix=packages/mini-arcade-native-backend pkg-native main
+
+  notify:
+    needs:
+      - prepare_release
+      - publish_core
+      - publish_pygame
+      - build_native_windows_wheels
+      - publish_native
+      - publish_mini
+      - tag_release
+      - sync_develop
+      - sync_subtrees
+    runs-on: ubuntu-latest
+    if: always()
+
+    env:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_CHANNEL_ID_RELEASE: ${{ secrets.SLACK_CHANNEL_ID_RELEASE }}
+
+    steps:
+      - name: Calculate pipeline duration
+        id: duration
+        run: |
+          end=$(date +%s)
+          seconds=$((end - ${{ needs.prepare_release.outputs.start_unix }}))
+          if [ "$seconds" -lt 60 ]; then
+            formatted="${seconds}s"
+          elif [ "$seconds" -lt 3600 ]; then
+            minutes=$((seconds / 60)); secs=$((seconds % 60))
+            formatted="${minutes}m"; [ "$secs" -ne 0 ] && formatted="${formatted} ${secs}s"
+          else
+            hours=$((seconds / 3600)); minutes=$(((seconds % 3600) / 60))
+            formatted="${hours}h"; [ "$minutes" -ne 0 ] && formatted="${formatted} ${minutes}m"
+          fi
+          echo "time=${formatted}" >> "$GITHUB_OUTPUT"
+
+      - name: Compute status
+        id: status
+        run: |
+          if [[ "${{ needs.publish_mini.result }}" == "success" && \
+                "${{ needs.tag_release.result }}" == "success" && \
+                "${{ needs.sync_develop.result }}" == "success" && \
+                "${{ needs.sync_subtrees.result }}" == "success" ]]; then
+            echo "icon=white_check_mark" >> "$GITHUB_OUTPUT"
+            echo "word=passed" >> "$GITHUB_OUTPUT"
+          else
+            echo "icon=x" >> "$GITHUB_OUTPUT"
+            echo "word=failed" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build payload
+        id: payload
+        env:
+          SERVER_URL: ${{ github.server_url }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          ACTOR: ${{ github.actor }}
+          VERSION: ${{ needs.prepare_release.outputs.version }}
+          WORD: ${{ steps.status.outputs.word }}
+          ICON: ${{ steps.status.outputs.icon }}
+          DURATION: ${{ steps.duration.outputs.time }}
+        run: |
+          payload=$(jq -cn \
+            --arg icon "$ICON" \
+            --arg server "$SERVER_URL" \
+            --arg repo "$REPO" \
+            --arg runid "$RUN_ID" \
+            --arg actor "$ACTOR" \
+            --arg version "$VERSION" \
+            --arg word "$WORD" \
+            --arg dur "$DURATION" \
+            '{
+              text: (":" + $icon + ": Release stack " + $word + " for v" + $version + " in " + $dur),
+              blocks: [
+                {
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: (":" + $icon + ": *Release stack* for `v" + $version + "` has *" + $word + "* in `" + $dur + "`.\n" +
+                           "Triggered by <" + $server + "/" + $actor + "|@" + $actor + ">.\n" +
+                           "Run: <" + $server + "/" + $repo + "/actions/runs/" + $runid + "|#" + $runid + ">")
+                  }
+                }
+              ]
+            }')
+          echo "payload=$(echo "$payload" | jq -c .)" >> "$GITHUB_OUTPUT"
+
+      - name: Slack notification
+        if: env.SLACK_BOT_TOKEN != '' && env.SLACK_CHANNEL_ID_RELEASE != ''
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ env.SLACK_CHANNEL_ID_RELEASE }}
+          payload: ${{ steps.payload.outputs.payload }}
+        env:
+          SLACK_BOT_TOKEN: ${{ env.SLACK_BOT_TOKEN }}
