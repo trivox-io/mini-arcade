@@ -53,11 +53,8 @@ class EntityIdAllocator:
         return eid
 
 
-# Justification: BaseEntity has a lot of attributes but it's mostly data and optional
-# components, hard to break down more without overcomplicating it.
-# pylint: disable=too-many-instance-attributes
 @dataclass
-class BaseEntity:
+class BaseEntity:  # pylint: disable=too-many-instance-attributes
     """
     Base entity class.
 

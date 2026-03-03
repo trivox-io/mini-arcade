@@ -61,6 +61,8 @@ disable = [
     "logging-fstring-interpolation",
     # Justification: TODOs are acceptable during development.
     "fixme",
+    # Justification: Render passes intentionally share orchestration patterns.
+    "duplicate-code",
 ]
 
 [tool.pylint.MAIN]
@@ -73,6 +75,9 @@ ignore-paths = [
     "^dist",
     "^docs",
 ]
+
+[tool.pylint.DESIGN]
+max-attributes = 13
 
 [tool.poetry]
 packages = [{ include = "mini_arcade_core", from = "src" }]
