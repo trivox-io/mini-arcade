@@ -1,26 +1,28 @@
-name: Publish from Release Branch
+﻿name: Hotfix Patch Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: write
 
-on:
-  workflow_dispatch:
-    inputs:
-      release_branch:
-        description: "Release branch name (e.g. release/0.6)"
-        required: true
-        type: string
-
 jobs:
-  publish:
-    uses: trivox-io/trivox-ci/.github/workflows/publish-from-release.yml@main
+  patch-release:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.head_commit.message == '' || !startsWith(github.event.head_commit.message, 'chore(release):') }}
+    uses: trivox-io/mini-arcade/.github/workflows/reusable-release-package.yml@main
     with:
-      release_branch: ${{ inputs.release_branch }}
-      version_file: "pyproject.toml"
-      apt-deps: "libsdl2-dev libsdl2-ttf-dev libsdl2-mixer-dev"
-      poetry-build-args: "-f sdist"
-      build_wheels: true
+      project_name: mini-arcade-native-backend
+      working_directory: .
+      version_file: pyproject.toml
+      bump_type: patch
+      merge_develop_into_main: false
+      sync_develop_from_main: true
+      tag_prefix: mini-arcade-native-backend
+      apt_deps: "libsdl2-dev libsdl2-ttf-dev libsdl2-mixer-dev"
+      build_windows_wheels: true
+      build_command: "python -m build --sdist"
     secrets:
       PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      SLACK_CHANNEL_ID_RELEASE: ${{ secrets.SLACK_CHANNEL_ID_RELEASE }}

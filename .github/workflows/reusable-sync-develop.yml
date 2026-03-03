@@ -1,0 +1,51 @@
+﻿name: Reusable Sync Develop From Main
+
+on:
+  workflow_call:
+    inputs:
+      stable_branch:
+        required: false
+        type: string
+        default: "main"
+      develop_branch:
+        required: false
+        type: string
+        default: "develop"
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync develop from main
+        env:
+          STABLE_BRANCH: ${{ inputs.stable_branch }}
+          DEVELOP_BRANCH: ${{ inputs.develop_branch }}
+        run: |
+          set -e
+
+          git fetch origin "$STABLE_BRANCH" "$DEVELOP_BRANCH"
+
+          git checkout "$DEVELOP_BRANCH"
+          git pull origin "$DEVELOP_BRANCH"
+
+          if git merge-base --is-ancestor "origin/$STABLE_BRANCH" HEAD; then
+            echo "$DEVELOP_BRANCH already includes $STABLE_BRANCH"
+            exit 0
+          fi
+
+          git merge --no-ff "origin/$STABLE_BRANCH" -m "chore: sync $DEVELOP_BRANCH with $STABLE_BRANCH"
+          git push origin "$DEVELOP_BRANCH"

@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -6,7 +6,6 @@ on:
       - main
       - develop
       - "feature/**"
-      - "release/**"
       - "hotfix/**"
   pull_request:
     branches:
@@ -19,27 +18,26 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - project-name: "mini-arcade"
-            lint-path: "src/mini_arcade"
-            working-directory: "packages/mini-arcade"
+          - project_name: "mini-arcade"
+            lint_path: "src/mini_arcade"
+            working_directory: "packages/mini-arcade"
 
-          - project-name: "mini-arcade-core"
-            lint-path: "src/mini_arcade_core"
-            working-directory: "packages/mini-arcade-core"
+          - project_name: "mini-arcade-core"
+            lint_path: "src/mini_arcade_core"
+            working_directory: "packages/mini-arcade-core"
 
-          - project-name: "mini-arcade-pygame-backend"
-            lint-path: "src/mini_arcade_pygame_backend"
-            working-directory: "packages/mini-arcade-pygame-backend"
+          - project_name: "mini-arcade-pygame-backend"
+            lint_path: "src/mini_arcade_pygame_backend"
+            working_directory: "packages/mini-arcade-pygame-backend"
 
-          - project-name: "mini-arcade-native-backend"
-            lint-path: "src/mini_arcade_native_backend"
-            working-directory: "packages/mini-arcade-native-backend"
+          - project_name: "mini-arcade-native-backend"
+            lint_path: "src/mini_arcade_native_backend"
+            working_directory: "packages/mini-arcade-native-backend"
+            apt_deps: "libsdl2-dev libsdl2-ttf-dev libsdl2-mixer-dev"
 
-    uses: trivox-io/trivox-ci/.github/workflows/python-ci.yml@main
+    uses: ./.github/workflows/reusable-python-ci.yml
     with:
-      project-name: ${{ matrix.project-name }}
-      lint-path: ${{ matrix.lint-path }}
-      working-directory: ${{ matrix.working-directory }}
-    secrets:
-      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      project_name: ${{ matrix.project_name }}
+      lint_path: ${{ matrix.lint_path }}
+      working_directory: ${{ matrix.working_directory }}
+      apt_deps: ${{ matrix.apt_deps || '' }}
