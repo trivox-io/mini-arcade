@@ -5,8 +5,8 @@ Pygame backend façade.
 from __future__ import annotations
 
 import pygame
-
 from mini_arcade_core.backend.viewport import ViewportTransform
+
 from mini_arcade_pygame_backend.config import PygameBackendSettings
 from mini_arcade_pygame_backend.ports.audio import AudioPort
 from mini_arcade_pygame_backend.ports.capture import CapturePort

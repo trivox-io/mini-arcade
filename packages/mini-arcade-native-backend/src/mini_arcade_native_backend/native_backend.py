@@ -5,6 +5,7 @@ Native backend façade.
 from __future__ import annotations
 
 from mini_arcade_core.backend.viewport import ViewportTransform
+
 from mini_arcade_native_backend.config import NativeBackendSettings
 from mini_arcade_native_backend.mapping.events import NativeEventMapper
 from mini_arcade_native_backend.ports.audio import AudioPort

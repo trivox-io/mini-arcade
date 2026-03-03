@@ -6,7 +6,6 @@ Provides functionality to poll and map input events.
 from __future__ import annotations
 
 import pygame
-
 from mini_arcade_core.backend.events import (  # pyright: ignore[reportMissingImports]
     Event,
     EventType,

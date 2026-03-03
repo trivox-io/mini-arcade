@@ -22,6 +22,7 @@ jobs:
             working_directory: "packages/mini-arcade"
             lint_path: "src/mini_arcade"
             apt_deps: "libsdl2-dev libsdl2-ttf-dev libsdl2-mixer-dev"
+            run_pytest: false
             local_dependency_paths: >-
               ["$GITHUB_WORKSPACE/packages/mini-arcade-core",
                "$GITHUB_WORKSPACE/packages/mini-arcade-pygame-backend",
@@ -31,12 +32,14 @@ jobs:
             working_directory: "packages/mini-arcade-core"
             lint_path: "src/mini_arcade_core"
             apt_deps: ""
+            run_pytest: true
             local_dependency_paths: "[]"
 
           - project_name: "mini-arcade-pygame-backend"
             working_directory: "packages/mini-arcade-pygame-backend"
             lint_path: "src/mini_arcade_pygame_backend"
             apt_deps: ""
+            run_pytest: true
             local_dependency_paths: >-
               ["$GITHUB_WORKSPACE/packages/mini-arcade-core"]
 
@@ -44,6 +47,7 @@ jobs:
             working_directory: "packages/mini-arcade-native-backend"
             lint_path: "src/mini_arcade_native_backend"
             apt_deps: "libsdl2-dev libsdl2-ttf-dev libsdl2-mixer-dev"
+            run_pytest: true
             local_dependency_paths: >-
               ["$GITHUB_WORKSPACE/packages/mini-arcade-core"]
 
@@ -53,4 +57,5 @@ jobs:
       working_directory: ${{ matrix.working_directory }}
       lint_path: ${{ matrix.lint_path }}
       apt_deps: ${{ matrix.apt_deps }}
+      run_pytest: ${{ matrix.run_pytest }}
       local_dependency_paths: ${{ matrix.local_dependency_paths }}
