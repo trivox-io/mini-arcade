@@ -1,4 +1,4 @@
-﻿name: Release Packages (Major/Minor)
+﻿name: Release Packages (Major/Minor/Patch)
 
 on:
   workflow_dispatch:
@@ -8,6 +8,7 @@ on:
         required: true
         type: choice
         options:
+          - patch
           - minor
           - major
 
@@ -22,3 +23,4 @@ jobs:
       stable_branch: main
       develop_branch: develop
     secrets: inherit
+
