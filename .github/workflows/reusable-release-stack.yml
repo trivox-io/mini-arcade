@@ -40,6 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.bump.outputs.version }}
+      changelog_section: ${{ steps.bump.outputs.changelog_section }}
       ref: ${{ steps.ref.outputs.ref }}
       start_unix: ${{ steps.start.outputs.start_unix }}
 
@@ -78,6 +79,7 @@ jobs:
           python - << 'PY'
           from pathlib import Path
           from datetime import date
+          import json
           import os
           import re
           import subprocess
@@ -274,6 +276,7 @@ jobs:
           out = Path(os.environ["GITHUB_OUTPUT"])
           with out.open("a", encoding="utf-8") as fh:
               fh.write(f"version={new_version}\n")
+              fh.write(f"changelog_section={json.dumps(new_section.strip())}\n")
           PY
 
       - name: Commit release changes
@@ -607,13 +610,32 @@ jobs:
         run: |
           set -e
 
-          git remote add pkg-core   "https://x-access-token:${SUBTREE_PUSH_TOKEN}@github.com/trivox-io/mini-arcade-core.git"
-          git remote add pkg-pygame "https://x-access-token:${SUBTREE_PUSH_TOKEN}@github.com/trivox-io/mini-arcade-pygame-backend.git"
-          git remote add pkg-native "https://x-access-token:${SUBTREE_PUSH_TOKEN}@github.com/trivox-io/mini-arcade-native-backend.git"
+          push_subtree_if_available() {
+            local remote_name="$1"
+            local repo_url="$2"
+            local prefix_path="$3"
 
-          git subtree push --prefix=packages/mini-arcade-core pkg-core main
-          git subtree push --prefix=packages/mini-arcade-pygame-backend pkg-pygame main
-          git subtree push --prefix=packages/mini-arcade-native-backend pkg-native main
+            if ! git ls-remote --heads "$repo_url" >/dev/null 2>&1; then
+              echo "::warning::Skipping ${remote_name}. Cannot access ${repo_url}. Verify repository exists and SUBTREE_PUSH_TOKEN has access."
+              return 0
+            fi
+
+            git remote add "$remote_name" "$repo_url"
+            git subtree push --prefix="$prefix_path" "$remote_name" main
+          }
+
+          push_subtree_if_available \
+            "pkg-core" \
+            "https://x-access-token:${SUBTREE_PUSH_TOKEN}@github.com/trivox-io/mini-arcade-core.git" \
+            "packages/mini-arcade-core"
+          push_subtree_if_available \
+            "pkg-pygame" \
+            "https://x-access-token:${SUBTREE_PUSH_TOKEN}@github.com/trivox-io/mini-arcade-pygame-backend.git" \
+            "packages/mini-arcade-pygame-backend"
+          push_subtree_if_available \
+            "pkg-native" \
+            "https://x-access-token:${SUBTREE_PUSH_TOKEN}@github.com/trivox-io/mini-arcade-native-backend.git" \
+            "packages/mini-arcade-native-backend"
 
   notify:
     needs:
@@ -650,58 +672,121 @@ jobs:
           fi
           echo "time=${formatted}" >> "$GITHUB_OUTPUT"
 
-      - name: Compute status
-        id: status
+      - name: Set pipeline status icon
+        id: icon
         run: |
-          if [[ "${{ needs.publish_mini.result }}" == "success" && \
-                "${{ needs.tag_release.result }}" == "success" && \
-                "${{ needs.sync_develop.result }}" == "success" && \
-                "${{ needs.sync_subtrees.result }}" == "success" ]]; then
-            echo "icon=white_check_mark" >> "$GITHUB_OUTPUT"
-            echo "word=passed" >> "$GITHUB_OUTPUT"
-          else
+          if [[ "${{ needs.publish_core.result }}" != "success" || \
+                "${{ needs.publish_pygame.result }}" != "success" || \
+                "${{ needs.build_native_windows_wheels.result }}" != "success" || \
+                "${{ needs.publish_native.result }}" != "success" || \
+                "${{ needs.publish_mini.result }}" != "success" || \
+                "${{ needs.tag_release.result }}" != "success" || \
+                "${{ needs.sync_develop.result }}" != "success" || \
+                "${{ needs.sync_subtrees.result }}" != "success" ]]; then
             echo "icon=x" >> "$GITHUB_OUTPUT"
-            echo "word=failed" >> "$GITHUB_OUTPUT"
+          else
+            echo "icon=white_check_mark" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build payload
+      - name: Set pipeline status word
+        id: word
+        run: |
+          if [[ "${{ needs.publish_core.result }}" != "success" || \
+                "${{ needs.publish_pygame.result }}" != "success" || \
+                "${{ needs.build_native_windows_wheels.result }}" != "success" || \
+                "${{ needs.publish_native.result }}" != "success" || \
+                "${{ needs.publish_mini.result }}" != "success" || \
+                "${{ needs.tag_release.result }}" != "success" || \
+                "${{ needs.sync_develop.result }}" != "success" || \
+                "${{ needs.sync_subtrees.result }}" != "success" ]]; then
+            echo "word=failed" >> "$GITHUB_OUTPUT"
+          else
+            echo "word=passed" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Get GitHub user full name
+        id: ghname
+        run: |
+          name=$(curl -s "https://api.github.com/users/${{ github.actor }}" | jq -r '.name // empty')
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+
+      - name: Build payload JSON
         id: payload
         env:
-          SERVER_URL: ${{ github.server_url }}
-          REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
-          ACTOR: ${{ github.actor }}
-          VERSION: ${{ needs.prepare_release.outputs.version }}
-          WORD: ${{ steps.status.outputs.word }}
-          ICON: ${{ steps.status.outputs.icon }}
-          DURATION: ${{ steps.duration.outputs.time }}
+          SERVER_URL:   ${{ github.server_url }}
+          REPO:         ${{ github.repository }}
+          RUN_ID:       ${{ github.run_id }}
+          ACTOR:        ${{ github.actor }}
+          BRANCH:       ${{ github.head_ref || github.ref_name }}
+          COMMIT:       ${{ github.sha }}
+          COMMIT_MSG:   ${{ github.event.head_commit.message || github.event.pull_request.title || 'Commit message not available' }}
+          DURATION:     ${{ steps.duration.outputs.time }}
+          ICON:         ${{ steps.icon.outputs.icon }}
+          WORD:         ${{ steps.word.outputs.word }}
+          NAME:         ${{ steps.ghname.outputs.name }}
+          VERSION:      ${{ needs.prepare_release.outputs.version }}
+          CHANGELOG_SECTION_JSON: ${{ needs.prepare_release.outputs.changelog_section }}
         run: |
+          CHANGELOG_SECTION=$(printf '%s' "$CHANGELOG_SECTION_JSON" | jq -r . 2>/dev/null || true)
+          if [ -z "$CHANGELOG_SECTION" ] || [ "$CHANGELOG_SECTION" = "null" ]; then
+            CHANGELOG_SECTION="Changelog section not available."
+          fi
+
+          blocks=$(jq -cn \
+            --arg icon    "$ICON" \
+            --arg name    "$NAME" \
+            --arg server  "$SERVER_URL" \
+            --arg repo    "$REPO" \
+            --arg runid   "$RUN_ID" \
+            --arg actor   "$ACTOR" \
+            --arg branch  "$BRANCH" \
+            --arg commit  "$COMMIT" \
+            --arg cmsg    "$COMMIT_MSG" \
+            --arg dur     "$DURATION" \
+            --arg word    "$WORD" \
+            --arg version "$VERSION" \
+            --arg chlog   "$CHANGELOG_SECTION" '
+            [
+              {
+                "type":"section",
+                "text":{
+                  "type":"mrkdwn",
+                  "text": (":\($icon): *Release pipeline \((if ($name|length)>0 then $name else $actor end))* " +
+                          "(<\($server)/\($actor)|@\($actor)>)\n" +
+                          "Pipeline <\($server)/\($repo)/actions/runs/\($runid)|#\($runid)> has *\($word)* in `\($dur)`.")
+                }
+              },
+              {
+                "type":"section",
+                "fields":[
+                  { "type":"mrkdwn", "text":"*Branch:*\n<\($server)/\($repo)/tree/\($branch)|`\($branch)`>" },
+                  { "type":"mrkdwn", "text":"*Commit:*\n<\($server)/\($repo)/commit/\($commit)|`\($commit)`> - `\($cmsg)`" }
+                ]
+              },
+              {
+                "type":"section",
+                "text":{
+                  "type":"mrkdwn",
+                  "text":"*Release:* `v\($version)`\n\n\($chlog)"
+                }
+              }
+            ]')
+
           payload=$(jq -cn \
             --arg icon "$ICON" \
             --arg server "$SERVER_URL" \
             --arg repo "$REPO" \
             --arg runid "$RUN_ID" \
-            --arg actor "$ACTOR" \
-            --arg version "$VERSION" \
             --arg word "$WORD" \
             --arg dur "$DURATION" \
-            '{
-              text: (":" + $icon + ": Release stack " + $word + " for v" + $version + " in " + $dur),
-              blocks: [
-                {
-                  type: "section",
-                  text: {
-                    type: "mrkdwn",
-                    text: (":" + $icon + ": *Release stack* for `v" + $version + "` has *" + $word + "* in `" + $dur + "`.\n" +
-                           "Triggered by <" + $server + "/" + $actor + "|@" + $actor + ">.\n" +
-                           "Run: <" + $server + "/" + $repo + "/actions/runs/" + $runid + "|#" + $runid + ">")
-                  }
-                }
-              ]
+            --argjson blocks "$blocks" '
+            {
+              "text": (":\($icon): Release pipeline <\($server)/\($repo)/actions/runs/\($runid)|#\($runid)> has *\($word)* in `\($dur)`."),
+              "blocks": $blocks
             }')
           echo "payload=$(echo "$payload" | jq -c .)" >> "$GITHUB_OUTPUT"
 
-      - name: Slack notification
+      - name: Slack Notification
         if: env.SLACK_BOT_TOKEN != '' && env.SLACK_CHANNEL_ID_RELEASE != ''
         uses: slackapi/slack-github-action@v1.24.0
         with:
