@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "mini-arcade"
-version = "1.5.1"
+version = "1.5.2"
 description = "Mini Arcade product package: CLI/GUI + runtime orchestration for the mini-arcade ecosystem."
 authors = [
     { name = "Santiago Rincon", email = "rincores@gmail.com" },
@@ -14,9 +14,9 @@ license = { file = "LICENSE" }
 requires-python = ">=3.9,<3.12"
 dependencies = [
     "tomli>=2.0.1; python_version < '3.11'",
-    "mini-arcade-core (>=1.5.1,<2.0.0)",
-    "mini-arcade-native-backend (>=1.5.1,<2.0.0)",
-    "mini-arcade-pygame-backend (>=1.5.1,<2.0.0)",
+    "mini-arcade-core (>=1.5.2,<2.0.0)",
+    "mini-arcade-native-backend (>=1.5.2,<2.0.0)",
+    "mini-arcade-pygame-backend (>=1.5.2,<2.0.0)",
 ]
 
 [project.optional-dependencies]
