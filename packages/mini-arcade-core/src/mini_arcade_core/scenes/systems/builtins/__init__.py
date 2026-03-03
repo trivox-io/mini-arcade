@@ -18,9 +18,7 @@ from mini_arcade_core.scenes.sim_scene import (
     RenderQueue,
     SubmitRenderQueue,
 )
-from mini_arcade_core.scenes.systems.base_system import (
-    BaseSystem,
-)
+from mini_arcade_core.scenes.systems.base_system import BaseSystem
 from mini_arcade_core.spaces.math.vec2 import Vec2
 
 from .actions import (  # noqa: E402  (re-export)
