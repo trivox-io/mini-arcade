@@ -602,6 +602,7 @@ jobs:
         with:
           ref: ${{ needs.prepare_release.outputs.ref }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Configure git
         run: |
@@ -614,6 +615,15 @@ jobs:
           SUBTREE_REPO_OWNER: ${{ inputs.subtree_repo_owner != '' && inputs.subtree_repo_owner || github.repository_owner }}
         run: |
           set -euo pipefail
+
+          if [ -z "${SUBTREE_PUSH_TOKEN:-}" ]; then
+            echo "::error::SUBTREE_PUSH_TOKEN is empty."
+            exit 1
+          fi
+
+          # Ensure checkout's github-actions token is not used for mirror pushes.
+          git config --unset-all http.https://github.com/.extraheader || true
+          git config --global --unset-all http.https://github.com/.extraheader || true
 
           push_subtree() {
             local remote_name="$1"
