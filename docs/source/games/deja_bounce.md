@@ -1,29 +1,29 @@
 # Deja Bounce
 
-A minimalist Pong-like arena prototype built on Mini Arcade.
+A minimalist Pong-like reference game built on Mini Arcade.
 
-Deja Bounce serves two roles:
+## What it validates
 
-1) a tiny shippable game  
-2) a **reference project** that validates engine features
-
-## Validates (engine features)
-
-- scenes + system pipeline
-- input → intents
-- collisions (2D)
-- fixed tick simulation (replay-friendly direction)
-- backend swapping (native / pygame)
-- capture hooks (screenshots / recordings) *(as implemented)*
+- Scene and system pipeline organization
+- Input-to-intent flow
+- 2D collisions and bounce behavior
+- Runtime services integration (audio, window, render)
+- Capture hooks (screenshots/video/replay as configured)
 
 ## Run
 
+From repo root:
+
 ```bash
-mini-arcade run --game deja-bounce
+python -m mini_arcade.main run --game deja-bounce
 ```
 
-## Roadmap
+Alternative (inside `games/deja-bounce`):
 
-- replay format v1 (deterministic ticks)
-- content pipeline presets (IG/YouTube aspect exports)
-- difficulty + modifiers (Arena Pong direction)
+```bash
+python manage.py
+```
+
+## Notes
+
+Deja Bounce is used as both a playable sample and an engine regression target.

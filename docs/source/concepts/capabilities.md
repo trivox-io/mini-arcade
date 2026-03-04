@@ -1,33 +1,39 @@
 # Capabilities
 
-Keep this page updated. It answers: **what works today, where, and what proves it?**
+This page tracks what is implemented in code today.
 
-| Feature | Core | Pygame backend | Native backend | Proof (example/game) |
-|---|---:|---:|---:|---|
-| Window + event polling | ✅ | ✅ | ✅ | E01 Boot & Blank Window |
-| Clear + primitive rendering (rect, line) | ✅ | ✅ | ✅ | (no example yet) |
-| Primitive rendering (circle, others) | ⚠️ | ⚠️ | ⚠️ | (planned) |
-| Text rendering | ✅ | ✅ | ✅ | (no example yet) |
-| Audio (play SFX/music) | ✅ | ✅ | ✅ | (no example yet) |
-| Input mapping (events → keys) | ✅ | ✅ | ✅ | (no example yet) |
-| InputFrame (keys_down/pressed/released) | ✅ | ✅ | ✅ | (no example yet) |
-| Input → Intent pattern (input system) | ✅ | ✅ | ✅ | (no example yet) |
-| 2D math (Vec2) | ✅ | ✅ | ✅ | E03 Collisions 2D |
-| Transforms / geometry basics (Position/Size/Transform2D) | ✅ | ✅ | ✅ | (no example yet) |
-| Kinematics (Velocity/advance, Kinematic2D) | ✅ | ✅ | ✅ | (no example yet) |
-| Collisions 2D (AABB/rect collider) | ✅ | ✅ | ✅ | (no example yet) |
-| Simple bouncing / responses (game-level) | ✅ | ✅ | ✅ | (no example yet) |
-| Sprites (textures) | ✅ | ✅ | ✅ | (no example yet) |
-| Sprite animation (frame-based) | ✅ | ✅ | ✅ | (no example yet) |
-| Scene registry / auto-registration | ✅ | ✅ | ✅ | (no example yet) |
-| Scene stack / overlays (visible_entries, input_entry) | ✅ | ✅ | ✅ | (no example yet) |
-| System pipeline (ordered systems) | ✅ | ✅ | ✅ | (no example yet) |
-| Render pipeline (multi-pass structure) | ✅ | ⚠️ | ⚠️ | (no example yet) |
-| UI pass (WIP) | ⚠️ | ⚠️ | ⚠️ | (planned) |
-| Lighting pass (WIP) | ⚠️ | ⚠️ | ⚠️ | (planned) |
-| PostFX stack (CRT, vignette noise) | ✅ | ⚠️ | ⚠️ | (no example yet) |
-| Screenshots (still capture) | ✅ | ✅ | ✅ | E05 Capture |
-| Recordings (video frames → encoded video) | ✅ | ❌ | ⚠️ | (no example yet) |
-| Replays (input recording/playback) | ⚠️ | ⚠️ | ⚠️ | (no example yet) |
-| Determinism helpers (frame_index/dt authoritative) | ⚠️ | ⚠️ | ⚠️ | (no example yet) |
-| Profiler / frame timer reporting | ✅ | ✅ | ✅ | (no example yet) |
+Legend:
+
+- `Yes`: implemented and wired
+- `Partial`: implemented with known limitations
+- `No`: not implemented yet
+
+| Capability | Core | Pygame | Native | Notes |
+|---|---|---|---|---|
+| Window and event polling | Yes | Yes | Yes | Backend `window` + `input` ports |
+| Input snapshot (`InputFrame`) | Yes | Yes | Yes | Keys/buttons/axes/quit state |
+| Scene registry and discovery | Yes | N/A | N/A | `SceneRegistry.discover()` |
+| Scene stack and overlays | Yes | N/A | N/A | `SceneAdapter` + `ScenePolicy` |
+| System pipeline | Yes | N/A | N/A | Ordered `SystemPipeline.step(ctx)` |
+| Tick-level command queue | Yes | N/A | N/A | Commands drained each frame |
+| Cheat sequence manager | Yes | N/A | N/A | Enqueues commands from key sequences |
+| Render pipeline passes | Yes | Yes | Yes | Begin/world/lighting/ui/postfx/end |
+| Primitive draw ops (rect/line/circle/poly) | Yes | Yes | Yes | Via backend render ports |
+| Texture/sprite draw | Yes | Yes | Yes | Native currently ignores texture rotation |
+| Text render and measure | Yes | Yes | Yes | Backend text ports |
+| Audio load/play | Yes | Yes | Yes | Runtime adapter calls backend audio |
+| Virtual resolution and viewport transforms | Yes | Yes | Yes | Window service + backend transform |
+| Capture: screenshots | Yes | Yes | Yes | `CaptureService.screenshot()` |
+| Capture: replay record/playback | Yes | Yes | Yes | Input stream serialization |
+| Capture: video frame sequence | Yes | Yes | Yes | Post-render frame capture |
+| Video encoding to MP4 | Partial | Partial | Partial | Requires `ffmpeg` on PATH |
+| Profiler/frame timing reports | Yes | Yes | Yes | `FrameTimer` and reporting |
+
+## Known limitations
+
+- The examples runner currently does not parse and forward passthrough args to
+  `build_example(**kwargs)`.
+- Backend parity exists for core rendering/capture APIs, but game-level
+  feature parity still depends on each game and asset pipeline.
+- Capability coverage is broader than tutorial coverage; some features exist in
+  core code before dedicated tutorials are added.

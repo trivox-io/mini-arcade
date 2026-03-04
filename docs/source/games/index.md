@@ -6,6 +6,7 @@ Games are **reference projects**: they are meant to be shippable, but also serve
 :caption: Games
 :maxdepth: 1
 
+asteroids
 deja_bounce
 space_invaders
 ```

@@ -104,6 +104,9 @@ autoapi_dirs = [
     os.path.join(ROOT, "packages", "mini-arcade-pygame-backend", "src"),
     os.path.join(ROOT, "packages", "mini-arcade-native-backend", "src"),
 ]
+autoapi_ignore = [
+    "*scenes/systems/builtins/cull.py",
+]
 
 autoapi_options = [
     "members",
@@ -142,10 +145,14 @@ autosummary_generate = True
 html_theme = "furo"
 html_static_path = ["_static"]
 
-# Replace these with your actual repo paths/files
-# Put logo/favicon in: docs/source/_static/
-html_logo = "_static/mini-arcade-logo.png"
-html_favicon = "_static/favicon-32x32.png"
+REPO_URL = "https://github.com/trivox-io/mini-arcade"
+DOCS_URL = f"{REPO_URL}/tree/main/docs"
+
+_logo_abs = os.path.join(os.path.dirname(__file__), "_static", "mini-arcade-logo.png")
+_favicon_abs = os.path.join(os.path.dirname(__file__), "_static", "favicon-32x32.png")
+
+html_logo = "_static/mini-arcade-logo.png" if os.path.exists(_logo_abs) else None
+html_favicon = "_static/favicon-32x32.png" if os.path.exists(_favicon_abs) else None
 
 html_css_files = [
     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/fontawesome.min.css",
@@ -180,21 +187,15 @@ html_theme_options = {
     "footer_icons": [
         {
             "name": "GitHub",
-            "url": "<URL TO MINI-ARCADE REPO>",
+            "url": REPO_URL,
             "html": "",
             "class": "fa-brands fa-github",
         },
         {
             "name": "Docs",
-            "url": "<URL TO DOCS SITE>",
+            "url": DOCS_URL,
             "html": "",
             "class": "fa-solid fa-book",
-        },
-        {
-            "name": "Itch.io",
-            "url": "<URL TO ITCH PAGE>",
-            "html": "",
-            "class": "fa-brands fa-itch-io",
         },
     ],
 }

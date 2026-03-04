@@ -2,18 +2,21 @@
 
 ```text
 mini-arcade/
-├─ packages/
-│  ├─ mini-arcade/
-│  ├─ mini-arcade-core/
-│  ├─ mini-arcade-pygame-backend/
-│  └─ mini-arcade-native-backend/
-├─ games/
-├─ examples/
-└─ docs/
+|- packages/
+|  |- mini-arcade/
+|  |- mini-arcade-core/
+|  |- mini-arcade-pygame-backend/
+|  `- mini-arcade-native-backend/
+|- games/
+|- examples/
+|- docs/
+`- scripts/
 ```
 
 ## Conventions
 
-- `games/` are reference projects (they prove engine features).
-- `examples/` are progressive tutorials (they become blog posts).
-- `docs/` is the source of truth.
+- `packages/`: reusable published packages.
+- `games/`: reference games proving engine behavior in real scenarios.
+- `examples/`: progressive learning path used by tutorials.
+- `docs/`: architecture, guides, and API docs source.
+- `scripts/`: local developer automation (install/check helpers).

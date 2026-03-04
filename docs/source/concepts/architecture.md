@@ -1,161 +1,229 @@
 # Architecture
 
-Mini Arcade is a monorepo with multiple independently published packages, developed together for a consistent workflow.
+Mini Arcade is a monorepo with independently published packages that evolve together.
+
+The core idea is a simulation-first engine with backend adapters, scene-driven gameplay,
+and an explicit render/capture pipeline.
 
 ## Mental model
 
-Mini Arcade is **simulation-first** and **data-driven** (increasingly).
-
 At runtime:
 
-- A **GameConfig** defines what to run (initial scene, backend, FPS, post-fx, etc.).
-- **Scenes are registered** (registry + optional auto-registration).
-- The `Game` bootstraps **managers** and **runtime services**.
-- The `EngineRunner` drives the loop:
-  - polls backend events
-  - builds an `InputFrame` (or reads it from replay)
-  - ticks the active scene stack (simulation)
-  - processes cheats + executes queued commands
-  - renders via a render pipeline (passes + packets)
-  - records capture outputs (replay / video frames)
+- `GameConfig` defines the initial scene, backend, fps, virtual resolution, and postfx.
+- `SceneRegistry` discovers and registers scene factories.
+- `Game` builds managers and runtime services around a selected backend.
+- `EngineRunner` executes the frame loop.
+- Scenes produce `RenderPacket` objects; render passes consume `FramePacket` wrappers.
+- Capture records input streams (replay) and optional video frames.
 
-### Frame lifecycle (high level)
+## Package map
 
-1. **Poll backend input** → raw events  
-2. **Build InputFrame** → keys/buttons/axes + dt + frame_index  
-3. **Tick scenes** → systems update pure data (world/entities/components)  
-4. **Collect render packets** → scene produces `RenderPacket` / draw ops  
-5. **Render pipeline** → passes render packets in order  
-6. **Capture hooks** → record input + optional video frame  
-7. **Sleep** to maintain target FPS (optional)
+- `mini-arcade`
+  User-facing package: CLI + runner modules for launching games/examples.
+- `mini-arcade-core`
+  Engine runtime: scenes, systems, loop, commands, rendering, services, spaces.
+- `mini-arcade-pygame-backend`
+  `Backend` protocol implementation using pygame.
+- `mini-arcade-native-backend`
+  `Backend` protocol implementation using native SDL2 (`pybind11`).
 
----
-
-## Packages
-
-- `mini-arcade`  
-  User-facing package: CLI/runner + unified namespace + “run targets”
-- `mini-arcade-core`  
-  Engine core: scenes/systems/entities/spaces/runtime services, render pipeline
-- `mini-arcade-pygame-backend`  
-  Backend implementation using pygame
-- `mini-arcade-native-backend`  
-  Native backend (SDL2) for performance/control
-
-```{mermaid} id="7e5kc8"
+```{mermaid}
 flowchart TD
-  subgraph Apps["Apps / Content"]
-    G[Games<br/>deja-bounce, space-invaders, ...]
-    E[Examples<br/>progressive tutorials]
+  subgraph Content[Apps and Content]
+    G[Games]
+    E[Examples]
   end
 
-  subgraph Runner["mini-arcade"]
-    CLI[Runner + CLI<br/>select target, backend, config]
+  subgraph Product[mini-arcade]
+    CLI[CLI and Runner]
   end
 
-  subgraph Core["mini-arcade-core"]
-    Game[Game<br/>bootstraps managers + services]
-    Loop[EngineRunner<br/>main loop]
-    Scenes[Scene stack + Registry]
-    Sim[Systems + World<br/>data-only simulation]
-    Render[RenderPipeline<br/>passes + packets]
-    Cap[CaptureService<br/>replay + video frames]
+  subgraph Core[mini-arcade-core]
+    CFG[GameConfig]
+    GAME[Game]
+    MGR[Managers]
+    SVC[RuntimeServices]
+    LOOP[EngineRunner]
+    SCN[SceneAdapter + SceneRegistry]
+    RP[RenderPipeline]
+    CAP[CaptureService]
   end
 
-  subgraph Backends["Backends"]
-    PYG[pygame backend]
-    NAT[native SDL2 backend]
+  subgraph Backends[Backends]
+    PYG[pygame]
+    NAT[native SDL2]
   end
 
   G --> CLI
   E --> CLI
-  CLI --> Game
-  Game --> Loop
-  Loop --> Scenes
-  Scenes --> Sim
-  Loop --> Render
-  Loop --> Cap
+  CLI --> CFG
+  CFG --> GAME
+  GAME --> MGR
+  GAME --> SVC
+  GAME --> LOOP
+  MGR --> SCN
+  LOOP --> SCN
+  LOOP --> RP
+  LOOP --> CAP
 
-  CLI --> PYG
-  CLI --> NAT
-  PYG --> Core
-  NAT --> Core
-
-  Render --> PYG
-  Render --> NAT
-  Cap --> PYG
-  Cap --> NAT
+  GAME --> PYG
+  GAME --> NAT
+  PYG --> SVC
+  NAT --> SVC
 ```
 
----
+## Core runtime objects
 
-## Runtime flow (closer to the actual code)
+### `Game`
 
-```{mermaid} id="bjuaqa"
+`Game` is the composition root for a running session. It wires:
+
+- managers (`cheats`, `command_queue`, `scenes`)
+- runtime services (`window`, `audio`, `files`, `capture`, `input`, `render`, `scenes`)
+- postfx registry and stack
+- loop hooks (`DefaultGameHooks`)
+
+### Managers
+
+- `SceneAdapter`: stack operations (`change`, `push`, `pop`, `remove_scene`, `quit`)
+- `CommandQueue`: tick-level command outbox
+- `CheatManager`: key-sequence matcher that enqueues commands
+
+### Runtime services
+
+`RuntimeServices` exposes ports/adapters for:
+
+- window
+- audio
+- files
+- capture
+- input
+- render
+- scene queries
+
+### Scenes and systems
+
+Scenes are `SimScene` subclasses. A scene tick:
+
+1. builds a typed tick context (`BaseTickContext`-derived)
+2. runs `SystemPipeline.step(ctx)`
+3. must set `ctx.packet` and return a `RenderPacket`
+
+The world state is scene-owned (`scene.world`), while side effects are emitted through commands/services.
+
+## Frame lifecycle (actual loop order)
+
+`EngineRunner.run()` performs this order per frame:
+
+1. Poll backend events.
+2. Apply loop hooks (`DefaultGameHooks`) for resize/debug hotkeys.
+3. Build `InputFrame` from events, or consume replay input if replay playback is active.
+4. If quit is requested, stop loop.
+5. Resolve input-focused scene (`input_entry`).
+6. Tick update scenes:
+   - input scene receives full `InputFrame`
+   - other updating scenes receive neutral input for this frame
+7. Build `CommandContext` (services + managers + settings + resolved world).
+8. Process cheats and enqueue commands.
+9. Drain and execute command queue.
+10. Build visible `FramePacket` list from scene stack.
+11. Build `RenderContext` and run `RenderPipeline` passes.
+12. Record video frame if capture is active.
+13. Sleep to honor target fps.
+14. Emit profiler report (if enabled) and increment `frame_index`.
+
+On exit, scene stack is cleaned (`scenes.clean()`).
+
+```{mermaid}
 sequenceDiagram
-  participant U as User
-  participant CLI as mini-arcade (runner/CLI)
-  participant G as Game (core)
-  participant ER as EngineRunner (core)
-  participant BK as Backend (pygame/native)
-  participant IN as InputAdapter/Capture
-  participant SC as Scene stack
-  participant CM as Cheats/Commands
+  participant CLI as mini-arcade
+  participant G as Game
+  participant ER as EngineRunner
+  participant BK as Backend
+  participant SC as SceneAdapter
+  participant CQ as CommandQueue
   participant RP as RenderPipeline
   participant CP as CaptureService
 
-  U->>CLI: run target + config (backend, fps, initial_scene)
-  CLI->>G: Game(cfg, registry)
-  G->>BK: init window/resources (via adapters)
-  G->>ER: EngineRunner(game, pipeline, hooks)
+  CLI->>G: build config + registry + backend
+  G->>ER: run loop
+
   loop each frame
     ER->>BK: poll events
-    ER->>IN: build InputFrame (or replay input)
-    ER->>SC: tick update entries (systems) -> RenderPacket
-    ER->>CM: cheats.process_frame()
-    ER->>CM: command_queue.drain().execute(ctx)
-    ER->>RP: render_frame(backend, frame_packets)
+    ER->>ER: hooks.on_events(events)
+    ER->>ER: build InputFrame (or replay input)
+    ER->>SC: tick update entries
+    ER->>CQ: cheats enqueue commands
+    ER->>CQ: drain and execute
+    ER->>SC: collect visible FramePackets
+    ER->>RP: render_frame(backend, context, packets)
     ER->>CP: record_video_frame(frame_index)
   end
-  BK-->>ER: quit/close
-  ER-->>SC: scenes.clean()
+
+  ER->>SC: clean scene stack
 ```
 
----
+## Scene stack policy
 
-## Where “intents” fit
+Scene stack behavior is policy-driven (`ScenePolicy` on each stack entry):
 
-Scenes typically convert `InputFrame` → **Intent** in an input system (one-shot + held input), then downstream systems make decisions based on that intent.
+- render visibility: render from highest opaque scene upward
+- update propagation: top-down until a scene blocks updates
+- input routing: top-most eligible scene receives input, respecting blockers
 
-Example pattern:
+This gives overlays (pause/menu/debug) explicit control over update/input/render behavior.
 
-- `InputSystem` reads keys → produces `SpaceInvadersIntent`
-- gameplay systems read `ctx.intent` and mutate **world data only**
-- render system produces draw calls / render ops from world state
+## Render model
 
-This keeps gameplay deterministic and testable.
+Rendering is packet-based:
 
----
+- scene tick returns `RenderPacket(ops, meta)`
+- runner wraps packets into `FramePacket(scene_id, is_overlay, packet)`
+- pipeline executes ordered passes:
+  - `BeginFramePass`
+  - `WorldPass`
+  - `LightingPass`
+  - `UIPass`
+  - `PostFXPass`
+  - `EndFramePass`
+
+Layered rendering can be driven via `packet.meta["pass_ops"]` with keys like
+`world`, `lighting`, `ui`, `effects`.
+
+## Input, intent, commands
+
+The engine separates concerns:
+
+- `InputAdapter` turns backend events into `InputFrame` snapshots.
+- scene input systems map raw input to scene-specific intent.
+- systems mutate world state using intent.
+- side effects (scene transitions, capture toggles, quit, effect toggles) are emitted as commands.
+
+This keeps gameplay logic testable and mostly backend-agnostic.
+
+## Capture and replay
+
+`CaptureService` handles:
+
+- screenshots
+- replay record/playback (`InputFrame` stream)
+- video frame capture + optional async encoding
+
+Video capture is invoked after render in the frame loop.
 
 ## Repo layout
 
 ```text
 mini-arcade/
-├─ packages/
-├─ games/
-├─ examples/
-└─ docs/
+|- packages/
+|- games/
+|- examples/
+`- docs/
 ```
 
-## Why a monorepo
+## Why monorepo
 
-- shared tooling and standards (formatting, linting, typing)
-- one CI pipeline to validate everything together
-- coordinated releases with correct publish order
-- unified documentation and learning path
-
----
-
-### Note on naming (precision)
-
-In the docs above we say “draw calls” sometimes for readability, but in the actual engine the scene typically produces a `RenderPacket`, and the render pipeline consumes a stack of `FramePacket(scene_id, is_overlay, packet)`.
+- one architecture across core, backends, examples, and games
+- shared tooling and CI
+- coordinated versioning and releases
+- docs tied directly to implementation changes

@@ -1,18 +1,21 @@
 # Mini Arcade
 
-Mini Arcade is a Python-first mini game engine and monorepo built to ship small arcade games fast, while evolving a clean, testable engine architecture.
+Mini Arcade is a Python-first mini game engine and monorepo built to ship
+small arcade games while keeping engine architecture simple, explicit, and
+testable.
 
-**What you get:**
+What you get:
 
 - Simulation-first scenes, entities, and systems
-- Multiple backends (**native SDL2** and **pygame**)
-- A growing set of reference games and progressive examples
-- A content pipeline focus (screenshots/replays) for sharing devlogs
+- Swappable backends (native SDL2 and pygame)
+- Reference games and progressive tutorials
+- Capture-focused tooling (screenshots, replay, video frames)
 
 ```{toctree}
 :caption: Start Here
 :hidden:
 
+README <readme>
 Quickstart <quickstart>
 Architecture <concepts/architecture>
 Capabilities <concepts/capabilities>

@@ -1,23 +1,30 @@
 # Space Invaders
 
-Space Invaders clone built as a Mini Arcade reference game.
+Space Invaders clone used as a Mini Arcade reference game.
 
-## Validates (engine features)
+## What it validates
 
-- sprites + animations
-- projectiles + cooldowns
-- simple AI movement patterns
-- score/state HUD
-- asset loading conventions
-- backend switching *(as implemented)*
+- Sprite-based rendering
+- Projectile/cooldown gameplay loops
+- Multi-entity update systems
+- Scene transitions and command flow
+- Asset loading patterns in a larger game module
 
 ## Run
 
+From repo root:
+
 ```bash
-mini-arcade run --game space-invaders
+python -m mini_arcade.main run --game space-invaders
+```
+
+Alternative (inside `games/space-invaders`):
+
+```bash
+python manage.py
 ```
 
 ## Notes
 
-This game exists to prove engine capabilities and catch regressions.
-Keep gameplay small and code readable.
+This game intentionally keeps mechanics readable so engine behavior is easy to
+inspect and debug.

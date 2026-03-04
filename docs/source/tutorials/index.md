@@ -1,6 +1,6 @@
 # Tutorials
 
-Tutorials map 1:1 with the `examples/` folder. Each tutorial is intended to be blog-post quality.
+Tutorials map to runnable examples under `examples/scenes/`.
 
 ```{toctree}
 :caption: Tutorials
@@ -8,6 +8,8 @@ Tutorials map 1:1 with the `examples/` folder. Each tutorial is intended to be b
 
 001_min_scene
 002_hello_overlay
+003_simple_shape
+004_shape_gallery
 ```
 
 ```{toctree}

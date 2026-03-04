@@ -4,26 +4,35 @@
 
 ```bash
 pip install mini-arcade
-mini-arcade --help
+python -m mini_arcade.main --help
 ```
 
-## Contributors (dev)
+If your environment exposes the `mini-arcade` command, it should behave
+equivalently.
 
-### 1) Install editable packages
+## Contributors
+
+### 1) Install editable packages and tooling
 
 ```bash
 # Windows (PowerShell)
-.\scripts\dev_install.ps1
+./scripts/dev_install.ps1
 ```
 
 ### 2) Run an example
 
 ```bash
-mini-arcade run --example 001_min_scene
+python -m mini_arcade.main run --example 001_min_scene
 ```
 
 ### 3) Run a game
 
 ```bash
-mini-arcade run --game deja-bounce
+python -m mini_arcade.main run --game deja-bounce
+```
+
+### 4) Run tests
+
+```bash
+pytest
 ```
