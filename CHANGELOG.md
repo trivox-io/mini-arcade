@@ -6,6 +6,11 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.5.2] - 2026-03-03
+
+### Other
+- Merge branch 'main' of https://github.com/trivox-io/mini-arcade
+
 ## [1.5.1] - 2026-03-03
 
 ### Other
