@@ -31,6 +31,8 @@ on:
         required: false
       SLACK_CHANNEL_ID_RELEASE:
         required: false
+      DISCORD_WEBHOOK_URL_RELEASE:
+        required: false
 
 permissions:
   contents: write
@@ -671,6 +673,7 @@ jobs:
     env:
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       SLACK_CHANNEL_ID_RELEASE: ${{ secrets.SLACK_CHANNEL_ID_RELEASE }}
+      DISCORD_WEBHOOK_URL_RELEASE: ${{ secrets.DISCORD_WEBHOOK_URL_RELEASE }}
 
     steps:
       - name: Calculate pipeline duration
@@ -811,3 +814,42 @@ jobs:
           payload: ${{ steps.payload.outputs.payload }}
         env:
           SLACK_BOT_TOKEN: ${{ env.SLACK_BOT_TOKEN }}
+
+      - name: Build Discord payload JSON
+        id: discord_payload
+        env:
+          SERVER_URL: ${{ github.server_url }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          VERSION: ${{ needs.prepare_release.outputs.version }}
+          WORD: ${{ steps.word.outputs.word }}
+          DURATION: ${{ steps.duration.outputs.time }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          payload=$(jq -cn \
+            --arg server "$SERVER_URL" \
+            --arg repo "$REPO" \
+            --arg runid "$RUN_ID" \
+            --arg version "$VERSION" \
+            --arg word "$WORD" \
+            --arg dur "$DURATION" \
+            --arg branch "$BRANCH" \
+            --arg commit "$COMMIT" '
+            {
+              "content": ("Release `v" + $version + "` " + $word + " in `" + $dur + "`\n" +
+                          "Run: " + $server + "/" + $repo + "/actions/runs/" + $runid + "\n" +
+                          "Branch: `" + $branch + "`\n" +
+                          "Commit: `" + $commit + "`")
+            }')
+          echo "payload=$(echo "$payload" | jq -c .)" >> "$GITHUB_OUTPUT"
+
+      - name: Discord Notification
+        if: env.DISCORD_WEBHOOK_URL_RELEASE != ''
+        env:
+          DISCORD_PAYLOAD: ${{ steps.discord_payload.outputs.payload }}
+        run: |
+          curl -sS -X POST \
+            -H "Content-Type: application/json" \
+            -d "$DISCORD_PAYLOAD" \
+            "$DISCORD_WEBHOOK_URL_RELEASE"

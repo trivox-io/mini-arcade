@@ -59,3 +59,4 @@ jobs:
       apt_deps: ${{ matrix.apt_deps }}
       run_pytest: ${{ matrix.run_pytest }}
       local_dependency_paths: ${{ matrix.local_dependency_paths }}
+    secrets: inherit

@@ -30,6 +30,13 @@ on:
         required: false
         type: string
         default: "[]"
+    secrets:
+      SLACK_BOT_TOKEN:
+        required: false
+      SLACK_CHANNEL_ID:
+        required: false
+      DISCORD_WEBHOOK_URL_CI:
+        required: false
 
 permissions:
   contents: read
@@ -39,7 +46,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      start_unix: ${{ steps.start.outputs.start_unix }}
+    steps:
+      - name: Mark start time
+        id: start
+        run: echo "start_unix=$(date +%s)" >> "$GITHUB_OUTPUT"
+
   lint-and-test:
+    needs: [setup]
     runs-on: ubuntu-latest
 
     strategy:
@@ -113,3 +130,173 @@ jobs:
       - name: Run pytest
         if: ${{ inputs.run_pytest }}
         run: pytest
+
+  notify:
+    needs: [setup, lint-and-test]
+    runs-on: ubuntu-latest
+    if: always()
+
+    env:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      DISCORD_WEBHOOK_URL_CI: ${{ secrets.DISCORD_WEBHOOK_URL_CI }}
+
+    steps:
+      - name: Calculate pipeline duration
+        id: duration
+        run: |
+          end=$(date +%s)
+          seconds=$((end - ${{ needs.setup.outputs.start_unix }}))
+          if [ "$seconds" -lt 60 ]; then
+            formatted="${seconds}s"
+          elif [ "$seconds" -lt 3600 ]; then
+            minutes=$((seconds / 60)); secs=$((seconds % 60))
+            formatted="${minutes}m"; [ "$secs" -ne 0 ] && formatted="${formatted} ${secs}s"
+          else
+            hours=$((seconds / 3600)); minutes=$(((seconds % 3600) / 60))
+            formatted="${hours}h"; [ "$minutes" -ne 0 ] && formatted="${formatted} ${minutes}m"
+          fi
+          echo "time=${formatted}" >> "$GITHUB_OUTPUT"
+
+      - name: Set pipeline status icon
+        id: icon
+        run: |
+          if [[ "${{ needs.lint-and-test.result }}" != "success" ]]; then
+            echo "icon=x" >> "$GITHUB_OUTPUT"
+          else
+            echo "icon=white_check_mark" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set pipeline status word
+        id: word
+        run: |
+          if [[ "${{ needs.lint-and-test.result }}" != "success" ]]; then
+            echo "word=failed" >> "$GITHUB_OUTPUT"
+          else
+            echo "word=passed" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Get GitHub user full name
+        id: ghname
+        run: |
+          name=$(curl -s "https://api.github.com/users/${{ github.actor }}" | jq -r '.name // empty')
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+
+      - name: Build payload JSON
+        id: payload
+        env:
+          PROJECT:      ${{ inputs.project_name }}
+          SERVER_URL:   ${{ github.server_url }}
+          REPO:         ${{ github.repository }}
+          RUN_ID:       ${{ github.run_id }}
+          ACTOR:        ${{ github.actor }}
+          BRANCH:       ${{ github.head_ref || github.ref_name }}
+          COMMIT:       ${{ github.sha }}
+          COMMIT_MSG:   ${{ github.event.head_commit.message || github.event.pull_request.title || 'Commit message not available' }}
+          START_UNIX:   ${{ needs.setup.outputs.start_unix }}
+          DURATION:     ${{ steps.duration.outputs.time }}
+          ICON:         ${{ steps.icon.outputs.icon }}
+          WORD:         ${{ steps.word.outputs.word }}
+          NAME:         ${{ steps.ghname.outputs.name }}
+        run: |
+          blocks=$(jq -cn \
+            --arg icon   "$ICON" \
+            --arg name   "$NAME" \
+            --arg server "$SERVER_URL" \
+            --arg repo   "$REPO" \
+            --arg runid  "$RUN_ID" \
+            --arg actor  "$ACTOR" \
+            --arg branch "$BRANCH" \
+            --arg commit "$COMMIT" \
+            --arg cmsg   "$COMMIT_MSG" \
+            --arg dur    "$DURATION" \
+            --arg start  "$START_UNIX" \
+            --arg word   "$WORD" \
+            --arg project "$PROJECT" '
+            [
+              {
+                "type":"section",
+                "text":{
+                  "type":"mrkdwn",
+                  "text": (":\($icon): *CI \($project) by \((if ($name|length)>0 then $name else $actor end))* (<\($server)/\($actor)|@\($actor)>)\n" +
+                          "Pipeline <\($server)/\($repo)/actions/runs/\($runid)|#\($runid)> has *\($word)* in `\($dur)`.")
+                }
+              },
+              {
+                "type":"section",
+                "fields":[
+                  { "type":"mrkdwn", "text":"*Branch:*\n<\($server)/\($repo)/tree/\($branch)|`\($branch)`>" },
+                  { "type":"mrkdwn", "text":"*Commit:*\n<\($server)/\($repo)/commit/\($commit)|`\($commit)`> - `\($cmsg)`" }
+                ]
+              },
+              {
+                "type":"context",
+                "elements":[
+                  { "type":"mrkdwn", "text":"<\($server)/\($repo)|\($repo)> · <!date^\($start)^{date_short_pretty} at {time}|Run time unavailable>" }
+                ]
+              }
+            ]')
+
+          payload=$(jq -cn \
+            --arg icon "$ICON" \
+            --arg server "$SERVER_URL" \
+            --arg repo "$REPO" \
+            --arg runid "$RUN_ID" \
+            --arg word "$WORD" \
+            --arg dur "$DURATION" \
+            --arg project "$PROJECT" \
+            --argjson blocks "$blocks" '
+            {
+              "text": (":\($icon): CI \($project) <\($server)/\($repo)/actions/runs/\($runid)|#\($runid)> has *\($word)* in `\($dur)`."),
+              "blocks": $blocks
+            }')
+
+          echo "payload=$(echo "$payload" | jq -c .)" >> "$GITHUB_OUTPUT"
+
+      - name: Build Discord payload JSON
+        id: discord_payload
+        env:
+          PROJECT:    ${{ inputs.project_name }}
+          SERVER_URL: ${{ github.server_url }}
+          REPO:       ${{ github.repository }}
+          RUN_ID:     ${{ github.run_id }}
+          BRANCH:     ${{ github.head_ref || github.ref_name }}
+          COMMIT:     ${{ github.sha }}
+          WORD:       ${{ steps.word.outputs.word }}
+          DURATION:   ${{ steps.duration.outputs.time }}
+        run: |
+          payload=$(jq -cn \
+            --arg project "$PROJECT" \
+            --arg server "$SERVER_URL" \
+            --arg repo "$REPO" \
+            --arg runid "$RUN_ID" \
+            --arg branch "$BRANCH" \
+            --arg commit "$COMMIT" \
+            --arg word "$WORD" \
+            --arg dur "$DURATION" '
+            {
+              "content": ("CI `" + $project + "` " + $word + " in `" + $dur + "`\n" +
+                          "Run: " + $server + "/" + $repo + "/actions/runs/" + $runid + "\n" +
+                          "Branch: `" + $branch + "`\n" +
+                          "Commit: `" + $commit + "`")
+            }')
+          echo "payload=$(echo "$payload" | jq -c .)" >> "$GITHUB_OUTPUT"
+
+      - name: Slack Notification
+        if: env.SLACK_BOT_TOKEN != '' && env.SLACK_CHANNEL_ID != ''
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ env.SLACK_CHANNEL_ID }}
+          payload: ${{ steps.payload.outputs.payload }}
+        env:
+          SLACK_BOT_TOKEN: ${{ env.SLACK_BOT_TOKEN }}
+
+      - name: Discord Notification
+        if: env.DISCORD_WEBHOOK_URL_CI != ''
+        env:
+          DISCORD_PAYLOAD: ${{ steps.discord_payload.outputs.payload }}
+        run: |
+          curl -sS -X POST \
+            -H "Content-Type: application/json" \
+            -d "$DISCORD_PAYLOAD" \
+            "$DISCORD_WEBHOOK_URL_CI"
