@@ -7,9 +7,6 @@ import os
 import sys
 from datetime import date
 
-from mini_arcade.constants import PACKAGE_NAME
-from mini_arcade.utils.get_package_version import get_package_version
-
 # -- Path setup --------------------------------------------------------------
 # If you want autodoc to resolve imports, add package roots here.
 # (Adjust if your docs folder lives somewhere else.)
@@ -22,6 +19,9 @@ sys.path.insert(
 sys.path.insert(
     0, os.path.join(ROOT, "packages", "mini-arcade-native-backend", "src")
 )
+
+from mini_arcade.constants import PACKAGE_NAME
+from mini_arcade.utils.get_package_version import get_package_version
 
 # -- Project information -----------------------------------------------------
 
