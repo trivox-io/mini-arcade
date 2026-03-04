@@ -752,6 +752,11 @@ jobs:
             CHANGELOG_SECTION="Changelog section not available."
           fi
 
+          PACKAGE_LINKS="- \`mini-arcade-core\`: <${SERVER_URL}/${REPO}/releases/tag/mini-arcade-core-v${VERSION}|tag> | <https://pypi.org/project/mini-arcade-core/${VERSION}/|PyPI>\n"
+          PACKAGE_LINKS="${PACKAGE_LINKS}- \`mini-arcade-pygame-backend\`: <${SERVER_URL}/${REPO}/releases/tag/mini-arcade-pygame-backend-v${VERSION}|tag> | <https://pypi.org/project/mini-arcade-pygame-backend/${VERSION}/|PyPI>\n"
+          PACKAGE_LINKS="${PACKAGE_LINKS}- \`mini-arcade-native-backend\`: <${SERVER_URL}/${REPO}/releases/tag/mini-arcade-native-backend-v${VERSION}|tag> | <https://pypi.org/project/mini-arcade-native-backend/${VERSION}/|PyPI>\n"
+          PACKAGE_LINKS="${PACKAGE_LINKS}- \`mini-arcade\`: <${SERVER_URL}/${REPO}/releases/tag/mini-arcade-v${VERSION}|tag> | <https://pypi.org/project/mini-arcade/${VERSION}/|PyPI>"
+
           blocks=$(jq -cn \
             --arg icon    "$ICON" \
             --arg name    "$NAME" \
@@ -765,6 +770,7 @@ jobs:
             --arg dur     "$DURATION" \
             --arg word    "$WORD" \
             --arg version "$VERSION" \
+            --arg pkgs    "$PACKAGE_LINKS" \
             --arg chlog   "$CHANGELOG_SECTION" '
             [
               {
@@ -782,6 +788,13 @@ jobs:
                   { "type":"mrkdwn", "text":"*Branch:*\n<\($server)/\($repo)/tree/\($branch)|`\($branch)`>" },
                   { "type":"mrkdwn", "text":"*Commit:*\n<\($server)/\($repo)/commit/\($commit)|`\($commit)`> - `\($cmsg)`" }
                 ]
+              },
+              {
+                "type":"section",
+                "text":{
+                  "type":"mrkdwn",
+                  "text":"*Packages:*\n\($pkgs)"
+                }
               },
               {
                 "type":"section",
@@ -827,6 +840,11 @@ jobs:
           BRANCH: ${{ github.head_ref || github.ref_name }}
           COMMIT: ${{ github.sha }}
         run: |
+          PACKAGE_LINES="- mini-arcade-core: ${SERVER_URL}/${REPO}/releases/tag/mini-arcade-core-v${VERSION} | https://pypi.org/project/mini-arcade-core/${VERSION}/\n"
+          PACKAGE_LINES="${PACKAGE_LINES}- mini-arcade-pygame-backend: ${SERVER_URL}/${REPO}/releases/tag/mini-arcade-pygame-backend-v${VERSION} | https://pypi.org/project/mini-arcade-pygame-backend/${VERSION}/\n"
+          PACKAGE_LINES="${PACKAGE_LINES}- mini-arcade-native-backend: ${SERVER_URL}/${REPO}/releases/tag/mini-arcade-native-backend-v${VERSION} | https://pypi.org/project/mini-arcade-native-backend/${VERSION}/\n"
+          PACKAGE_LINES="${PACKAGE_LINES}- mini-arcade: ${SERVER_URL}/${REPO}/releases/tag/mini-arcade-v${VERSION} | https://pypi.org/project/mini-arcade/${VERSION}/"
+
           payload=$(jq -cn \
             --arg server "$SERVER_URL" \
             --arg repo "$REPO" \
@@ -835,12 +853,14 @@ jobs:
             --arg word "$WORD" \
             --arg dur "$DURATION" \
             --arg branch "$BRANCH" \
-            --arg commit "$COMMIT" '
+            --arg commit "$COMMIT" \
+            --arg pkgs "$PACKAGE_LINES" '
             {
               "content": ("Release `v" + $version + "` " + $word + " in `" + $dur + "`\n" +
                           "Run: " + $server + "/" + $repo + "/actions/runs/" + $runid + "\n" +
                           "Branch: `" + $branch + "`\n" +
-                          "Commit: `" + $commit + "`")
+                          "Commit: `" + $commit + "`\n" +
+                          "Packages:\n" + $pkgs)
             }')
           echo "payload=$(echo "$payload" | jq -c .)" >> "$GITHUB_OUTPUT"
 
