@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Protocol
 
+from mini_arcade_core.scenes.systems.phases import SystemPhase
 from mini_arcade_core.spaces.physics.kinematics2d import Kinematic2D
 
 
@@ -28,6 +29,7 @@ class CullOutOfViewportSystem:
     """
 
     name: str = "common_cull_viewport"
+    phase: int = SystemPhase.SIMULATION
     order: int = 0
 
     viewport_getter: Callable[[object], tuple[float, float]] = lambda _w: (

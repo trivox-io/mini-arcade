@@ -437,6 +437,7 @@ class BaseTickContext(Generic[TWorld, TIntent]):
     :ivar world: Scene-owned world state (usually mutated during the tick).
     :ivar commands: Queue of commands/events emitted by systems.
     :ivar intent: Optional intent snapshot for this tick (produced by input system).
+    :ivar intent_channels: Optional per-source intent snapshots for this tick.
     :ivar packet: Optional render packet produced for this tick.
     :ivar draw_ops: Optional immediate draw operations (debug/overlay/utility).
     """
@@ -446,9 +447,16 @@ class BaseTickContext(Generic[TWorld, TIntent]):
     world: TWorld
     commands: CommandQueue
     intent: TIntent | None = None
+    intent_channels: dict[str, object] = field(default_factory=dict)
     packet: RenderPacket | None = None
     draw_ops: list[DrawOp] | None = None
     render_queue: RenderQueue = field(default_factory=RenderQueue)
+
+    def intent_for(self, channel: str, default: object | None = None) -> object:
+        """
+        Return the intent stored for a channel, if present.
+        """
+        return self.intent_channels.get(channel, default)
 
 
 @dataclass(frozen=True)

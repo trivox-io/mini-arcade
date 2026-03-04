@@ -7,6 +7,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Iterable, Protocol
 
+from mini_arcade_core.scenes.systems.phases import SystemPhase
+
 
 class HasAnimSprite(Protocol):
     """Protocol for entities that have an animation and a texture."""
@@ -20,6 +22,7 @@ class AnimationTickSystem:
     """System to update animations and set the current frame as texture."""
 
     name: str = "common_anim_tick"
+    phase: int = SystemPhase.PRESENTATION
     order: int = 0
     get_entities: Callable[[object], Iterable[HasAnimSprite]] = lambda _w: ()
 

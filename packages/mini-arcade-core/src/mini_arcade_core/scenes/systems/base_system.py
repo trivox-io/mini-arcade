@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from typing import Generic, Protocol, TypeVar, runtime_checkable
 
+from mini_arcade_core.scenes.systems.phases import SystemPhase
+
 # Justification: Type variable name is conventional.
 # pylint: disable=invalid-name
 TSystemContext = TypeVar("TSystemContext")
@@ -18,7 +20,7 @@ class BaseSystem(Protocol, Generic[TSystemContext]):
     """Protocol for a system that operates within a given context."""
 
     name: str
-    phase: int = 0
+    phase: int = SystemPhase.SIMULATION
     order: int = 0
 
     def enabled(self, ctx: TSystemContext) -> bool:

@@ -18,6 +18,7 @@ from mini_arcade_core.engine.commands import (
 from mini_arcade_core.runtime.services import RuntimeServices
 from mini_arcade_core.scenes.systems.base_system import BaseSystem
 from mini_arcade_core.scenes.systems.builtins.actions import ActionMap
+from mini_arcade_core.scenes.systems.phases import SystemPhase
 
 
 class CaptureContext(Protocol):
@@ -58,6 +59,7 @@ class CaptureHotkeysSystem(BaseSystem[CaptureContext]):
     action_map: ActionMap
     cfg: CaptureHotkeysConfig = CaptureHotkeysConfig()
     name: str = "capture_hotkeys"
+    phase: int = SystemPhase.CONTROL
     order: int = 13
 
     def step(self, ctx: CaptureContext) -> None:

@@ -11,6 +11,7 @@ from mini_arcade_core.backend.keys import Key
 from mini_arcade_core.runtime.input_frame import ButtonState, InputFrame
 from mini_arcade_core.scenes.sim_scene import BaseIntent
 from mini_arcade_core.scenes.systems.base_system import BaseSystem
+from mini_arcade_core.scenes.systems.phases import SystemPhase
 
 # pylint: disable=invalid-name
 TContext = TypeVar("TContext")
@@ -239,11 +240,24 @@ class ActionIntentSystem(BaseSystem[TContext], Generic[TContext, TIntent]):
     action_map: ActionMap
     intent_factory: Callable[[ActionSnapshot, TContext], TIntent]
     name: str = "action_intent"
+    phase: int = SystemPhase.INPUT
     order: int = 10
+    channel: str | None = None
+    write_to_ctx_intent: bool = True
 
     def step(self, ctx: TContext) -> None:
         frame = getattr(ctx, "input_frame", None)
         if frame is None:
             return
         snapshot = self.action_map.read(frame)
-        setattr(ctx, "intent", self.intent_factory(snapshot, ctx))
+        intent = self.intent_factory(snapshot, ctx)
+
+        if self.channel:
+            channels = getattr(ctx, "intent_channels", None)
+            if channels is None:
+                channels = {}
+                setattr(ctx, "intent_channels", channels)
+            channels[self.channel] = intent
+
+        if self.write_to_ctx_intent:
+            setattr(ctx, "intent", intent)

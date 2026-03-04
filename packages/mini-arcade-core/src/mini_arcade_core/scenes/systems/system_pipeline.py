@@ -12,6 +12,7 @@ from mini_arcade_core.scenes.systems.base_system import (
     BaseSystem,
     TSystemContext,
 )
+from mini_arcade_core.scenes.systems.phases import SystemPhase
 
 
 @dataclass
@@ -76,7 +77,7 @@ class SystemPipeline(Generic[TSystemContext]):
 
     def _sort_key(self, s: BaseSystem):
         return (
-            getattr(s, "phase", 0),
+            getattr(s, "phase", SystemPhase.SIMULATION),
             getattr(s, "order", 0),
             getattr(s, "name", s.__class__.__name__),
             s.__class__.__name__,

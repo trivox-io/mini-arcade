@@ -19,6 +19,7 @@ from mini_arcade_core.scenes.sim_scene import (
     SubmitRenderQueue,
 )
 from mini_arcade_core.scenes.systems.base_system import BaseSystem
+from mini_arcade_core.scenes.systems.phases import SystemPhase
 from mini_arcade_core.spaces.math.vec2 import Vec2
 
 from .actions import (  # noqa: E402  (re-export)
@@ -63,7 +64,7 @@ class InputIntentSystem(BaseSystem):
     """
 
     name: str = "base_input"
-    # phase: int = 10
+    phase: int = SystemPhase.INPUT
     order: int = 10
 
     def build_intent(self, ctx: BaseTickContext) -> BaseIntent:
@@ -85,6 +86,7 @@ class BaseRenderSystem(BaseSystem[TTickContext], Generic[TTickContext]):
     """
 
     name: str = "base_render"
+    phase: int = SystemPhase.RENDERING
     order: int = 100
 
     def build_draw_ops(self, ctx: TTickContext) -> list[DrawCall]:
