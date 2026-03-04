@@ -6,6 +6,12 @@ from __future__ import annotations
 import os
 import sys
 from datetime import date
+from pathlib import Path
+
+try:
+    import tomllib  # py311+
+except ModuleNotFoundError:  # pragma: no cover
+    import tomli as tomllib  # type: ignore
 
 # -- Path setup --------------------------------------------------------------
 # If you want autodoc to resolve imports, add package roots here.
@@ -20,17 +26,39 @@ sys.path.insert(
     0, os.path.join(ROOT, "packages", "mini-arcade-native-backend", "src")
 )
 
-from mini_arcade.constants import PACKAGE_NAME
-from mini_arcade.utils.get_package_version import get_package_version
+
+def _docs_version() -> str:
+    """
+    Resolve docs version without requiring editable installs.
+    Priority:
+      1) DOCS_VERSION env var
+      2) packages/mini-arcade/pyproject.toml -> [project].version
+      3) fallback 0.0.0
+    """
+    env_version = os.getenv("DOCS_VERSION")
+    if env_version:
+        return env_version
+
+    pyproject_path = Path(ROOT) / "packages" / "mini-arcade" / "pyproject.toml"
+    if pyproject_path.exists():
+        try:
+            data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+            version_value = data.get("project", {}).get("version")
+            if isinstance(version_value, str) and version_value.strip():
+                return version_value.strip()
+        except Exception:  # pylint: disable=broad-exception-caught
+            pass
+
+    return "0.0.0"
 
 # -- Project information -----------------------------------------------------
 
-project = PACKAGE_NAME
+project = "Mini Arcade"
 copyright = f"{date.today().year}, Santiago Rincon"
 author = "Santiago Rincon"
 
-# Keep in sync with your released package version (or wire it to pkg metadata later)
-release = get_package_version(PACKAGE_NAME)
+version = _docs_version()
+release = version
 
 # -- General configuration ---------------------------------------------------
 
@@ -144,6 +172,7 @@ autosummary_generate = True
 
 html_theme = "furo"
 html_static_path = ["_static"]
+html_title = "Mini Arcade"
 
 REPO_URL = "https://github.com/trivox-io/mini-arcade"
 DOCS_URL = f"{REPO_URL}/tree/main/docs"

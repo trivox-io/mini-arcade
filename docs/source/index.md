@@ -4,12 +4,65 @@ Mini Arcade is a Python-first mini game engine and monorepo built to ship
 small arcade games while keeping engine architecture simple, explicit, and
 testable.
 
-What you get:
+```{button-link} quickstart.html
+:color: primary
+:shadow:
 
-- Simulation-first scenes, entities, and systems
-- Swappable backends (native SDL2 and pygame)
-- Reference games and progressive tutorials
-- Capture-focused tooling (screenshots, replay, video frames)
+Get Started
+```
+
+```{button-link} concepts/architecture.html
+:color: secondary
+:shadow:
+
+Read Architecture
+```
+
+## What you get
+
+```{grid} 1 1 2 2
+:gutter: 3
+
+```{grid-item-card} Engine Core
+Simulation-first scenes, entities, systems, commands, and render packets.
+```
+
+```{grid-item-card} Swappable Backends
+Run with native SDL2 or pygame through the same backend protocol.
+```
+
+```{grid-item-card} Learning Path
+Progressive tutorials and reference games that validate real features.
+```
+
+```{grid-item-card} Capture Tooling
+Screenshots, replay recording/playback, and video frame capture hooks.
+```
+```
+
+## Explore
+
+```{grid} 1 1 3 3
+:gutter: 2
+
+```{grid-item-card} Docs
+:link: quickstart.html
+:link-type: url
+Quick start, architecture, capabilities, and contributing guides.
+```
+
+```{grid-item-card} Tutorials
+:link: tutorials/index.html
+:link-type: url
+Runnable examples designed to teach engine concepts incrementally.
+```
+
+```{grid-item-card} Games
+:link: games/index.html
+:link-type: url
+Reference games used to validate architecture and catch regressions.
+```
+```
 
 ```{toctree}
 :caption: Start Here

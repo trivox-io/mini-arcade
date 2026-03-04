@@ -44,6 +44,10 @@ jobs:
         run: |
           python -m sphinx -b html docs/source docs/_build/html
 
+      - name: Add CNAME
+        run: |
+          echo "mini-arcade.trivox.io" > docs/_build/html/CNAME
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
