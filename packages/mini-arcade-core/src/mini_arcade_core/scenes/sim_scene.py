@@ -452,7 +452,9 @@ class BaseTickContext(Generic[TWorld, TIntent]):
     draw_ops: list[DrawOp] | None = None
     render_queue: RenderQueue = field(default_factory=RenderQueue)
 
-    def intent_for(self, channel: str, default: object | None = None) -> object:
+    def intent_for(
+        self, channel: str, default: object | None = None
+    ) -> object:
         """
         Return the intent stored for a channel, if present.
         """
