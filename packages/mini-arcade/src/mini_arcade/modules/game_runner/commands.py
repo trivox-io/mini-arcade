@@ -25,7 +25,7 @@ class GameRunnerCommand(BaseCommand):
         ArgumentType(
             "example",
             str,
-            "Example id/folder name (e.g. 010_entities_showcase). Mutually exclusive with --game.",
+            "Example id/folder path (e.g. config/engine_config_basics). Mutually exclusive with --game.",
             required=False,
             default=None,
         ),
@@ -58,7 +58,7 @@ class GameRunnerCommand(BaseCommand):
 
     Usage:
         mini-arcade run --game deja-bounce [--from-source <games_parent>] [--pass-through -- <args...>]
-        mini-arcade run --example 010_entities_showcase [--examples-dir <examples_parent>] [--pass-through -- <args...>]
+        mini-arcade run --example config/engine_config_basics [--examples-dir <examples_parent>] [--pass-through -- <args...>]
     
     Description:
         This command starts a Mini Arcade game or example. You can specify the game/example by its id or folder name. By default, it looks for games in the ./games directory and examples in the ./examples directory (relative to the current working directory). You can override these defaults with the --from-source and --examples-dir options.

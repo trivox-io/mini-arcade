@@ -300,7 +300,8 @@ class ExampleLocator(BaseTargetLocator):
         The entrypoint is always the shared runner:
           <repo_root>/examples/_shared/run_example.py
 
-        The example_id is the folder name.
+        The example_id is the path under examples root
+        (e.g. config/engine_config_basics).
         """
         target_id = target_dir.name
 
@@ -326,11 +327,23 @@ class ExampleLocator(BaseTargetLocator):
                     examples_root = p
                     break
 
-        shared_entry = (examples_root / "_shared" / "run_example.py").resolve()
+        shared_entry = (
+            examples_root / "_shared" / "run_example.py"
+        ).resolve()
         if not shared_entry.exists():
             raise CommandException(
                 f"Shared example runner missing: {shared_entry}"
             )
+
+        # derive canonical id relative to examples root parent folder
+        # examples/catalog/config/engine_config_basics -> config/engine_config_basics
+        try:
+            catalog_root = examples_root / "catalog"
+            target_id = str(
+                target_dir.resolve().relative_to(catalog_root.resolve())
+            ).replace("\\", "/")
+        except ValueError:
+            target_id = target_dir.name
 
         meta: dict[str, Any] = {
             "example_id": target_id,
@@ -386,7 +399,7 @@ class GameRunnerProcessor(BaseCommandProcessor):
             )
 
         self._dev_games_dir = (Path.cwd() / "games").resolve()
-        self._dev_examples_dir = (Path.cwd() / "examples" / "scenes").resolve()
+        self._dev_examples_dir = (Path.cwd() / "examples" / "catalog").resolve()
 
         self._games = GameLocator(dev_default_parent_dir=self._dev_games_dir)
         self._examples = ExampleLocator(
@@ -409,12 +422,13 @@ class GameRunnerProcessor(BaseCommandProcessor):
             parent = locator.resolve_parent_dir(self.examples_dir)
             target_dir = locator.find_dir(parent, self.example)
             spec = locator.validate(target_dir)
+            requested_example_id = str(self.example).replace("\\", "/").strip("/")
 
             # IMPORTANT:
             # examples use the shared runner, which needs the example_id.
             # We pass it as argv[1] to run_example.py
             #
-            #   python examples/_shared/run_example.py 001_min_scene -- --backend native
+            #   python examples/_shared/run_example.py config/engine_config_basics --backend native
             #
             # The shared runner can parse:
             #   sys.argv[1] = example_id
@@ -422,7 +436,7 @@ class GameRunnerProcessor(BaseCommandProcessor):
             cmd = [
                 sys.executable,
                 str(spec.entrypoint),
-                spec.target_id,
+                requested_example_id,
                 *self.pass_through,
             ]
 

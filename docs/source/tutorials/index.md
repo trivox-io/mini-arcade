@@ -1,15 +1,12 @@
 # Tutorials
 
-Tutorials map to runnable examples under `examples/scenes/`.
+Tutorials map to runnable examples under `examples/catalog/`.
 
 ```{toctree}
 :caption: Tutorials
 :maxdepth: 1
 
-001_min_scene
-002_hello_overlay
-003_simple_shape
-004_shape_gallery
+config/engine_config_basics
 ```
 
 ```{toctree}
