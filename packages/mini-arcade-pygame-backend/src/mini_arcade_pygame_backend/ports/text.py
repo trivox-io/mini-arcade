@@ -6,11 +6,11 @@ Provides functionality to draw and measure text.
 from __future__ import annotations
 
 import pygame
+
 from mini_arcade_core.backend.utils import (  # pyright: ignore[reportMissingImports]
     rgba,
 )
 from mini_arcade_core.backend.viewport import ViewportTransform
-
 from mini_arcade_pygame_backend.ports.window import WindowPort
 
 

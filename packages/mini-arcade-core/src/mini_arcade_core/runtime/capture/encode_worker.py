@@ -99,6 +99,14 @@ class EncodeWorker(BaseWorker):
             target=self._run, name=cfg.name, daemon=cfg.daemon
         )
 
+    def set_on_done(
+        self, on_done: Optional[Callable[[EncodeResult], None]]
+    ) -> None:
+        """
+        Replace the completion callback invoked after each processed job.
+        """
+        self._on_done = on_done
+
     def _process_job(self, job: EncodeJob) -> None:
         try:
             logger.info(f"[encode] job={job.job_id} start {job.output_path}")

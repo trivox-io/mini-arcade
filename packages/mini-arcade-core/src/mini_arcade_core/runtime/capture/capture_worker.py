@@ -104,6 +104,14 @@ class CaptureWorker(BaseWorker):
         self._on_done = worker_config.on_done
         self._delete_temp = worker_config.delete_temp
 
+    def set_on_done(
+        self, on_done: Optional[Callable[[CaptureResult], None]]
+    ) -> None:
+        """
+        Replace the completion callback invoked after each processed job.
+        """
+        self._on_done = on_done
+
     def _process_job(self, job: CaptureJob) -> None:
         try:
             job.out_path.parent.mkdir(parents=True, exist_ok=True)

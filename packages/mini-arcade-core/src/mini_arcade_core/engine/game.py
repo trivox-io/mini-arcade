@@ -25,6 +25,9 @@ from mini_arcade_core.engine.render.render_service import RenderService
 from mini_arcade_core.engine.scenes.scene_manager import SceneAdapter
 from mini_arcade_core.runtime.audio.audio_adapter import SDLAudioAdapter
 from mini_arcade_core.runtime.capture.capture_service import CaptureService
+from mini_arcade_core.runtime.capture.event_handlers import (
+    register_default_capture_event_handlers,
+)
 from mini_arcade_core.runtime.file.file_adapter import LocalFilesAdapter
 from mini_arcade_core.runtime.input.input_adapter import InputAdapter
 from mini_arcade_core.runtime.scene.scene_query_adapter import (
@@ -80,6 +83,7 @@ class Game:
             render=RenderService(self.backend),
             scenes=SceneQueryAdapter(self.managers.scenes),
         )
+        register_default_capture_event_handlers()
 
     @property
     def running(self) -> bool:

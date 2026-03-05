@@ -1,5 +1,5 @@
 """
-Capture service managing screenshots and replays.
+Capture service managing screenshots, replay, and video recording.
 """
 
 from __future__ import annotations
@@ -11,13 +11,19 @@ from typing import Optional
 from uuid import uuid4
 
 from mini_arcade_core.backend import Backend
+from mini_arcade_core.bus import event_bus
+from mini_arcade_core.runtime.capture import events as capture_events
 from mini_arcade_core.runtime.capture.capture_service_protocol import (
     CaptureServicePort,
 )
 from mini_arcade_core.runtime.capture.capture_settings import CaptureSettings
-from mini_arcade_core.runtime.capture.capture_worker import CaptureJob
+from mini_arcade_core.runtime.capture.capture_worker import (
+    CaptureJob,
+    CaptureResult,
+)
 from mini_arcade_core.runtime.capture.encode_worker import (
     EncodeJob,
+    EncodeResult,
     EncodeWorker,
 )
 from mini_arcade_core.runtime.capture.replay import (
@@ -45,7 +51,7 @@ class CaptureService(CaptureServicePort):
         - screenshots (delegated)
         - replay recording (InputFrame stream)
         - replay playback (feeds InputFrames)
-        - (later) video recording
+        - video recording + optional encode
     """
 
     # pylint: disable=too-many-arguments
@@ -67,16 +73,34 @@ class CaptureService(CaptureServicePort):
         self.video = VideoRecorder(VideoRecordConfig(fps=60, capture_fps=15))
         self._video_manifest: Optional[VideoManifest] = None
         self.encoder = EncodeWorker()
+
+        # Emit completion events when worker jobs finish.
+        self.screenshots.worker.set_on_done(self._on_capture_done)
+        self.encoder.set_on_done(self._on_encode_done)
         self.encoder.start()
 
     # -------- screenshots --------
     def screenshot(self, label: str | None = None) -> str:
-        return self.screenshots.screenshot(label)
+        out = self.screenshots.screenshot(label)
+        event_bus.emit(
+            capture_events.SCREENSHOT_QUEUED,
+            path=out,
+            label=label,
+        )
+        return out
 
     def screenshot_sim(
         self, run_id: str, frame_index: int, label: str = "frame"
     ) -> str:
-        return self.screenshots.screenshot_sim(run_id, frame_index, label)
+        out = self.screenshots.screenshot_sim(run_id, frame_index, label)
+        event_bus.emit(
+            capture_events.SCREENSHOT_QUEUED,
+            path=out,
+            label=label,
+            run_id=run_id,
+            frame_index=frame_index,
+        )
+        return out
 
     # -------- replays --------
     @property
@@ -97,22 +121,39 @@ class CaptureService(CaptureServicePort):
         self.replay_recorder.start(
             ReplayRecorderConfig(path=path, header=header)
         )
+        event_bus.emit(capture_events.REPLAY_RECORD_STARTED, path=str(path))
 
     def stop_replay_record(self):
+        path: str | None = None
+        writer = getattr(self.replay_recorder, "_writer", None)
+        if writer is not None:
+            writer_path = getattr(writer, "path", None)
+            if writer_path is not None:
+                path = str(writer_path)
         self.replay_recorder.stop()
+        event_bus.emit(capture_events.REPLAY_RECORD_STOPPED, path=path)
 
     def record_input(self, frame: InputFrame):
         self.replay_recorder.record(frame)
 
     def start_replay_play(self, filename: str) -> ReplayHeader:
         path = Path(self.settings.replays_dir) / filename
-        return self.replay_player.start(path)
+        header = self.replay_player.start(path)
+        event_bus.emit(capture_events.REPLAY_PLAY_STARTED, path=str(path))
+        return header
 
     def stop_replay_play(self):
         self.replay_player.stop()
+        event_bus.emit(capture_events.REPLAY_PLAY_STOPPED)
 
     def next_replay_input(self) -> InputFrame:
-        return self.replay_player.next()
+        try:
+            return self.replay_player.next()
+        except RuntimeError as exc:
+            if "Replay finished" not in str(exc):
+                raise
+            event_bus.emit(capture_events.REPLAY_PLAY_FINISHED)
+            return InputFrame(frame_index=0, dt=0.0)
 
     # -------- video --------
 
@@ -123,7 +164,6 @@ class CaptureService(CaptureServicePort):
     def start_video_record(
         self, *, fps: int = 60, capture_fps: int = 15
     ) -> Path:
-        # configure
         self.video.cfg.fps = fps
         self.video.cfg.capture_fps = capture_fps
 
@@ -135,6 +175,7 @@ class CaptureService(CaptureServicePort):
             frames=0,
         )
         self._write_video_manifest(base_dir)
+        event_bus.emit(capture_events.VIDEO_STARTED, path=str(base_dir))
         return base_dir
 
     def stop_video_record(self):
@@ -153,9 +194,10 @@ class CaptureService(CaptureServicePort):
         self._write_video_manifest(base_dir)
         logger.info(f"Video frames saved to: {base_dir}")
 
+        out_mp4: Path | None = None
+        encode_queued = False
         if self.settings.encode_on_stop:
             out_mp4 = base_dir / "video.mp4"
-
             job = EncodeJob(
                 job_id=f"encode:{uuid4().hex}",
                 ffmpeg_path=self.settings.ffmpeg_path,
@@ -168,15 +210,22 @@ class CaptureService(CaptureServicePort):
                 preset=self.settings.video_preset,
                 keep_frames=self.settings.keep_frames,
             )
-
-            if not self.encoder.enqueue(job):
+            encode_queued = self.encoder.enqueue(job)
+            if not encode_queued:
                 logger.warning("[encode] dropped encode job (queue full)")
             else:
-                logger.info(f"[encode] queued → {out_mp4}")
+                logger.info(f"[encode] queued -> {out_mp4}")
+
+        if encode_queued and out_mp4 is not None:
+            event_bus.emit(
+                capture_events.VIDEO_ENCODE_QUEUED,
+                path=str(out_mp4),
+            )
 
         self.video.stop()
         self._video_manifest = None
         logger.info("Video recording stopped.")
+        event_bus.emit(capture_events.VIDEO_STOPPED, path=str(base_dir))
 
     def record_video_frame(self, *, frame_index: int):
         """
@@ -189,18 +238,15 @@ class CaptureService(CaptureServicePort):
 
         worker = self.screenshots.worker
 
-        # Backpressure: if worker is overloaded, drop to protect gameplay
+        # Backpressure: if worker is overloaded, drop to protect gameplay.
         if hasattr(worker, "qsize") and worker.qsize() > 200:
             return
 
         out_png, out_frame = self.video.next_paths()
         out_png.parent.mkdir(parents=True, exist_ok=True)
 
-        # Capture bytes (no disk I/O on the main thread)
-        w, h, pixels = (
-            self.backend.capture.argb8888_bytes()
-        )  # uses backend.capture.bmp(None)
-        # alternatively: data = self.backend.capture.bmp(path=None) if supported
+        # Capture bytes (no disk I/O on the main thread).
+        w, h, pixels = self.backend.capture.argb8888_bytes()
 
         if self._video_manifest:
             self._video_manifest = VideoManifest(
@@ -231,4 +277,37 @@ class CaptureService(CaptureServicePort):
         path.write_text(
             json.dumps(asdict(self._video_manifest), indent=2),
             encoding="utf-8",
+        )
+
+    def _on_capture_done(self, result: CaptureResult) -> None:
+        # Video recording frames share the capture worker; avoid spamming
+        # screenshot completion events for each encoded frame.
+        if result.job_id.startswith("video:"):
+            return
+        if result.ok:
+            event_bus.emit(
+                capture_events.SCREENSHOT_DONE,
+                path=str(result.out_path),
+                job_id=result.job_id,
+            )
+            return
+        event_bus.emit(
+            capture_events.SCREENSHOT_FAILED,
+            path=str(result.out_path),
+            job_id=result.job_id,
+            error=result.error or "Unknown screenshot error",
+        )
+
+    def _on_encode_done(self, result: EncodeResult) -> None:
+        if result.ok:
+            event_bus.emit(
+                capture_events.VIDEO_ENCODE_DONE,
+                path=str(result.output_path) if result.output_path else None,
+                job_id=result.job_id,
+            )
+            return
+        event_bus.emit(
+            capture_events.VIDEO_ENCODE_FAILED,
+            job_id=result.job_id,
+            error=result.error or "Unknown encode error",
         )

@@ -98,6 +98,7 @@ class SceneAdapter:
         if not scene:
             logger.warning(f"Failed to create scene with id={scene_id!r}")
             return
+        scene.scene_id = scene_id
         scene.on_enter()
 
         entry = SceneEntry(

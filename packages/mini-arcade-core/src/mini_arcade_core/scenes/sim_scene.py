@@ -8,7 +8,15 @@ from __future__ import annotations
 import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Callable, Generic, Literal, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    ClassVar,
+    Generic,
+    Literal,
+    Type,
+    TypeVar,
+)
 
 from mini_arcade_core.backend.backend import Backend
 from mini_arcade_core.backend.types import Color
@@ -16,6 +24,10 @@ from mini_arcade_core.engine.entities import BaseEntity
 from mini_arcade_core.engine.render.packet import DrawOp, RenderPacket
 from mini_arcade_core.runtime.context import RuntimeContext
 from mini_arcade_core.runtime.input_frame import InputFrame
+from mini_arcade_core.scenes.systems.capture_controls import (
+    CaptureControlsSystem,
+    SceneCaptureConfig,
+)
 from mini_arcade_core.scenes.systems.system_pipeline import SystemPipeline
 from mini_arcade_core.spaces.math.vec2 import Vec2
 
@@ -656,9 +668,16 @@ class SubmitRenderQueue(Drawable[BaseTickContext]):
                     points, color, filled = payload
                     closed = True
                 elif isinstance(payload, tuple) and len(payload) == 5:
-                    points, fill, _stroke, _thickness, closed = payload
-                    color = fill if fill is not None else (255, 255, 255, 255)
-                    filled = fill is not None
+                    points, fill, stroke, _thickness, closed = payload
+                    if fill is not None:
+                        color = fill
+                        filled = True
+                    elif stroke is not None:
+                        color = stroke
+                        filled = False
+                    else:
+                        color = (255, 255, 255, 255)
+                        filled = False
                 else:
                     raise ValueError(
                         f"Unexpected draw_poly payload: {payload!r}"
@@ -704,6 +723,7 @@ class SimScene(Generic[TContext, TWorld]):
     context: RuntimeContext
     systems: SystemPipeline[TContext]
     world: TWorld
+    capture_config: ClassVar[SceneCaptureConfig] = SceneCaptureConfig()
 
     # 👇 each scene sets this
     tick_context_type: Type[TContext] | None = None
@@ -711,6 +731,8 @@ class SimScene(Generic[TContext, TWorld]):
     def __init__(self, ctx: RuntimeContext):
         self.context = ctx
         self.systems = self.build_pipeline()
+        self.scene_id: str | None = None
+        self._capture_controls_installed = False
 
     def build_pipeline(self) -> SystemPipeline[TContext]:
         """
@@ -720,15 +742,6 @@ class SimScene(Generic[TContext, TWorld]):
         :rtype: SystemPipeline[TContext]
         """
         return SystemPipeline[TContext]()
-
-    def make_world(self) -> TWorld:
-        """
-        Construct the initial world state for this scene. Called during on_enter.
-
-        :return: Initial world state
-        :rtype: TWorld
-        """
-        raise NotImplementedError("Subclasses must implement make_world()")
 
     def on_enter(self):
         """Called when the scene becomes active (safe place to create world & add systems)."""
@@ -755,6 +768,25 @@ class SimScene(Generic[TContext, TWorld]):
             commands=self.context.command_queue,
         )
 
+    def _resolve_scene_id(self) -> str:
+        if self.scene_id:
+            return str(self.scene_id)
+        return self.__class__.__name__.lower()
+
+    def _ensure_capture_controls(self) -> None:
+        if self._capture_controls_installed:
+            return
+
+        cfg = self.capture_config.with_scene_defaults(self._resolve_scene_id())
+        if cfg.any_enabled():
+            self.systems.add(
+                CaptureControlsSystem(
+                    services=self.context.services,
+                    cfg=cfg,
+                )
+            )
+        self._capture_controls_installed = True
+
     def tick(self, input_frame: InputFrame, dt: float) -> RenderPacket:
         """
         Advance the simulation by dt seconds, processing input_frame.
@@ -765,6 +797,7 @@ class SimScene(Generic[TContext, TWorld]):
         :param dt: Delta time since last tick.
         :type dt: float
         """
+        self._ensure_capture_controls()
         ctx = self._get_tick_context(input_frame, dt)
         self.systems.step(ctx)
 

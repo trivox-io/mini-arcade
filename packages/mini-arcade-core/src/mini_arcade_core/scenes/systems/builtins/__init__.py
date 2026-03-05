@@ -33,6 +33,7 @@ from .capture_hotkeys import (  # noqa: E402  (re-export)
     CaptureHotkeysConfig,
     CaptureHotkeysSystem,
 )
+from .pause import IntentPauseSystem  # noqa: E402  (re-export)
 
 
 class RenderSystemContext(Protocol):
