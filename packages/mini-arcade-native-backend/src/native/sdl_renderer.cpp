@@ -163,12 +163,33 @@ namespace mini {
         return id;
     }
 
-    void SdlRenderer::draw_texture(TextureHandle tex, int x, int y, int w, int h) {
+    void SdlRenderer::draw_texture(
+        TextureHandle tex,
+        int x,
+        int y,
+        int w,
+        int h,
+        double angle_deg
+    ) {
         auto it = textures_.find(tex);
         if (it == textures_.end() || !it->second) return;
 
         SDL_Rect dst{ x,y,w,h };
-        SDL_RenderCopy(renderer_, it->second, nullptr, &dst);
+        if (std::abs(angle_deg) <= 0.001) {
+            SDL_RenderCopy(renderer_, it->second, nullptr, &dst);
+            return;
+        }
+
+        SDL_Point center{w / 2, h / 2};
+        SDL_RenderCopyEx(
+            renderer_,
+            it->second,
+            nullptr,
+            &dst,
+            angle_deg,
+            &center,
+            SDL_FLIP_NONE
+        );
     }
 
     void SdlRenderer::destroy_texture(TextureHandle tex) {

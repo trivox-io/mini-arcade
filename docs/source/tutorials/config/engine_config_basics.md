@@ -38,20 +38,20 @@ mini-arcade run --example config/engine_config_basics
 Swap backend:
 
 ```bash
-mini-arcade run --example config/engine_config_basics --pass-through -- --backend pygame
-mini-arcade run --example config/engine_config_basics --pass-through -- --backend native
+mini-arcade run --example config/engine_config_basics --pass-through --backend pygame
+mini-arcade run --example config/engine_config_basics --pass-through --backend native
 ```
 
 Override engine parameters:
 
 ```bash
-mini-arcade run --example config/engine_config_basics --pass-through -- --fps 72 --virtual-width 960 --virtual-height 540
+mini-arcade run --example config/engine_config_basics --pass-through --fps 72 --virtual-width 960 --virtual-height 540
 ```
 
 Enable profiler + postfx:
 
 ```bash
-mini-arcade run --example config/engine_config_basics --pass-through -- --enable-profiler --postfx-enabled --postfx-active crt,vignette_noise
+mini-arcade run --example config/engine_config_basics --pass-through --enable-profiler --postfx-enabled --postfx-active crt,vignette_noise
 ```
 
 ## Tutorial intro: game folder structure (Deja Bounce reference)
@@ -105,6 +105,39 @@ What each part should contain:
 - `games/<game-id>/settings/settings.yml`: game-local runtime settings file
   consumed by `Settings.for_game("<game-id>")`.
 
+## Game settings file example (`games/<game-id>/settings/settings.yml`)
+
+Minimal starter config:
+
+```yaml
+scene:
+  initial_scene: menu
+  scene_registry:
+    discover_packages:
+      - deja_bounce.scenes
+
+engine_config:
+  fps: 60
+  virtual_resolution: [800, 600]
+  enable_profiler: false
+  postfx:
+    enabled: false
+    active: []
+
+backend:
+  provider: native
+  window:
+    width: 800
+    height: 600
+    title: Deja Bounce
+```
+
+This is read by `Settings.for_game("deja-bounce")` and transformed into:
+
+- `SceneConfig` via `settings.scene_defaults()`
+- `EngineConfig` via `settings.engine_config_defaults()`
+- backend defaults via `settings.backend_defaults()`
+
 ## Required `pyproject.toml` section for CLI game discovery
 
 To run a game with:
@@ -141,3 +174,7 @@ Field meaning:
 
 - `F1`: toggle built-in debug overlay
 - `ESC`: exit
+
+## Next step
+
+- Continue with `config/backend_swap` to validate parity between backends.

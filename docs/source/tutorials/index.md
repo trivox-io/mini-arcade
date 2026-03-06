@@ -84,11 +84,95 @@ This metadata is how `mini-arcade run --game <game-id>` discovers and launches
 your game. For a concrete, complete reference, see
 `games/deja-bounce/` and the tutorial `config/engine_config_basics`.
 
+## Game Settings YAML (`settings/settings.yml`)
+
+Each game should include a local profile at:
+
+```text
+games/<game-id>/settings/settings.yml
+```
+
+The loader call:
+
+```python
+settings = Settings.for_game("<game-id>", required=True)
+```
+
+looks for that file and exposes normalized sections through:
+
+- `settings.scene_defaults()`
+- `settings.engine_config_defaults()`
+- `settings.backend_defaults()`
+- `settings.gameplay_defaults()`
+
+Recommended baseline template:
+
+```yaml
+game:
+  id: <game-id>
+
+project:
+  # Optional. Defaults to games/<game-id> when omitted.
+  root: ${settings_dir}/..
+  # Optional. Defaults to ${project_root}/assets when omitted.
+  assets_root: ${project_root}/assets
+
+scene:
+  initial_scene: menu
+  scene_registry:
+    discover_packages:
+      - <python_package>.scenes
+
+engine_config:
+  fps: 60
+  virtual_resolution: [800, 600]
+  enable_profiler: false
+  postfx:
+    enabled: false
+    active: []
+
+backend:
+  provider: native # or pygame
+  window:
+    width: 800
+    height: 600
+    title: <Game Title>
+    resizable: true
+  renderer:
+    background_color: [20, 20, 20]
+  fonts:
+    - name: default
+      path: ${assets_root}/fonts/<font-file>.ttf
+      size: 24
+  audio:
+    enable: true
+    sounds:
+      ui_select: sfx/ui_select.wav
+
+gameplay:
+  difficulty:
+    default: normal
+```
+
+Notes:
+
+- `scene.initial_scene` and `scene.scene_registry.discover_packages` map to
+  `SceneConfig`.
+- `engine_config.*` maps to `EngineConfig` (`fps`, `virtual_resolution`,
+  `postfx`, `enable_profiler`).
+- Relative asset/audio/font paths are resolved from `assets_root`.
+- Available path tokens include:
+  `${settings_dir}`, `${project_root}`, `${assets_root}`, `${repo_root}`, and
+  `${cwd}`.
+- Keep game-specific runtime settings with the game itself; use repo-level
+  `settings/settings.yml` only for shared defaults.
+
 ```{toctree}
 :caption: Tutorials
 :maxdepth: 1
 
 config/engine_config_basics
+config/backend_swap
 ```
 
 ```{toctree}

@@ -20,7 +20,7 @@ Status legend:
 ### Group 0: Configuration (engine-first)
 
 - `config/engine_config_basics` (`WIP`)
-- `config/backend_swap` (`TODO`)
+- `config/backend_swap` (`DONE`)
 
 ### Group A: Scene stack core
 

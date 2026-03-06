@@ -2,7 +2,11 @@
 # Settings.for_example("config/backend_swap")
 # Use this to test backend parity quickly.
 scene:
-  initial_scene: engine_config_basics
+  initial_scene: backend_swap
+  scene_registry:
+    discover_packages:
+      - examples.catalog.config.backend_swap
+      - mini_arcade_core.scenes
 
 engine_config:
   fps: 60

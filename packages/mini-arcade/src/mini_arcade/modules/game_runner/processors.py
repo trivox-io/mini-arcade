@@ -391,6 +391,11 @@ class GameRunnerProcessor(BaseCommandProcessor):
 
         # both
         self.pass_through = kwargs.get("pass_through", [])
+        if not isinstance(self.pass_through, list):
+            self.pass_through = [str(self.pass_through)]
+        # Accept legacy docs style: --pass-through -- <args...>
+        if self.pass_through and self.pass_through[0] == "--":
+            self.pass_through = self.pass_through[1:]
 
         # validate selection
         if bool(self.game) == bool(self.example):  # both set OR both empty

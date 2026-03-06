@@ -335,7 +335,12 @@ class BaseCLIApp:
             else:
                 kwargs["type"] = ty
 
-            command_parser.add_argument(f"--{arg.name}", **kwargs)
+            flags = [f"--{arg.name}"]
+            dashed = arg.name.replace("_", "-")
+            if dashed != arg.name:
+                flags.append(f"--{dashed}")
+
+            command_parser.add_argument(*flags, **kwargs)
 
     def parse_args(
         self, argv: Optional[List[str]] = None

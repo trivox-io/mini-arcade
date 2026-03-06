@@ -27,7 +27,14 @@ class IRenderer {
 
         // Texture API (needed for text now, sprites later)
         virtual TextureHandle create_texture_rgba(int w, int h, const void* pixels, int pitch) = 0;
-        virtual void draw_texture(TextureHandle tex, int x, int y, int w, int h) = 0;
+        virtual void draw_texture(
+            TextureHandle tex,
+            int x,
+            int y,
+            int w,
+            int h,
+            double angle_deg = 0.0
+        ) = 0;
         virtual void destroy_texture(TextureHandle tex) = 0;
         virtual void draw_texture_tiled_y(TextureHandle tex, int x, int y, int w, int h) = 0;
 

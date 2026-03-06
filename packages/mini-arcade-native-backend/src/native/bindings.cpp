@@ -179,14 +179,22 @@ PYBIND11_MODULE(_native, m) {
         )
 
         .def("draw_texture",
-            [](Backend& b, int texture_id, int x, int y, int w, int h) {
-                b.render().draw_texture(static_cast<TextureHandle>(texture_id), x, y, w, h);
+            [](Backend& b, int texture_id, int x, int y, int w, int h, double angle_deg) {
+                b.render().draw_texture(
+                    static_cast<TextureHandle>(texture_id),
+                    x,
+                    y,
+                    w,
+                    h,
+                    angle_deg
+                );
             },
             py::arg("texture_id"),
             py::arg("x"),
             py::arg("y"),
             py::arg("width"),
-            py::arg("height")
+            py::arg("height"),
+            py::arg("angle_deg") = 0.0
         )
 
         .def("draw_texture_tiled_y",

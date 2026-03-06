@@ -1,9 +1,31 @@
 #include "mini/backend.h"
 #include "mini/sdl_renderer.h"
 #include "mini/sdl_text.h"
+#include <filesystem>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace mini {
+namespace {
+std::string resolve_fallback_font_path() {
+    const std::vector<std::string> candidates = {
+        "C:/Windows/Fonts/segoeui.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+    };
+
+    for (const auto& candidate : candidates) {
+        std::error_code ec;
+        if (std::filesystem::exists(candidate, ec)) {
+            return candidate;
+        }
+    }
+    return "";
+}
+} // namespace
 
 Backend::Backend(const BackendConfig& cfg)
     : platform_()
@@ -24,11 +46,17 @@ Backend::Backend(const BackendConfig& cfg)
     // Text renderer depends on renderer (future: GlTextRenderer)
     text_ = std::make_unique<SdlTextRenderer>(*renderer_);
 
-    // Load default font (optional)
+    // Load default font: explicit path first, otherwise built-in fallbacks.
     if (!cfg.text.default_font_path.empty()) {
         int fid = text_->load_font(cfg.text.default_font_path, cfg.text.default_font_size);
         // If it's the SDL text renderer, it sets default automatically; fine.
         (void)fid;
+    } else {
+        const auto fallback = resolve_fallback_font_path();
+        if (!fallback.empty()) {
+            int fid = text_->load_font(fallback, cfg.text.default_font_size);
+            (void)fid;
+        }
     }
 
   // Audio (optional)

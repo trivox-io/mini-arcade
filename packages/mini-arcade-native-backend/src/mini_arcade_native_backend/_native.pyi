@@ -513,7 +513,13 @@ class Backend:
         """
 
     def draw_texture(
-        self, texture_id: int, x: int, y: int, width: int, height: int
+        self,
+        texture_id: int,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        angle_deg: float = 0.0,
     ) -> None:
         """
         Draw a texture at the specified position and size.

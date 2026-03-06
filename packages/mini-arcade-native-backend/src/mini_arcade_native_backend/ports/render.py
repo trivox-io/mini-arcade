@@ -220,10 +220,6 @@ class RenderPort:
         """
         self._b.destroy_texture(int(tex))
 
-    # TODO: Implement draw_texture with rotation support in the native backend.
-    # Justification: Rotation is not currently supported by the native backend,
-    # but we want to keep the API consistent for future support.
-    # pylint: disable=unused-argument
     def draw_texture(
         self,
         tex: int,
@@ -247,12 +243,18 @@ class RenderPort:
         :param h: The height to draw the texture.
         :type h: int
         :param angle_deg: Clockwise rotation angle in degrees around texture center.
-            The native backend currently ignores non-zero rotation.
         :type angle_deg: float
         """
         sx, sy = self._vp.map_xy(x, y)
         sw, sh = self._vp.map_wh(w, h)
-        self._b.draw_texture(int(tex), int(sx), int(sy), int(sw), int(sh))
+        self._b.draw_texture(
+            int(tex),
+            int(sx),
+            int(sy),
+            int(sw),
+            int(sh),
+            float(angle_deg),
+        )
 
     def draw_texture_tiled_y(self, tex: int, x: int, y: int, w: int, h: int):
         """

@@ -26,7 +26,14 @@ class SdlRenderer final : public IRenderer {
         std::pair<int,int> drawable_size() const override;
 
         TextureHandle create_texture_rgba(int w, int h, const void* pixels, int pitch) override;
-        void draw_texture(TextureHandle tex, int x, int y, int w, int h) override;
+        void draw_texture(
+            TextureHandle tex,
+            int x,
+            int y,
+            int w,
+            int h,
+            double angle_deg = 0.0
+        ) override;
         void destroy_texture(TextureHandle tex) override;
         void draw_texture_tiled_y(TextureHandle tex, int x, int y, int w, int h) override;
 
