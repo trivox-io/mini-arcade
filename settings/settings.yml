@@ -1,0 +1,22 @@
+scene:
+  initial_scene: example_scene
+
+engine_config:
+  fps: 60
+  virtual_resolution: [960, 720]
+  enable_profiler: false
+  postfx:
+    enabled: false
+    active: []
+
+backend:
+  provider: pygame
+  window:
+    width: 960
+    height: 720
+    title: Example Game
+    resizable: true
+  renderer:
+    background_color: [8, 10, 16]
+  audio:
+    enable: false

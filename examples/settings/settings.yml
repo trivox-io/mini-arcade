@@ -1,0 +1,23 @@
+# Shared defaults for all tutorial examples.
+scene:
+  initial_scene: engine_config_basics
+
+engine_config:
+  fps: 60
+  virtual_resolution: [800, 600]
+  enable_profiler: false
+  postfx:
+    enabled: false
+    active: []
+
+backend:
+  provider: pygame
+  window:
+    width: 960
+    height: 540
+    title: Mini Arcade Example
+    resizable: true
+  renderer:
+    background_color: [20, 20, 20]
+  audio:
+    enable: false

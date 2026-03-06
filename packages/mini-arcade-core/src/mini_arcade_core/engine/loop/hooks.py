@@ -1,5 +1,5 @@
 """
-Game core module defining the Game class and configuration.
+Engine loop hooks module.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from mini_arcade_core.engine.render.effects.base import EffectStack
 from mini_arcade_core.utils import logger
 
 if TYPE_CHECKING:
-    from mini_arcade_core.engine.game import Game
+    from mini_arcade_core.engine.game import Engine
 
 
 class LoopHooks(Protocol):
@@ -37,13 +37,13 @@ class DefaultGameHooks:
     """
     Default implementation of LoopHooks for handling common events.
 
-    :param game: The Game instance.
-    :type game: Game
+    :param game: The Engine instance.
+    :type game: Engine
     :param effects_stack: The EffectStack for post-processing effects.
     :type effects_stack: EffectStack
     """
 
-    def __init__(self, game: "Game", effects_stack: EffectStack):
+    def __init__(self, game: "Engine", effects_stack: EffectStack):
         self.game = game
         self.effects_stack = effects_stack
 

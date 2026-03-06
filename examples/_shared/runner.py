@@ -9,8 +9,8 @@ from typing import Any
 
 from mini_arcade.utils.logging import logger  # type: ignore[import-not-found]
 from mini_arcade_core import (  # type: ignore[import-not-found]
-    GameConfig,
-    SceneRegistry,
+    EngineConfig,
+    SceneConfig,
     run_game,
 )
 
@@ -110,23 +110,25 @@ def run_example(example_id: str, **kwargs) -> int:
     normalized = _normalized_example_id(example_id)
     spec = load_example_spec(normalized, **kwargs)
 
-    scene_registry = SceneRegistry(_factories={}).discover(
-        *spec.discover_packages
-    )
-
     backend = spec.backend_factory()
 
-    if spec.game_config_factory:
-        game_config = spec.game_config_factory(backend, scene_registry)
+    if spec.engine_config_factory:
+        engine_config = spec.engine_config_factory(backend)
     else:
-        game_config = GameConfig(
-            initial_scene=spec.initial_scene,
+        engine_config = EngineConfig(
             fps=spec.fps,
-            backend=backend,
         )
+    scene_config = SceneConfig(
+        initial_scene=spec.initial_scene,
+        discover_packages=list(spec.discover_packages),
+    )
 
     logger.info(
         f"Starting example: {normalized} (scene={spec.initial_scene}, fps={spec.fps})"
     )
-    run_game(game_config=game_config, scene_registry=scene_registry)
+    run_game(
+        engine_config=engine_config,
+        scene_config=scene_config,
+        backend=backend,
+    )
     return 0

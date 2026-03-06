@@ -11,10 +11,12 @@ from mini_arcade_core.runtime.input_frame import InputFrame
 from mini_arcade_core.scenes.autoreg import register_scene
 from mini_arcade_core.scenes.sim_scene import SimScene
 
+SCENE_ID = "engine_config_basics"
+
 
 # Justification: This scene overrides tick directly and doesn't need tick context.
 # pylint: disable=abstract-method
-@register_scene("engine_config_basics")
+@register_scene(SCENE_ID)
 class EngineConfigBasicsScene(SimScene):
     """
     Shows effective engine configuration at runtime.
@@ -26,14 +28,17 @@ class EngineConfigBasicsScene(SimScene):
 
     def tick(self, input_frame: InputFrame, dt: float) -> RenderPacket:
         cfg = self.context.config
+        # pylint: disable=assignment-from-no-return
         vp = self.context.services.window.get_viewport()
-        active = ", ".join(cfg.postfx.active) if cfg.postfx.active else "(none)"
+        active = (
+            ", ".join(cfg.postfx.active) if cfg.postfx.active else "(none)"
+        )
 
         lines = [
             "config/engine_config_basics",
             "",
             f"backend: {self._last_backend_name}",
-            f"initial_scene: {cfg.initial_scene}",
+            f"initial_scene: {SCENE_ID}",
             f"fps target: {cfg.fps}",
             f"virtual_resolution: {cfg.virtual_resolution[0]}x{cfg.virtual_resolution[1]}",
             f"postfx.enabled: {cfg.postfx.enabled}",
@@ -54,8 +59,9 @@ class EngineConfigBasicsScene(SimScene):
             backend.render.draw_rect(12, 12, 620, 410, color=(0, 0, 0, 0.75))
             y = 24
             for line in lines:
-                backend.text.draw(20, y, line, color=(230, 230, 235), font_size=18)
+                backend.text.draw(
+                    20, y, line, color=(230, 230, 235), font_size=18
+                )
                 y += 22
 
         return RenderPacket(ops=[draw])
-

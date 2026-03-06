@@ -1,0 +1,34 @@
+# Example-specific settings profile:
+# Settings.for_example("config/engine_config_basics")
+scene:
+  initial_scene: engine_config_basics
+  scene_registry:
+    discover_packages:
+      - examples.catalog.config.engine_config_basics
+      - mini_arcade_core.scenes
+
+engine_config:
+  fps: 60
+  virtual_resolution: [800, 600]
+  enable_profiler: false
+  postfx:
+    enabled: false
+    active: []
+
+backend:
+  provider: pygame
+  window:
+    width: 960
+    height: 540
+    title: config/engine_config_basics
+    resizable: true
+  renderer:
+    background_color: [20, 20, 20]
+  audio:
+    enable: false
+
+# Optional test values you can copy into CLI args.
+cli_examples:
+  - "--backend pygame"
+  - "--backend native"
+  - "--fps 75 --virtual-width 960 --virtual-height 540"

@@ -16,7 +16,7 @@ from mini_arcade_core.scenes.registry import SceneRegistry
 from mini_arcade_core.utils import logger
 
 if TYPE_CHECKING:
-    from mini_arcade_core.engine.game import Game
+    from mini_arcade_core.engine.game import Engine
     from mini_arcade_core.scenes.sim_scene import SimScene
 
 
@@ -25,7 +25,7 @@ class SceneAdapter:
     Manages multiple scenes (not implemented).
     """
 
-    def __init__(self, registry: SceneRegistry, game: Game):
+    def __init__(self, registry: SceneRegistry, game: Engine):
         self._registry = registry
         self._stack: List[StackItem] = []
         self._game = game

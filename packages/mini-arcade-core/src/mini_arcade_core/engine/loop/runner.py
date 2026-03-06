@@ -1,5 +1,5 @@
 """
-Game core module defining the Game class and configuration.
+Engine runner module.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from mini_arcade_core.runtime.input_frame import InputFrame
 from mini_arcade_core.utils import FrameTimer, logger
 
 if TYPE_CHECKING:
-    from mini_arcade_core.engine.game import Game
+    from mini_arcade_core.engine.game import Engine
 
 
 def _neutral_input(frame_index: int, dt: float) -> InputFrame:
@@ -34,8 +34,8 @@ class EngineRunner:
     """
     Core engine runner responsible for the main loop execution.
 
-    :param game: The Game instance to run.
-    :type game: Game
+    :param game: The Engine instance to run.
+    :type game: Engine
     :param pipeline: The RenderPipeline to use for rendering.
     :type pipeline: RenderPipeline
     :param effects_stack: The EffectStack for post-processing effects.
@@ -46,7 +46,7 @@ class EngineRunner:
 
     def __init__(
         self,
-        game: "Game",
+        game: "Engine",
         *,
         pipeline: RenderPipeline,
         effects_stack: EffectStack,

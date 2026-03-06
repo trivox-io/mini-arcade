@@ -1,13 +1,16 @@
 """
-Game core module defining the Game class and configuration.
+Engine core module defining the Engine class and configuration.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+from typing import Any
+
 from mini_arcade_core.backend import Backend
 from mini_arcade_core.engine.cheats import CheatManager
 from mini_arcade_core.engine.commands import CommandQueue
-from mini_arcade_core.engine.game_config import GameConfig
+from mini_arcade_core.engine.engine_config import EngineConfig
 from mini_arcade_core.engine.gameplay_settings import GamePlaySettings
 from mini_arcade_core.engine.loop.config import RunnerConfig
 from mini_arcade_core.engine.loop.hooks import DefaultGameHooks
@@ -40,36 +43,61 @@ from mini_arcade_core.utils import FrameTimer
 from mini_arcade_core.utils.profiler import FrameTimerConfig
 
 
-class Game:
-    """Core game object responsible for managing the main loop and active scene."""
+@dataclass
+class EngineDependencies:
+    """
+    Runtime dependencies required by the Engine.
+
+    :ivar backend: Backend implementation used by the runtime.
+    :ivar scene_registry: Scene registry available to the scene adapter.
+    :ivar gameplay_settings: Optional gameplay settings payload.
+    """
+
+    backend: Backend
+    scene_registry: SceneRegistry = field(
+        default_factory=lambda: SceneRegistry(_factories={})
+    )
+    gameplay_settings: GamePlaySettings | dict[str, Any] | None = None
+
+
+class Engine:
+    """Core engine object responsible for the main loop and active scene."""
 
     def __init__(
-        self, config: GameConfig, scene_registry: SceneRegistry | None = None
+        self,
+        config: EngineConfig,
+        dependencies: EngineDependencies,
     ):
         """
-        :param config: Game configuration options.
-        :type config: GameConfig
+        :param config: Engine configuration options.
+        :type config: EngineConfig
 
-        :param scene_registry: Optional SceneRegistry for scene management.
-        :type scene_registry: SceneRegistry | None
+        :param dependencies: Runtime dependencies for this engine instance.
+        :type dependencies: EngineDependencies
 
-        :raises ValueError: If the provided config does not have a valid Backend.
+        :raises ValueError: If a valid Backend instance is not provided.
         """
         self.config = config
         self._running: bool = False
 
-        if self.config.backend is None:
+        if dependencies.backend is None:
             raise ValueError(
-                "GameConfig.backend must be set to a Backend instance"
+                "A valid Backend instance must be provided."
             )
 
-        self.backend: Backend = self.config.backend
-        self.settings = GamePlaySettings()
+        self.backend = dependencies.backend
+        gameplay_settings = dependencies.gameplay_settings
+        if isinstance(gameplay_settings, GamePlaySettings):
+            self.settings = gameplay_settings
+        elif isinstance(gameplay_settings, dict):
+            self.settings = GamePlaySettings.from_dict(gameplay_settings)
+        else:
+            self.settings = GamePlaySettings()
         self.managers = EngineManagers(
             cheats=CheatManager(),
             command_queue=CommandQueue(),
             scenes=SceneAdapter(
-                scene_registry or SceneRegistry(_factories={}), self
+                dependencies.scene_registry, self
             ),
         )
         self.services = RuntimeServices(
@@ -78,7 +106,7 @@ class Game:
             files=LocalFilesAdapter(),
             capture=CaptureService(
                 self.backend
-            ),  # NOTE: Should actually be a manager?
+            ),
             input=InputAdapter(),
             render=RenderService(self.backend),
             scenes=SceneQueryAdapter(self.managers.scenes),
@@ -94,17 +122,18 @@ class Game:
         """Request that the main loop stops."""
         self._running = False
 
-    def run(self):
+    def run(self, initial_scene: str | None = None):
         """
         Run the main loop starting with the given scene.
 
         This is intentionally left abstract so you can plug pygame, pyglet,
         or another backend.
 
-        :param initial_scene_id: The scene id to start the game with (must be registered).
-        :type initial_scene_id: str
+        :param initial_scene: Optional scene id to start with.
+        :type initial_scene: str | None
         """
-        self.managers.scenes.change(self.config.initial_scene)
+        start_scene = initial_scene or "main"
+        self.managers.scenes.change(start_scene)
 
         pipeline = RenderPipeline()
         effects_registry = EffectRegistry()

@@ -1,0 +1,34 @@
+# Example-specific settings profile:
+# Settings.for_example("config/backend_swap")
+# Use this to test backend parity quickly.
+scene:
+  initial_scene: engine_config_basics
+
+engine_config:
+  fps: 60
+  virtual_resolution: [800, 600]
+  enable_profiler: false
+  postfx:
+    enabled: false
+    active: []
+
+backend:
+  provider: native
+  window:
+    width: 960
+    height: 540
+    title: config/backend_swap
+    resizable: true
+  renderer:
+    background_color: [20, 20, 20]
+  audio:
+    enable: false
+
+backend_swap:
+  backends:
+    - pygame
+    - native
+  parity_checks:
+    - "window opens and closes cleanly"
+    - "same virtual resolution"
+    - "same clear color"
