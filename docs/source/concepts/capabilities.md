@@ -31,8 +31,6 @@ Legend:
 
 ## Known limitations
 
-- The examples runner currently does not parse and forward passthrough args to
-  `build_example(**kwargs)`.
 - Backend parity exists for core rendering/capture APIs, but game-level
   feature parity still depends on each game and asset pipeline.
 - Capability coverage is broader than tutorial coverage; some features exist in

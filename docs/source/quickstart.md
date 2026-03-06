@@ -22,7 +22,7 @@ equivalently.
 ### 2) Run an example
 
 ```bash
-python -m mini_arcade.main run --example 001_min_scene
+python -m mini_arcade.main run --example config/engine_config_basics
 ```
 
 ### 3) Run a game
@@ -36,3 +36,9 @@ python -m mini_arcade.main run --game deja-bounce
 ```bash
 pytest
 ```
+
+## Build a new game
+
+Use the full guide:
+
+- [Create a Game](tutorials/create_game.md)

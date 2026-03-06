@@ -2,6 +2,10 @@
 
 Tutorials map to runnable examples under `examples/catalog/`.
 
+If your goal is to build a new game package end-to-end, start here:
+
+- [Create a Game](create_game.md)
+
 ## Before You Start: Game Structure
 
 Use this baseline layout for CLI-runnable games:
@@ -171,6 +175,7 @@ Notes:
 :caption: Tutorials
 :maxdepth: 1
 
+create_game
 config/engine_config_basics
 config/backend_swap
 ```

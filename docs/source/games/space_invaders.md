@@ -28,3 +28,13 @@ python manage.py
 
 This game intentionally keeps mechanics readable so engine behavior is easy to
 inspect and debug.
+
+## Implementation map
+
+- Bootstrap:
+  - `games/space-invaders/manage.py`
+  - `games/space-invaders/src/space_invaders/app.py`
+- Settings profile:
+  - `games/space-invaders/settings/settings.yml`
+- Scene package:
+  - `games/space-invaders/src/space_invaders/scenes/`

@@ -167,4 +167,3 @@ class CaptureControlsSystem(BaseSystem[CaptureControlsContext]):
                 if cap.replay_recording:
                     ctx.commands.push(StopReplayRecordCommand())
                 ctx.commands.push(StartReplayPlayCommand(path=replay_file))
-                ctx.commands.push(StartReplayPlayCommand(path=replay_file))

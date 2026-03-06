@@ -62,3 +62,7 @@ mini-arcade run --example config/backend_swap --pass-through --fps 75 --virtual-
 
 - `F1`: toggle built-in debug overlay
 - `ESC`: exit
+
+## Next step
+
+- Build a new project with [Create a Game](../create_game.md).

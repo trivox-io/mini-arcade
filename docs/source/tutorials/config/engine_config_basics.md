@@ -5,6 +5,8 @@
 Learn the current config model (`EngineConfig` + `SceneConfig`) and how one
 example can switch backends and runtime parameters without changing scene code.
 
+For a full end-to-end game creation workflow, see [../create_game.md](../create_game.md).
+
 ## What this example demonstrates
 
 This example connects four pieces:
@@ -178,3 +180,4 @@ Field meaning:
 ## Next step
 
 - Continue with `config/backend_swap` to validate parity between backends.
+- Use [Create a Game](../create_game.md) to scaffold a full game package.

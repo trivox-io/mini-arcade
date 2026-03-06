@@ -33,7 +33,6 @@ def main(argv: Optional[list[str]] = None):
     _, remaining_argv = global_parser.parse_known_args(argv)
 
     commands_dir = Path(commands_pkg.__file__).parent
-    print(commands_dir)
 
     load_command_packages(
         base_namespace="mini_arcade.modules",

@@ -9,9 +9,10 @@ and an explicit render/capture pipeline.
 
 At runtime:
 
-- `GameConfig` defines the initial scene, backend, fps, virtual resolution, and postfx.
-- `SceneRegistry` discovers and registers scene factories.
-- `Game` builds managers and runtime services around a selected backend.
+- `EngineConfig` defines fps, virtual resolution, postfx, and profiling.
+- `SceneConfig` defines initial scene and discovery packages.
+- `SceneRegistry` discovers and registers scene factories from configured packages.
+- `Engine` builds managers and runtime services around a selected backend.
 - `EngineRunner` executes the frame loop.
 - Scenes produce `RenderPacket` objects; render passes consume `FramePacket` wrappers.
 - Capture records input streams (replay) and optional video frames.
@@ -39,8 +40,9 @@ flowchart TD
   end
 
   subgraph Core[mini-arcade-core]
-    CFG[GameConfig]
-    GAME[Game]
+    ECFG[EngineConfig]
+    SCFG[SceneConfig]
+    GAME[Engine]
     MGR[Managers]
     SVC[RuntimeServices]
     LOOP[EngineRunner]
@@ -56,8 +58,10 @@ flowchart TD
 
   G --> CLI
   E --> CLI
-  CLI --> CFG
-  CFG --> GAME
+  CLI --> ECFG
+  CLI --> SCFG
+  ECFG --> GAME
+  SCFG --> GAME
   GAME --> MGR
   GAME --> SVC
   GAME --> LOOP
@@ -74,9 +78,9 @@ flowchart TD
 
 ## Core runtime objects
 
-### `Game`
+### `Engine`
 
-`Game` is the composition root for a running session. It wires:
+`Engine` is the composition root for a running session. It wires:
 
 - managers (`cheats`, `command_queue`, `scenes`)
 - runtime services (`window`, `audio`, `files`, `capture`, `input`, `render`, `scenes`)
@@ -137,7 +141,7 @@ On exit, scene stack is cleaned (`scenes.clean()`).
 ```{mermaid}
 sequenceDiagram
   participant CLI as mini-arcade
-  participant G as Game
+  participant G as Engine
   participant ER as EngineRunner
   participant BK as Backend
   participant SC as SceneAdapter

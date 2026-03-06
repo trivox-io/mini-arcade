@@ -27,3 +27,13 @@ python manage.py
 ## Notes
 
 Deja Bounce is used as both a playable sample and an engine regression target.
+
+## Implementation map
+
+- Bootstrap:
+  - `games/deja-bounce/manage.py`
+  - `games/deja-bounce/src/deja_bounce/app.py`
+- Settings profile:
+  - `games/deja-bounce/settings/settings.yml`
+- Scene package:
+  - `games/deja-bounce/src/deja_bounce/scenes/`

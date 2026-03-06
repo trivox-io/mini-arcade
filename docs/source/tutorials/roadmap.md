@@ -19,7 +19,8 @@ Status legend:
 
 ### Group 0: Configuration (engine-first)
 
-- `config/engine_config_basics` (`WIP`)
+- `create_game` (`DONE`)
+- `config/engine_config_basics` (`DONE`)
 - `config/backend_swap` (`DONE`)
 
 ### Group A: Scene stack core

@@ -28,3 +28,13 @@ python manage.py
 - `Up`: thrust
 - `Space`: fire
 - `Esc`: pause
+
+## Implementation map
+
+- Bootstrap:
+  - `games/asteroids/manage.py`
+  - `games/asteroids/src/asteroids/app.py`
+- Settings profile:
+  - `games/asteroids/settings/settings.yml`
+- Scene package:
+  - `games/asteroids/src/asteroids/scenes/`

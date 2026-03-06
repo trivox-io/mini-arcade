@@ -1,12 +1,12 @@
 # mini-arcade
 
-`mini-arcade` is the **user-facing entry point** for the Mini Arcade ecosystem.
+`mini-arcade` is the user-facing package for running Mini Arcade games and examples.
 
 It provides:
 
-- a **unified namespace** that exposes the core + backends
-- **runner utilities** (CLI) to run examples and games
-- small shared utilities (logging, helpers, etc.)
+- the CLI entrypoint (`mini-arcade`)
+- runner modules for `--game` and `--example`
+- integration helpers that connect settings, backends, and runtime launch
 
 ## Install
 
@@ -14,25 +14,21 @@ It provides:
 pip install mini-arcade
 ```
 
-## Unified namespace
-
-After installing, you can import:
-
-- `mini_arcade.core` → engine core
-- `mini_arcade.backends.pygame` → pygame backend
-- `mini_arcade.backends.native` → native SDL2 backend
-
-## Run something
+## CLI
 
 ```bash
 mini-arcade --help
-mini-arcade list
-mini-arcade run --game <game-name>
-mini-arcade run --example <example-name>
+mini-arcade run --game deja-bounce
+mini-arcade run --example config/engine_config_basics
+mini-arcade run --example config/backend_swap --pass-through --backend native --fps 72
 ```
 
-> Replace commands above with your real CLI. Keep this section updated — it’s the first thing users try.
+Equivalent module invocation:
+
+```bash
+python -m mini_arcade.main run --game deja-bounce
+```
 
 ## Docs
 
-See the monorepo docs in `docs/` (quickstart, concepts, tutorials, games).
+See monorepo docs in `docs/` for quickstart, architecture, tutorials, and game creation.
