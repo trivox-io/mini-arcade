@@ -176,6 +176,7 @@ Notes:
 :maxdepth: 1
 
 create_game
+scene/minimal_scene
 config/engine_config_basics
 config/backend_swap
 ```

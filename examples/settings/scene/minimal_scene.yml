@@ -1,0 +1,33 @@
+# Example-specific settings profile:
+# Settings.for_example("scene/minimal_scene")
+scene:
+  initial_scene: minimal_scene
+  scene_registry:
+    discover_packages:
+      - examples.catalog.scene.minimal_scene
+      - mini_arcade_core.scenes
+
+engine_config:
+  fps: 60
+  virtual_resolution: [800, 600]
+  enable_profiler: false
+  postfx:
+    enabled: false
+    active: []
+
+backend:
+  provider: pygame
+  window:
+    width: 960
+    height: 540
+    title: scene/minimal_scene
+    resizable: true
+  renderer:
+    background_color: [16, 18, 28]
+  audio:
+    enable: false
+
+cli_examples:
+  - "--backend pygame"
+  - "--backend native"
+  - "--fps 72 --virtual-width 960 --virtual-height 540"

@@ -25,7 +25,7 @@ Status legend:
 
 ### Group A: Scene stack core
 
-- `scene/minimal_scene` (`TODO`)
+- `scene/minimal_scene` (`DONE`)
 - `scene/debug_overlay_builtin` (`TODO`)
 - `scene/menu_scene_base` (`TODO`)
 - `scene/change_scene` (`TODO`)
