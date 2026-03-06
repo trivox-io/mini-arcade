@@ -51,11 +51,24 @@ games/my-first-game/
         __init__.py
         scene.py
         models.py
+        draw_ops.py
         systems/
           __init__.py
           input.py
           rules.py
           render.py
+    entities/
+      __init__.py
+      entity_id.py
+      player.py
+      enemy.py
+    controllers/
+      __init__.py
+      cpu.py
+  assets/
+    sprites/
+    fonts/
+    sfx/
 ```
 
 ## Step 1: `pyproject.toml`
@@ -196,6 +209,34 @@ gameplay:
   difficulty:
     default: normal
 ```
+
+## Gameplay Architecture (Reference Model)
+
+For non-trivial games, use this separation:
+
+- `entities/`: reusable entity builders and IDs
+- `scenes/<mode>/models.py`: world state, intent, tick context
+- `scenes/<mode>/systems/*.py`: input, simulation rules, collisions, rendering
+- `scenes/<mode>/draw_ops.py`: reusable `Drawable` overlays and specialized visuals
+- `scenes/<mode>/scene.py`: scene registration, world creation, system wiring
+
+This is the same structure used in reference games:
+
+- Deja Bounce:
+  - `games/deja-bounce/src/deja_bounce/entities/`
+  - `games/deja-bounce/src/deja_bounce/scenes/pong/models.py`
+  - `games/deja-bounce/src/deja_bounce/scenes/pong/draw_ops.py`
+  - `games/deja-bounce/src/deja_bounce/scenes/pong/systems/`
+- Asteroids:
+  - `games/asteroids/src/asteroids/entities/`
+  - `games/asteroids/src/asteroids/scenes/asteroids/models.py`
+  - `games/asteroids/src/asteroids/scenes/asteroids/draw_ops.py`
+  - `games/asteroids/src/asteroids/scenes/asteroids/systems/`
+- Space Invaders:
+  - `games/space-invaders/src/space_invaders/entities/__init__.py`
+  - `games/space-invaders/src/space_invaders/scenes/space_invaders/models.py`
+  - `games/space-invaders/src/space_invaders/scenes/space_invaders/draw_ops.py`
+  - `games/space-invaders/src/space_invaders/scenes/space_invaders/systems/`
 
 ## Step 5: Scene Commands (`scenes/commands.py`)
 
@@ -451,6 +492,175 @@ class PlayScene(GameScene[PlayTickContext, PlayWorld]):
         )
 ```
 
+## Entities Deep Dive (How to model game objects)
+
+Reference pattern from all current games:
+
+1. Define stable IDs (`entity_id.py`).
+2. Create entity builder classes/functions in `entities/`.
+3. Build entities with `BaseEntity.from_dict(...)`.
+4. Store game-specific runtime flags as dynamic attributes when needed.
+
+Typical base components in `from_dict`:
+
+- `transform`: position, size, optional rotation
+- `shape`: draw-time primitive shape metadata
+- `collider`: collision shape metadata
+- `kinematic`: velocity, acceleration, max speed
+- `style`: primitive color/stroke style
+- `sprite`: texture id for sprite-based rendering
+- `anim`: animation metadata (frame list + fps)
+- `life`: ttl/alive lifecycle metadata
+
+Example entity builder (Asteroids-style):
+
+```python
+from mini_arcade_core.engine.entities import BaseEntity
+
+
+class PlayerShip(BaseEntity):
+    @staticmethod
+    def build(x: float, y: float) -> "PlayerShip":
+        ship: PlayerShip = PlayerShip.from_dict(
+            {
+                "id": 1,
+                "name": "Ship",
+                "transform": {
+                    "center": {"x": x, "y": y},
+                    "size": {"width": 24.0, "height": 28.0},
+                    "rotation_deg": -90.0,
+                },
+                "shape": {"kind": "triangle"},
+                "collider": {"kind": "circle", "radius": 12.0},
+                "kinematic": {
+                    "velocity": {"vx": 0.0, "vy": 0.0},
+                    "acceleration": {"ax": 0.0, "ay": 0.0},
+                    "max_speed": 330.0,
+                },
+                "style": {"fill": (240, 240, 245, 255)},
+            }
+        )
+        ship.fire_cd = 0.0
+        ship.invuln_timer = 0.0
+        return ship
+```
+
+Practical guidance:
+
+- Keep builder methods deterministic and free of side effects.
+- Keep IDs grouped by ranges when you need fast selection by category.
+- Keep scene-global state in `world`, not in entity classes.
+- Use entity dynamic fields for per-entity runtime details only.
+
+## World and Models Deep Dive
+
+Use `models.py` to define:
+
+- `World` (`BaseWorld`): all mutable scene state
+- `Intent` (`BaseIntent`): normalized input snapshot per tick
+- `TickContext` (`BaseTickContext`): typed pipeline context
+
+Scale-up pattern from Space Invaders:
+
+- Put timers/cooldowns in world (`ship_fire_timer`, `ufo_spawn_timer`)
+- Put score/lives/round flags in world (`score`, `lives`, `game_over`)
+- Put transient VFX state in world (`effects`, `fx_ttl`)
+- Add helper selectors in world (`ship()`, `asteroids()`, `bullets()`)
+
+## DrawOps Deep Dive (Recommended for complex scenes)
+
+For simple scenes, generating one `RenderPacket` with inline draw call is fine.
+
+For medium/large scenes, use:
+
+1. `draw_ops.py` classes that implement `Drawable[TContext]`
+2. `BaseQueuedRenderSystem` to emit entity rendering + custom layered overlays
+3. `DrawCall(drawable=..., ctx=ctx)` wrappers in render system
+
+This is how Deja Bounce, Asteroids, and Space Invaders handle overlays/HUD/VFX.
+
+Minimal `draw_ops.py` example:
+
+```python
+from mini_arcade_core.backend import Backend
+from mini_arcade_core.scenes.sim_scene import Drawable
+
+from my_first_game.scenes.play.models import PlayTickContext
+
+
+class DrawHud(Drawable[PlayTickContext]):
+    def draw(self, backend: Backend, ctx: PlayTickContext):
+        backend.text.draw(
+            12, 12, f"SCORE {ctx.world.score}", color=(255, 255, 255, 255)
+        )
+```
+
+Minimal queued render system using draw ops:
+
+```python
+from dataclasses import dataclass
+
+from mini_arcade_core.scenes.sim_scene import DrawCall
+from mini_arcade_core.scenes.systems.builtins import BaseQueuedRenderSystem
+from mini_arcade_core.scenes.systems.phases import SystemPhase
+
+from my_first_game.scenes.play.draw_ops import DrawHud
+from my_first_game.scenes.play.models import PlayTickContext
+
+
+@dataclass
+class PlayRenderSystem(BaseQueuedRenderSystem[PlayTickContext]):
+    name: str = "play_render"
+    phase: int = SystemPhase.RENDERING
+    order: int = 100
+
+    def emit(self, ctx: PlayTickContext, rq):
+        super().emit(ctx, rq)
+        rq.custom(op=DrawCall(drawable=DrawHud(), ctx=ctx), layer="ui", z=90)
+```
+
+Layer guidance:
+
+- `world`: entities and gameplay geometry
+- `lighting`: glow/light overlays
+- `ui`: HUD/menu text
+- `effects`: transient FX/post-world overlays
+
+## Systems Deep Dive (Pipeline design)
+
+A robust system order for gameplay scenes:
+
+1. Input systems (`SystemPhase.INPUT`)
+2. Control systems (pause/hotkeys/commands) (`SystemPhase.CONTROL`)
+3. Simulation systems (movement, collisions, rules) (`SystemPhase.SIMULATION`)
+4. Rendering systems (`SystemPhase.RENDERING`)
+
+Example from real games:
+
+- Deja Bounce:
+  - input -> pause/hotkeys -> movement/collision/rules -> render
+- Asteroids:
+  - input -> pause -> ship control/motion/collision -> render
+- Space Invaders:
+  - input -> pause/hotkeys -> many gameplay systems -> render
+
+Rule of thumb:
+
+- Systems mutate `ctx.world` and enqueue commands in `ctx.commands`.
+- Exactly one render path must set `ctx.packet` each tick.
+- Keep each system focused on one responsibility.
+
+## Asset and Texture Patterns
+
+Use these patterns from reference games:
+
+- Resolve asset root once (`find_assets_root()` helpers).
+- Load static texture IDs in `scene.on_enter()`.
+- Cache texture lookups in scene methods (`self._tex(path)` pattern).
+- Keep logical projectile/animation specs in `world` (not global module state).
+
+This keeps startup predictable and avoids per-frame texture loading.
+
 ## Step 8: Ensure Scene Discovery Imports
 
 `src/my_first_game/scenes/__init__.py` should import scene modules so decorators run:
@@ -502,3 +712,29 @@ When generating a new game automatically, enforce this sequence:
 7. Run `mini-arcade run --game <id>` and fix import/config/runtime errors.
 
 This gives a deterministic baseline that matches the current Mini Arcade runtime model.
+
+## Reference File Map (Use these as templates)
+
+Deja Bounce (balanced baseline):
+
+- `games/deja-bounce/src/deja_bounce/scenes/pong/scene.py`
+- `games/deja-bounce/src/deja_bounce/scenes/pong/models.py`
+- `games/deja-bounce/src/deja_bounce/scenes/pong/draw_ops.py`
+- `games/deja-bounce/src/deja_bounce/scenes/pong/systems/`
+- `games/deja-bounce/src/deja_bounce/entities/`
+
+Asteroids (shape-heavy rendering and ID ranges):
+
+- `games/asteroids/src/asteroids/scenes/asteroids/scene.py`
+- `games/asteroids/src/asteroids/scenes/asteroids/models.py`
+- `games/asteroids/src/asteroids/scenes/asteroids/draw_ops.py`
+- `games/asteroids/src/asteroids/scenes/asteroids/systems/render.py`
+- `games/asteroids/src/asteroids/entities/`
+
+Space Invaders (large scene decomposition and advanced overlays):
+
+- `games/space-invaders/src/space_invaders/scenes/space_invaders/scene.py`
+- `games/space-invaders/src/space_invaders/scenes/space_invaders/models.py`
+- `games/space-invaders/src/space_invaders/scenes/space_invaders/draw_ops.py`
+- `games/space-invaders/src/space_invaders/scenes/space_invaders/systems/render.py`
+- `games/space-invaders/src/space_invaders/entities/__init__.py`
