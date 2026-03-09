@@ -7,6 +7,7 @@ from __future__ import annotations
 import importlib
 from typing import Any
 
+from mini_arcade.modules.settings import Settings  # type: ignore[import-not-found]
 from mini_arcade.utils.logging import logger  # type: ignore[import-not-found]
 from mini_arcade_core import (  # type: ignore[import-not-found]
     EngineConfig,
@@ -122,6 +123,9 @@ def run_example(example_id: str, **kwargs) -> int:
         initial_scene=spec.initial_scene,
         discover_packages=list(spec.discover_packages),
     )
+    gameplay_config = Settings.for_example(
+        normalized, required=False
+    ).gameplay_defaults()
 
     logger.info(
         f"Starting example: {normalized} (scene={spec.initial_scene}, fps={spec.fps})"
@@ -130,5 +134,6 @@ def run_example(example_id: str, **kwargs) -> int:
         engine_config=engine_config,
         scene_config=scene_config,
         backend=backend,
+        gameplay_config=gameplay_config,
     )
     return 0

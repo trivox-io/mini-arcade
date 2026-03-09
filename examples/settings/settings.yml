@@ -10,6 +10,12 @@ engine_config:
     enabled: false
     active: []
 
+gameplay:
+  debug_overlay:
+    enabled: true
+    title: Example Debug Overlay
+    sections: [timing, render, viewport, stack, scene]
+
 backend:
   provider: pygame
   window:

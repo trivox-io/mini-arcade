@@ -64,6 +64,35 @@ Supporting cleanup made during validation:
 - root `pyproject.toml` now sets pytest `--import-mode=importlib` so package
   test modules with repeated names do not collide during collection
 
+## Debug Overlay
+
+The built-in debug overlay is now opt-in and settings-driven.
+
+- it is disabled unless `gameplay.debug_overlay.enabled: true` is present in
+  the active settings profile
+- examples now receive `gameplay_config` from `Settings.for_example(...)`, so
+  example YAML can enable the same overlay path as real games
+- the overlay can be configured from YAML for:
+  - `title`
+  - `toggle_key`
+  - `start_visible`
+  - `sections`
+  - `static_lines`
+  - `style`
+
+Scene authors can also extend the overlay without replacing it by overriding:
+
+```python
+def debug_overlay_lines(self) -> list[str]:
+    return [
+        "custom: value",
+        "another metric: 42",
+    ]
+```
+
+Those scene-provided lines are collected by the built-in overlay when the
+`scene` section is enabled.
+
 ## Current execution model
 
 System execution is already centralized and deterministic:

@@ -751,6 +751,14 @@ class SimScene(Generic[TContext, TWorld]):
     def on_exit(self):
         """Called when the scene stops being active (cleanup optional)."""
 
+    def debug_overlay_lines(self) -> list[str]:
+        """
+        Optional extension hook for the built-in debug overlay.
+
+        Scenes can override this to expose scene-specific diagnostics.
+        """
+        return []
+
     def _load_texture(self, path: str) -> int:
         return self.context.services.render.load_texture(path)
 

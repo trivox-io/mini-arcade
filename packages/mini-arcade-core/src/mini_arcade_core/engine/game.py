@@ -25,6 +25,7 @@ from mini_arcade_core.engine.render.effects.registry import EffectRegistry
 from mini_arcade_core.engine.render.effects.vignette import VignetteNoiseEffect
 from mini_arcade_core.engine.render.pipeline import RenderPipeline
 from mini_arcade_core.engine.render.render_service import RenderService
+from mini_arcade_core.engine.scenes.models import ScenePolicy
 from mini_arcade_core.engine.scenes.scene_manager import SceneAdapter
 from mini_arcade_core.runtime.audio.audio_adapter import SDLAudioAdapter
 from mini_arcade_core.runtime.capture.capture_service import CaptureService
@@ -134,6 +135,23 @@ class Engine:
         """
         start_scene = initial_scene or "main"
         self.managers.scenes.change(start_scene)
+        overlay_cfg = getattr(self.settings, "debug_overlay", None)
+        if (
+            overlay_cfg is not None
+            and overlay_cfg.enabled
+            and overlay_cfg.start_visible
+            and not self.managers.scenes.has_scene(overlay_cfg.scene_id)
+        ):
+            self.managers.scenes.push(
+                overlay_cfg.scene_id,
+                as_overlay=True,
+                policy=ScenePolicy(
+                    blocks_update=False,
+                    blocks_input=False,
+                    is_opaque=False,
+                    receives_input=False,
+                ),
+            )
 
         pipeline = RenderPipeline()
         effects_registry = EffectRegistry()

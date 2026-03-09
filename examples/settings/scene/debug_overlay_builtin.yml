@@ -15,6 +15,15 @@ engine_config:
     enabled: false
     active: []
 
+gameplay:
+  debug_overlay:
+    enabled: true
+    title: Built-in Debug Overlay
+    static_lines:
+      - "Configured from settings.yml"
+      - "Extra scene lines come from debug_overlay_lines()"
+    sections: [timing, render, viewport, stack, scene]
+
 backend:
   provider: pygame
   window:
@@ -31,4 +40,3 @@ cli_examples:
   - "--backend pygame"
   - "--backend native"
   - "--fps 75 --virtual-width 960 --virtual-height 540"
-

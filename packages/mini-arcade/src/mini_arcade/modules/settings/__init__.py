@@ -607,6 +607,12 @@ class Settings:
         if isinstance(controls, dict):
             out["controls"] = self._deep_copy_dict(controls)
 
+        debug_overlay = src.get("debug_overlay")
+        if isinstance(debug_overlay, dict):
+            out["debug_overlay"] = self._deep_copy_dict(debug_overlay)
+        elif isinstance(debug_overlay, bool):
+            out["debug_overlay"] = bool(debug_overlay)
+
         return out
 
     def backend_defaults(

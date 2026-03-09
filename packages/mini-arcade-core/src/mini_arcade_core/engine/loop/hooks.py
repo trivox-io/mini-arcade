@@ -54,6 +54,12 @@ class DefaultGameHooks:
         :param events: Iterable of input events.
         :type events: Iterable[Event]
         """
+        overlay_cfg = getattr(self.game.settings, "debug_overlay", None)
+        overlay_key = (
+            overlay_cfg.toggle_key
+            if overlay_cfg is not None and overlay_cfg.enabled
+            else None
+        )
         for e in events:
             if e.type == EventType.WINDOWRESIZED and e.size:
                 w, h = e.size
@@ -61,7 +67,7 @@ class DefaultGameHooks:
                 self.game.services.window.on_window_resized(w, h)
 
             if e.type == EventType.KEYDOWN:
-                if e.key == Key.F1:
+                if overlay_key is not None and e.key == overlay_key:
                     self.game.managers.command_queue.push(
                         ToggleDebugOverlayCommand()
                     )

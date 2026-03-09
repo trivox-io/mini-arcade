@@ -282,6 +282,9 @@ def _run_scene(
 def test_catalog_examples_smoke() -> None:
     for example_id in EXAMPLE_IDS:
         spec = load_example_spec(example_id)
+        settings = Settings.for_example(
+            example_id, required=False, force_reload=True
+        )
         engine_config = (
             spec.engine_config_factory(None)
             if spec.engine_config_factory is not None
@@ -291,6 +294,7 @@ def test_catalog_examples_smoke() -> None:
             scene_id=spec.initial_scene,
             discover_packages=list(spec.discover_packages),
             engine_config=engine_config,
+            gameplay_config=settings.gameplay_defaults(),
         )
 
 

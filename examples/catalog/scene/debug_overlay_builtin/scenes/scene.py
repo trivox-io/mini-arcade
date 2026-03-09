@@ -63,8 +63,9 @@ class DebugOverlayBuiltinScene(SimScene):
         lines = [
             "scene/debug_overlay_builtin",
             "",
-            "This scene never creates the debug overlay itself.",
-            "Press F1 to toggle built-in scene: debug_overlay.",
+            "The overlay is enabled from gameplay settings.",
+            "Press F1 to toggle the built-in debug overlay.",
+            "This scene contributes extra lines through debug_overlay_lines().",
             "",
             f"backend: {self._last_backend_name}",
             f"frame: {self._frames}",
@@ -101,3 +102,9 @@ class DebugOverlayBuiltinScene(SimScene):
 
         return RenderPacket.from_ops([draw])
 
+    def debug_overlay_lines(self) -> list[str]:
+        return [
+            f"scene_frames: {self._frames}",
+            f"overlay_toggles_observed: {self._toggle_count}",
+            f"backend_hint: {self._last_backend_name}",
+        ]

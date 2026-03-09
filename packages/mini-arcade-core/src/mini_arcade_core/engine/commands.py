@@ -220,16 +220,21 @@ class ToggleDebugOverlayCommand(Command):
     :cvar DEBUG_OVERLAY_ID: str: Identifier for the debug overlay scene.
     """
 
-    DEBUG_OVERLAY_ID = "debug_overlay"
-
     def execute(self, context: CommandContext):
+        overlay_settings = getattr(context.settings, "debug_overlay", None)
+        if overlay_settings is None or not overlay_settings.enabled:
+            return
+
+        scene_id = str(
+            getattr(overlay_settings, "scene_id", "debug_overlay")
+        ).strip() or "debug_overlay"
         scenes = context.managers.scenes
-        if scenes.has_scene(self.DEBUG_OVERLAY_ID):
-            scenes.remove_scene(self.DEBUG_OVERLAY_ID)
+        if scenes.has_scene(scene_id):
+            scenes.remove_scene(scene_id)
             return
 
         scenes.push(
-            self.DEBUG_OVERLAY_ID,
+            scene_id,
             as_overlay=True,
             policy=ScenePolicy(
                 blocks_update=False,
