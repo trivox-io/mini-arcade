@@ -64,6 +64,12 @@ Run an example:
 mini-arcade run --example config/backend_swap
 ```
 
+Run all examples as a tour:
+
+```bash
+mini-arcade run tour
+```
+
 Forward args to the example runner:
 
 ```bash

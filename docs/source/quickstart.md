@@ -25,6 +25,20 @@ equivalently.
 python -m mini_arcade.main run --example config/engine_config_basics
 ```
 
+### 2b) Run all examples as a guided tour
+
+```bash
+python -m mini_arcade.main run tour
+```
+
+Useful filters:
+
+```bash
+python -m mini_arcade.main run tour --group scene
+python -m mini_arcade.main run tour --from-example scene/minimal_scene --to-example scene/pause_overlay_policy
+python -m mini_arcade.main run tour --pass-through --backend native
+```
+
 ### 3) Run a game
 
 ```bash

@@ -7,9 +7,10 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 try:
     import tomllib  # pyright: ignore[reportMissingImports] # py311+
@@ -20,6 +21,8 @@ from mini_arcade.cli.base_command_processor import BaseCommandProcessor
 from mini_arcade.cli.exceptions import CommandException
 
 # ------------------------- TOML helpers --------------------------------------
+
+INTERRUPTED_EXIT_CODE = 130
 
 
 class TargetMetadataError(RuntimeError):
@@ -160,6 +163,49 @@ def _build_pythonpath(spec: TargetSpec) -> str:
         parts.append(existing)
 
     return os.pathsep.join(parts)
+
+
+def _stop_process(proc: subprocess.Popen) -> None:
+    """
+    Try to stop a subprocess gracefully, then force-kill if needed.
+    """
+    if proc.poll() is not None:
+        return
+
+    proc.terminate()
+    try:
+        proc.wait(timeout=3)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait(timeout=3)
+
+
+def _run_child_process(
+    *,
+    cmd: list[str],
+    cwd: Path,
+    env: dict[str, str],
+) -> tuple[int, bool]:
+    """
+    Run one subprocess and handle Ctrl+C interruption.
+
+    :return: (exit_code, interrupted)
+    """
+    proc = subprocess.Popen(
+        cmd,
+        cwd=str(cwd),
+        env=env,
+    )
+
+    try:
+        while True:
+            code = proc.poll()
+            if code is not None:
+                return int(code or 0), False
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        _stop_process(proc)
+        return INTERRUPTED_EXIT_CODE, True
 
 
 # ------------------------- Locators ------------------------------------------
@@ -455,12 +501,337 @@ class GameRunnerProcessor(BaseCommandProcessor):
         print(f"cmd={' '.join(cmd)}")
 
         try:
-            result = subprocess.run(
-                cmd,
-                cwd=str(spec.root_dir),
+            exit_code, interrupted = _run_child_process(
+                cmd=cmd,
+                cwd=spec.root_dir,
                 env=env,
-                check=False,
             )
-            return int(result.returncode or 0)
+            if interrupted:
+                print("Interrupted by user.")
+            return exit_code
         except FileNotFoundError as e:
             raise CommandException(f"Failed to execute entrypoint: {e}") from e
+
+
+class ExampleTourBus:
+    """
+    Lightweight in-process event bus for example tour orchestration.
+    """
+
+    def __init__(self):
+        self._subscribers: dict[str, list[Callable[..., None]]] = {}
+
+    def on(self, event_type: str, handler: Callable[..., None]):
+        self._subscribers.setdefault(event_type, []).append(handler)
+
+    def emit(self, event_type: str, **kwargs):
+        for handler in self._subscribers.get(event_type, []):
+            handler(**kwargs)
+
+
+class TourEvents:
+    """
+    Event names emitted by the examples tour processor.
+    """
+
+    SESSION_STARTED = "session_started"
+    EXAMPLE_STARTED = "example_started"
+    EXAMPLE_FINISHED = "example_finished"
+    EXAMPLE_FAILED = "example_failed"
+    SESSION_FINISHED = "session_finished"
+
+
+class ConsoleTourReporter:
+    """
+    Console reporter subscribed to tour lifecycle events.
+    """
+
+    def __init__(self, bus: ExampleTourBus):
+        bus.on(TourEvents.SESSION_STARTED, self._on_session_started)
+        bus.on(TourEvents.EXAMPLE_STARTED, self._on_example_started)
+        bus.on(TourEvents.EXAMPLE_FINISHED, self._on_example_finished)
+        bus.on(TourEvents.EXAMPLE_FAILED, self._on_example_failed)
+        bus.on(TourEvents.SESSION_FINISHED, self._on_session_finished)
+
+    def _on_session_started(self, *, total: int, examples: list[str]):
+        print(f"Starting examples tour ({total} examples).")
+        if examples:
+            print("Order:")
+            for idx, example_id in enumerate(examples, start=1):
+                print(f"  {idx}. {example_id}")
+
+    def _on_example_started(
+        self,
+        *,
+        index: int,
+        total: int,
+        example_id: str,
+        cmd: str,
+    ):
+        print(f"[{index}/{total}] Starting: {example_id}")
+        print(f"cmd={cmd}")
+
+    def _on_example_finished(
+        self,
+        *,
+        index: int,
+        total: int,
+        example_id: str,
+        exit_code: int,
+    ):
+        print(
+            f"[{index}/{total}] Finished: {example_id} (exit={exit_code})"
+        )
+
+    def _on_example_failed(
+        self,
+        *,
+        index: int,
+        total: int,
+        example_id: str,
+        error: str,
+    ):
+        print(f"[{index}/{total}] Failed: {example_id} ({error})")
+
+    def _on_session_finished(
+        self,
+        *,
+        total: int,
+        passed: int,
+        failed: int,
+        stopped: bool,
+    ):
+        status = "stopped early" if stopped else "completed"
+        print(
+            f"Examples tour {status}: total={total}, passed={passed}, "
+            f"failed={failed}"
+        )
+
+
+def _normalize_target_id(raw_value: str) -> str:
+    normalized = str(raw_value).replace("\\", "/").strip("/")
+    if not normalized:
+        raise CommandException("Example id must be non-empty")
+    return normalized
+
+
+def _discover_example_ids(examples_parent: Path) -> list[str]:
+    ids: list[str] = []
+    base = examples_parent.resolve()
+
+    for main_py in sorted(
+        base.rglob("main.py"), key=lambda p: str(p).lower()
+    ):
+        rel = str(main_py.parent.resolve().relative_to(base))
+        rel_id = rel.replace("\\", "/").strip("/")
+        if rel_id:
+            ids.append(rel_id)
+
+    # preserve order, remove duplicates
+    return list(dict.fromkeys(ids))
+
+
+class ExamplesTourProcessor(BaseCommandProcessor):
+    """
+    Processor for running examples sequentially in "tour" mode.
+    """
+
+    def __init__(self, **kwargs):
+        self.examples_dir = kwargs.get("examples_dir")
+        self.group = kwargs.get("group")
+        self.from_example = kwargs.get("from_example")
+        self.to_example = kwargs.get("to_example")
+        self.stop_on_fail = bool(kwargs.get("stop_on_fail", False))
+        self.list_only = bool(kwargs.get("list_only", False))
+
+        self.pass_through = kwargs.get("pass_through", [])
+        if not isinstance(self.pass_through, list):
+            self.pass_through = [str(self.pass_through)]
+        if self.pass_through and self.pass_through[0] == "--":
+            self.pass_through = self.pass_through[1:]
+
+        self._dev_examples_dir = (Path.cwd() / "examples" / "catalog").resolve()
+        self._examples = ExampleLocator(
+            dev_default_parent_dir=self._dev_examples_dir
+        )
+
+    def _resolve_playlist(self, parent_dir: Path) -> list[str]:
+        ids = _discover_example_ids(parent_dir)
+        ids = [_normalize_target_id(item) for item in ids]
+
+        if self.group:
+            group_id = _normalize_target_id(str(self.group))
+            prefix = f"{group_id}/"
+            ids = [
+                example_id
+                for example_id in ids
+                if example_id == group_id or example_id.startswith(prefix)
+            ]
+
+        from_idx = 0
+        to_idx = len(ids) - 1
+
+        if self.from_example:
+            from_id = _normalize_target_id(str(self.from_example))
+            if from_id not in ids:
+                raise CommandException(
+                    f"--from-example not found in playlist: {from_id}"
+                )
+            from_idx = ids.index(from_id)
+
+        if self.to_example:
+            to_id = _normalize_target_id(str(self.to_example))
+            if to_id not in ids:
+                raise CommandException(
+                    f"--to-example not found in playlist: {to_id}"
+                )
+            to_idx = ids.index(to_id)
+
+        if ids and from_idx > to_idx:
+            raise CommandException(
+                "Invalid range: --from-example is after --to-example"
+            )
+
+        if not ids:
+            return []
+
+        return ids[from_idx : to_idx + 1]
+
+    def _run_one(
+        self,
+        *,
+        parent_dir: Path,
+        example_id: str,
+        index: int,
+        total: int,
+        bus: ExampleTourBus,
+    ) -> tuple[int, bool]:
+        target_dir = self._examples.find_dir(parent_dir, example_id)
+        spec = self._examples.validate(target_dir)
+        requested_example_id = _normalize_target_id(example_id)
+
+        cmd = [
+            sys.executable,
+            str(spec.entrypoint),
+            requested_example_id,
+            *self.pass_through,
+        ]
+        env = os.environ.copy()
+        env["PYTHONPATH"] = _build_pythonpath(spec)
+
+        bus.emit(
+            TourEvents.EXAMPLE_STARTED,
+            index=index,
+            total=total,
+            example_id=requested_example_id,
+            cmd=" ".join(cmd),
+        )
+
+        try:
+            exit_code, interrupted = _run_child_process(
+                cmd=cmd,
+                cwd=spec.root_dir,
+                env=env,
+            )
+        except FileNotFoundError as exc:
+            bus.emit(
+                TourEvents.EXAMPLE_FAILED,
+                index=index,
+                total=total,
+                example_id=requested_example_id,
+                error=str(exc),
+            )
+            return 1, False
+        if interrupted:
+            bus.emit(
+                TourEvents.EXAMPLE_FAILED,
+                index=index,
+                total=total,
+                example_id=requested_example_id,
+                error="interrupted by user",
+            )
+            return exit_code, True
+
+        bus.emit(
+            TourEvents.EXAMPLE_FINISHED,
+            index=index,
+            total=total,
+            example_id=requested_example_id,
+            exit_code=exit_code,
+        )
+
+        if exit_code != 0:
+            bus.emit(
+                TourEvents.EXAMPLE_FAILED,
+                index=index,
+                total=total,
+                example_id=requested_example_id,
+                error=f"exit code {exit_code}",
+            )
+
+        return exit_code, False
+
+    def run(self):
+        parent_dir = self._examples.resolve_parent_dir(self.examples_dir)
+        playlist = self._resolve_playlist(parent_dir)
+
+        if not playlist:
+            raise CommandException(
+                f"No runnable examples found under: {parent_dir}"
+            )
+
+        if self.list_only:
+            for idx, example_id in enumerate(playlist, start=1):
+                print(f"{idx}. {example_id}")
+            return 0
+
+        bus = ExampleTourBus()
+        ConsoleTourReporter(bus)
+
+        total = len(playlist)
+        passed = 0
+        failed = 0
+        stopped = False
+        last_error_code = 0
+
+        bus.emit(
+            TourEvents.SESSION_STARTED,
+            total=total,
+            examples=playlist,
+        )
+
+        for index, example_id in enumerate(playlist, start=1):
+            exit_code, interrupted = self._run_one(
+                parent_dir=parent_dir,
+                example_id=example_id,
+                index=index,
+                total=total,
+                bus=bus,
+            )
+
+            if interrupted:
+                failed += 1
+                last_error_code = exit_code
+                stopped = True
+                break
+
+            if exit_code == 0:
+                passed += 1
+            else:
+                failed += 1
+                last_error_code = exit_code
+                if self.stop_on_fail:
+                    stopped = True
+                    break
+
+        bus.emit(
+            TourEvents.SESSION_FINISHED,
+            total=total,
+            passed=passed,
+            failed=failed,
+            stopped=stopped,
+        )
+
+        if failed > 0:
+            return last_error_code or 1
+        return 0

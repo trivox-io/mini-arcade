@@ -15,6 +15,21 @@ from mini_arcade.constants import APP, CLI
 from mini_arcade.utils.module_loader import load_command_packages
 
 
+def _normalize_legacy_run_alias(argv: list[str]) -> list[str]:
+    """
+    Backward-compatible command rewrite.
+
+    Allows:
+      mini-arcade run tour [options...]
+
+    by rewriting to:
+      mini-arcade tour [options...]
+    """
+    if len(argv) >= 2 and argv[0] == "run" and argv[1] == "tour":
+        return ["tour", *argv[2:]]
+    return argv
+
+
 def main(argv: Optional[list[str]] = None):
     """
     Main entry point for the Mini Arcade CLI.
@@ -31,6 +46,7 @@ def main(argv: Optional[list[str]] = None):
     )
     remaining_argv: list[str]
     _, remaining_argv = global_parser.parse_known_args(argv)
+    remaining_argv = _normalize_legacy_run_alias(remaining_argv)
 
     commands_dir = Path(commands_pkg.__file__).parent
 
