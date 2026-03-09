@@ -13,6 +13,7 @@ Developer internals (recommended alongside tutorials):
 - [Scene Internals](../concepts/scenes_internals.md)
 - [Menu Scenes Internals](../concepts/menu_scenes.md)
 - [Scene Transitions Internals](../concepts/scene_transitions.md)
+- [Overlay Policies Internals](../concepts/overlay_policies.md)
 
 ## Before You Start: Game Structure
 
@@ -188,6 +189,7 @@ scene/minimal_scene
 scene/debug_overlay_builtin
 scene/menu_scene_base
 scene/change_scene
+scene/pause_overlay_policy
 config/engine_config_basics
 config/backend_swap
 ```

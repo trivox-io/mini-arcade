@@ -114,3 +114,7 @@ mini-arcade run --example scene/change_scene --pass-through --backend native
 - Menu scene patterns (where change is often triggered):
   [../../concepts/menu_scenes.md](../../concepts/menu_scenes.md)
 
+## Next step
+
+- Keep scene instance but freeze it with overlay policy:
+  [pause_overlay_policy.md](pause_overlay_policy.md)

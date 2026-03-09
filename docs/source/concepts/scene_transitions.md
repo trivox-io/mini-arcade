@@ -47,6 +47,11 @@ Use with `as_overlay=True` and explicit `ScenePolicy` for:
 - modal dialogs
 - debug or tool overlays
 
+Pause-overlay policy details:
+
+- `docs/source/concepts/overlay_policies.md`
+- `docs/source/tutorials/scene/pause_overlay_policy.md`
+
 ## `pop` / `remove`: unwind overlays or specific scenes
 
 - `PopSceneCommand()` removes top scene
@@ -76,4 +81,3 @@ For `change`, policy on old scenes is irrelevant because stack is cleaned first.
 ## Tutorial reference
 
 - `docs/source/tutorials/scene/change_scene.md`
-

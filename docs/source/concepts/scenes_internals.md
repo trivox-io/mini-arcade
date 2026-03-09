@@ -49,6 +49,11 @@ Policy model:
 
 This controls pause overlays, modal menus, and render visibility.
 
+Overlay policy deep dive:
+
+- `docs/source/concepts/overlay_policies.md`
+- `docs/source/tutorials/scene/pause_overlay_policy.md`
+
 ## Built-in debug overlay internals
 
 Engine files involved:

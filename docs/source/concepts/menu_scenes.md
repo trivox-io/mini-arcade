@@ -96,6 +96,10 @@ Pause overlay pattern:
 - menu style usually uses `overlay_color` dimming
 - `quit_command()` typically resumes gameplay, not exit
 
+Policy details for pause overlays:
+
+- `docs/source/concepts/overlay_policies.md`
+
 See real game implementations:
 
 - `games/deja-bounce/src/deja_bounce/scenes/menu.py`
@@ -116,4 +120,3 @@ See real game implementations:
 ## Related tutorial
 
 - `docs/source/tutorials/scene/menu_scene_base.md`
-

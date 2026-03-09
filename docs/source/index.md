@@ -82,6 +82,7 @@ Backends Internals <concepts/backends>
 Scene Internals <concepts/scenes_internals>
 Menu Scenes Internals <concepts/menu_scenes>
 Scene Transitions Internals <concepts/scene_transitions>
+Overlay Policies Internals <concepts/overlay_policies>
 Tutorials <tutorials/index>
 Games <games/index>
 Contributing <contributing/index>

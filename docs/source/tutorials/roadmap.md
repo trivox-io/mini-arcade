@@ -29,7 +29,7 @@ Status legend:
 - `scene/debug_overlay_builtin` (`DONE`)
 - `scene/menu_scene_base` (`DONE`)
 - `scene/change_scene` (`DONE`)
-- `scene/pause_overlay_policy` (`TODO`)
+- `scene/pause_overlay_policy` (`DONE`)
 
 ### Group B: Entities and shapes
 
