@@ -62,7 +62,7 @@ skip = [".venv", "venv", "env", "build", "dist", "docs"]
 
 [tool.pytest.ini_options]
 testpaths = ["packages"]
-addopts = "-v --color=yes"
+addopts = "-v --color=yes --import-mode=importlib"
 
 [tool.mypy]
 python_version = "3.9"

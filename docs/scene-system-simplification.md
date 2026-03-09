@@ -38,6 +38,32 @@ Phase 3 is now implemented for the built-in vector path and Asteroids:
   thrust-only override
 - Asteroids render system is reduced to HUD composition and ship-thrust logic
 
+## Validation
+
+The simplification changes have now been validated against the shipped examples
+and games with automated smoke coverage.
+
+- added a headless smoke test in
+  `packages/mini-arcade-core/tests/test_smoke_examples_and_games.py`
+- the smoke pass loads every catalog example entrypoint and runs it through the
+  real engine loop with a fake backend for a small number of frames
+- the smoke pass also loads all shipped games and runs both menu and gameplay
+  scenes for:
+  - `deja-bounce`
+  - `space-invaders`
+  - `asteroids`
+  - `office-horrors`
+- this validates scene discovery, `on_enter()`, `GameScene` auto-system
+  installation, input processing, rendering, and the current startup path after
+  the Phase 1-3 changes
+
+Supporting cleanup made during validation:
+
+- `games/office-horrors/src/office_horrors/app.py` was updated to use the
+  current `Settings` + `run_game(...)` bootstrap path
+- root `pyproject.toml` now sets pytest `--import-mode=importlib` so package
+  test modules with repeated names do not collide during collection
+
 ## Current execution model
 
 System execution is already centralized and deterministic:
