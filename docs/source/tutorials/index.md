@@ -6,6 +6,12 @@ If your goal is to build a new game package end-to-end, start here:
 
 - [Create a Game](create_game.md)
 
+Developer internals (recommended alongside tutorials):
+
+- [Configuration Internals](../concepts/configuration.md)
+- [Backends Internals](../concepts/backends.md)
+- [Scene Internals](../concepts/scenes_internals.md)
+
 ## Before You Start: Game Structure
 
 Use this baseline layout for CLI-runnable games:
@@ -177,6 +183,7 @@ Notes:
 
 create_game
 scene/minimal_scene
+scene/debug_overlay_builtin
 config/engine_config_basics
 config/backend_swap
 ```

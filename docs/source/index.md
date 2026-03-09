@@ -77,6 +77,9 @@ README <readme>
 Quickstart <quickstart>
 Architecture <concepts/architecture>
 Capabilities <concepts/capabilities>
+Configuration Internals <concepts/configuration>
+Backends Internals <concepts/backends>
+Scene Internals <concepts/scenes_internals>
 Tutorials <tutorials/index>
 Games <games/index>
 Contributing <contributing/index>

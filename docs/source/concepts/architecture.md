@@ -231,3 +231,9 @@ mini-arcade/
 - shared tooling and CI
 - coordinated versioning and releases
 - docs tied directly to implementation changes
+
+## Related internals docs
+
+- Configuration internals: `concepts/configuration.md`
+- Backend internals: `concepts/backends.md`
+- Scene internals: `concepts/scenes_internals.md`

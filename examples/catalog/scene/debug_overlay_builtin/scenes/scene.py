@@ -1,0 +1,103 @@
+"""
+Scene for scene/debug_overlay_builtin tutorial example.
+"""
+
+from __future__ import annotations
+
+import math
+
+from mini_arcade_core.backend.backend import Backend
+from mini_arcade_core.engine.render.packet import RenderPacket
+from mini_arcade_core.runtime.context import RuntimeContext
+from mini_arcade_core.runtime.input_frame import InputFrame
+from mini_arcade_core.scenes.autoreg import register_scene
+from mini_arcade_core.scenes.sim_scene import SimScene
+
+SCENE_ID = "debug_overlay_builtin"
+DEBUG_OVERLAY_ID = "debug_overlay"
+
+
+# Justification: This scene overrides tick directly and does not use a tick context.
+# pylint: disable=abstract-method
+@register_scene(SCENE_ID)
+class DebugOverlayBuiltinScene(SimScene):
+    """
+    Scene that makes built-in debug overlay behavior observable.
+    """
+
+    def __init__(self, ctx: RuntimeContext):
+        super().__init__(ctx)
+        self._elapsed = 0.0
+        self._frames = 0
+        self._overlay_active = False
+        self._toggle_count = 0
+        self._last_backend_name = "unknown"
+
+    def tick(self, input_frame: InputFrame, dt: float) -> RenderPacket:
+        del input_frame
+        self._elapsed += dt
+        self._frames += 1
+
+        services = self.context.services
+        # pylint: disable=assignment-from-no-return
+        vp = services.window.get_viewport()
+        stack = list(services.scenes.visible_entries())
+        input_owner = services.scenes.input_entry()
+        # pylint: enable=assignment-from-no-return
+
+        overlay_active = any(
+            entry.scene_id == DEBUG_OVERLAY_ID for entry in stack
+        )
+        if overlay_active != self._overlay_active:
+            self._overlay_active = overlay_active
+            self._toggle_count += 1
+
+        input_scene_id = input_owner.scene_id if input_owner else "(none)"
+        pulse = (math.sin(self._elapsed * 2.0) + 1.0) * 0.5
+        bar_x = int(40 + pulse * 320)
+        stack_lines = [
+            f"  - {entry.scene_id} overlay={entry.is_overlay}"
+            for entry in stack
+        ] or ["  - (empty)"]
+
+        lines = [
+            "scene/debug_overlay_builtin",
+            "",
+            "This scene never creates the debug overlay itself.",
+            "Press F1 to toggle built-in scene: debug_overlay.",
+            "",
+            f"backend: {self._last_backend_name}",
+            f"frame: {self._frames}",
+            f"dt: {dt * 1000.0:.2f} ms",
+            f"overlay active: {overlay_active}",
+            f"overlay toggles observed: {self._toggle_count}",
+            f"input owner scene: {input_scene_id}",
+            "",
+            f"window: {vp.window_w}x{vp.window_h}",
+            f"viewport scale: {vp.scale:.3f}",
+            "",
+            "Visible stack:",
+            *stack_lines,
+            "",
+            "Controls:",
+            "  F1 toggle built-in debug overlay",
+            "  ESC exit",
+        ]
+
+        def draw(backend: Backend):
+            self._last_backend_name = backend.__class__.__name__
+            backend.render.draw_rect(16, 16, 760, 470, color=(0, 0, 0, 220))
+            backend.render.draw_rect(bar_x, 410, 120, 22, color=(110, 210, 255, 255))
+            y = 28
+            for line in lines:
+                backend.text.draw(
+                    28,
+                    y,
+                    line,
+                    color=(230, 230, 235),
+                    font_size=18,
+                )
+                y += 21
+
+        return RenderPacket.from_ops([draw])
+
