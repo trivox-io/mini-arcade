@@ -20,6 +20,14 @@ from typing import (
 
 from mini_arcade_core.backend.backend import Backend
 from mini_arcade_core.backend.types import Color
+from mini_arcade_core.engine.commands import (
+    ChangeSceneCommand,
+    PopSceneCommand,
+    PushSceneCommand,
+    PushSceneIfMissingCommand,
+    QuitCommand,
+    RemoveSceneCommand,
+)
 from mini_arcade_core.engine.entities import BaseEntity
 from mini_arcade_core.engine.render.packet import DrawOp, RenderPacket
 from mini_arcade_core.runtime.context import RuntimeContext
@@ -758,6 +766,47 @@ class SimScene(Generic[TContext, TWorld]):
         Scenes can override this to expose scene-specific diagnostics.
         """
         return []
+
+    def uses_builtin_escape_handling(self) -> bool:
+        """
+        Whether engine-level ESC handling should apply to this scene.
+        """
+        return True
+
+    def configured_escape_command(self):
+        """
+        Resolve the configured ESC command for this scene, if any.
+        """
+        scene_settings = getattr(self.context.settings, "scene_settings", None)
+        if not callable(scene_settings):
+            return None
+        cfg = scene_settings(self._resolve_scene_id())
+        if cfg is None or cfg.escape is None:
+            return None
+
+        action = cfg.escape
+        command = str(action.command).strip().lower()
+        current_scene = self._resolve_scene_id()
+        target_scene = (
+            str(action.scene_id).strip() if action.scene_id is not None else ""
+        )
+        if command == "quit":
+            return QuitCommand()
+        if command == "pop_scene":
+            return PopSceneCommand()
+        if command == "remove_scene":
+            return RemoveSceneCommand(target_scene or current_scene)
+        if command == "change_scene" and target_scene:
+            return ChangeSceneCommand(target_scene)
+        if command == "push_scene" and target_scene:
+            return PushSceneCommand(
+                target_scene, as_overlay=bool(action.as_overlay)
+            )
+        if command == "push_scene_if_missing" and target_scene:
+            return PushSceneIfMissingCommand(
+                target_scene, as_overlay=bool(action.as_overlay)
+            )
+        return None
 
     def _load_texture(self, path: str) -> int:
         return self.context.services.render.load_texture(path)

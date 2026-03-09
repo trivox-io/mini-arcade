@@ -758,6 +758,9 @@ class BaseMenuScene(SimScene[MenuTickContext, MenuWorld]):
         """
         raise NotImplementedError
 
+    def uses_builtin_escape_handling(self) -> bool:
+        return False
+
     def quit_command(self):
         """
         Get the command to execute when quitting the menu.
@@ -765,7 +768,9 @@ class BaseMenuScene(SimScene[MenuTickContext, MenuWorld]):
         :return: The command to execute on quit.
         :rtype: Command
         """
-        # default behavior: quit game
+        configured = self.configured_escape_command()
+        if configured is not None:
+            return configured
         return QuitCommand()
 
     def menu_viewport(self) -> tuple[int, int]:

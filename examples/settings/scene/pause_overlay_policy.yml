@@ -15,6 +15,12 @@ engine_config:
     enabled: false
     active: []
 
+gameplay:
+  scenes:
+    pause_overlay_policy_pause:
+      escape:
+        command: remove_scene
+
 backend:
   provider: pygame
   window:
@@ -31,4 +37,3 @@ cli_examples:
   - "--backend pygame"
   - "--backend native"
   - "--fps 72 --virtual-width 960 --virtual-height 540"
-

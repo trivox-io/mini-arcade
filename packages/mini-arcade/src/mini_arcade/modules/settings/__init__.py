@@ -613,6 +613,10 @@ class Settings:
         elif isinstance(debug_overlay, bool):
             out["debug_overlay"] = bool(debug_overlay)
 
+        scenes = src.get("scenes")
+        if isinstance(scenes, dict):
+            out["scenes"] = self._deep_copy_dict(scenes)
+
         return out
 
     def backend_defaults(

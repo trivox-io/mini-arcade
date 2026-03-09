@@ -175,6 +175,57 @@ class DebugOverlaySettings:
 
 
 @dataclass
+class SceneActionSettings:
+    """
+    Declarative command configuration for scene-level actions.
+    """
+
+    command: str
+    scene_id: str | None = None
+    as_overlay: bool = False
+
+    @classmethod
+    def from_dict(cls, data: Any) -> "SceneActionSettings | None":
+        if isinstance(data, str):
+            command = str(data).strip().lower()
+            return cls(command=command) if command else None
+        if not isinstance(data, dict):
+            return None
+
+        command = str(data.get("command", "")).strip().lower()
+        if not command:
+            return None
+        target_scene = data.get("scene_id", data.get("target_scene"))
+        scene_id = (
+            str(target_scene).strip() if target_scene is not None else None
+        )
+        if scene_id == "":
+            scene_id = None
+        return cls(
+            command=command,
+            scene_id=scene_id,
+            as_overlay=bool(data.get("as_overlay", False)),
+        )
+
+
+@dataclass
+class SceneRuntimeSettings:
+    """
+    Per-scene gameplay behavior configuration.
+    """
+
+    escape: SceneActionSettings | None = None
+
+    @classmethod
+    def from_dict(cls, data: Any) -> "SceneRuntimeSettings":
+        if not isinstance(data, dict):
+            return cls()
+        return cls(
+            escape=SceneActionSettings.from_dict(data.get("escape")),
+        )
+
+
+@dataclass
 class GamePlaySettings:
     """
     Game settings that can be modified during gameplay.
@@ -188,6 +239,7 @@ class GamePlaySettings:
     debug_overlay: DebugOverlaySettings = field(
         default_factory=DebugOverlaySettings
     )
+    scenes: dict[str, SceneRuntimeSettings] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> "GamePlaySettings":
@@ -213,4 +265,18 @@ class GamePlaySettings:
             data.get("debug_overlay")
         )
 
+        raw_scenes = data.get("scenes")
+        if isinstance(raw_scenes, dict):
+            settings.scenes = {
+                str(scene_id): SceneRuntimeSettings.from_dict(scene_data)
+                for scene_id, scene_data in raw_scenes.items()
+                if str(scene_id).strip()
+            }
+
         return settings
+
+    def scene_settings(self, scene_id: str) -> SceneRuntimeSettings | None:
+        """
+        Resolve runtime scene settings by registered scene id.
+        """
+        return self.scenes.get(str(scene_id))

@@ -7,14 +7,11 @@ from __future__ import annotations
 import math
 
 from mini_arcade_core.backend.backend import Backend
-from mini_arcade_core.backend.keys import Key
 from mini_arcade_core.engine.render.packet import RenderPacket
 from mini_arcade_core.runtime.context import RuntimeContext
 from mini_arcade_core.runtime.input_frame import InputFrame
 from mini_arcade_core.scenes.autoreg import register_scene
 from mini_arcade_core.scenes.sim_scene import SimScene
-
-from .commands import BackToMenuCommand
 
 SCENE_ID = "menu_scene_base_preview"
 
@@ -36,12 +33,6 @@ class MenuSceneBasePreviewScene(SimScene):
     def tick(self, input_frame: InputFrame, dt: float) -> RenderPacket:
         self._elapsed += dt
         self._frames += 1
-
-        if (
-            Key.ESCAPE in input_frame.keys_pressed
-            and self.context.command_queue is not None
-        ):
-            self.context.command_queue.push(BackToMenuCommand())
 
         level = str(self.context.settings.difficulty.level).upper()
         pulse = (math.sin(self._elapsed * 2.4) + 1.0) * 0.5
@@ -79,4 +70,3 @@ class MenuSceneBasePreviewScene(SimScene):
                 y += 24
 
         return RenderPacket.from_ops([draw])
-

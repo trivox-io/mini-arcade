@@ -93,6 +93,48 @@ def debug_overlay_lines(self) -> list[str]:
 Those scene-provided lines are collected by the built-in overlay when the
 `scene` section is enabled.
 
+## Scene Escape Config
+
+`ESC` behavior is now configurable per scene from gameplay settings.
+
+Suggested shape:
+
+```yaml
+gameplay:
+  scenes:
+    some_scene:
+      escape:
+        command: quit
+    some_pause_scene:
+      escape:
+        command: remove_scene
+    some_preview_scene:
+      escape:
+        command: change_scene
+        scene_id: some_menu_scene
+```
+
+Supported `escape.command` values are:
+
+- `quit`
+- `pop_scene`
+- `remove_scene`
+- `change_scene`
+- `push_scene`
+- `push_scene_if_missing`
+
+Behavior:
+
+- `BaseMenuScene.quit_command()` now resolves from scene config first, then
+  falls back to `QuitCommand()`
+- non-menu scenes can opt into engine-managed ESC handling with no custom scene
+  code
+- scenes that already want to own ESC directly can opt out by overriding
+  `uses_builtin_escape_handling()`
+
+This is now used by the shipped games for menu and pause scenes, and by the
+examples for quit/back/resume flows that used to be hard-coded in scene logic.
+
 ## Current execution model
 
 System execution is already centralized and deterministic:

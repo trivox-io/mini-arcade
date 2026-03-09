@@ -15,6 +15,18 @@ engine_config:
     enabled: false
     active: []
 
+gameplay:
+  scenes:
+    change_scene_hub:
+      escape:
+        command: quit
+    change_scene_arena:
+      escape:
+        command: quit
+    change_scene_lab:
+      escape:
+        command: quit
+
 backend:
   provider: pygame
   window:
@@ -31,4 +43,3 @@ cli_examples:
   - "--backend pygame"
   - "--backend native"
   - "--fps 72 --virtual-width 960 --virtual-height 540"
-

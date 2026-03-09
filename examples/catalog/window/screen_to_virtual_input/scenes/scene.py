@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from mini_arcade_core.backend.backend import Backend
 from mini_arcade_core.backend.keys import Key
-from mini_arcade_core.engine.commands import QuitCommand
 from mini_arcade_core.engine.render.packet import RenderPacket
 from mini_arcade_core.engine.render.viewport import ViewportMode
 from mini_arcade_core.runtime.context import RuntimeContext
@@ -40,11 +39,6 @@ class ScreenToVirtualInputScene(SimScene):
             services.window.set_viewport_mode(ViewportMode.FILL)
         if Key.C in input_frame.keys_pressed:
             self._trail.clear()
-        if (
-            self.context.command_queue is not None
-            and Key.ESCAPE in input_frame.keys_pressed
-        ):
-            self.context.command_queue.push(QuitCommand())
 
         screen_x, screen_y = input_frame.mouse_pos
         virtual_x, virtual_y = services.window.screen_to_virtual(

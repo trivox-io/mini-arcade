@@ -43,6 +43,3 @@ class PauseOverlayPolicyPauseScene(BaseMenuScene):
             MenuItem("quit", "QUIT", QuitCommand),
         ]
 
-    def quit_command(self):
-        return ResumeOverlayCommand()
-

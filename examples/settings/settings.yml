@@ -15,6 +15,31 @@ gameplay:
     enabled: true
     title: Example Debug Overlay
     sections: [timing, render, viewport, stack, scene]
+  scenes:
+    backend_swap:
+      escape:
+        command: quit
+    engine_config_basics:
+      escape:
+        command: quit
+    debug_overlay_builtin:
+      escape:
+        command: quit
+    minimal_scene:
+      escape:
+        command: quit
+    fit_vs_fill:
+      escape:
+        command: quit
+    resize_reflow:
+      escape:
+        command: quit
+    screen_to_virtual_input:
+      escape:
+        command: quit
+    virtual_resolution_basics:
+      escape:
+        command: quit
 
 backend:
   provider: pygame

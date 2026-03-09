@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from mini_arcade_core.backend.backend import Backend
 from mini_arcade_core.backend.keys import Key
-from mini_arcade_core.engine.commands import QuitCommand
 from mini_arcade_core.engine.render.packet import RenderPacket
 from mini_arcade_core.engine.render.viewport import ViewportMode
 from mini_arcade_core.runtime.context import RuntimeContext
@@ -47,11 +46,6 @@ class FitVsFillScene(SimScene):
             services.window.set_viewport_mode(ViewportMode.FIT)
         if Key.NUM_2 in input_frame.keys_pressed:
             services.window.set_viewport_mode(ViewportMode.FILL)
-        if (
-            self.context.command_queue is not None
-            and Key.ESCAPE in input_frame.keys_pressed
-        ):
-            self.context.command_queue.push(QuitCommand())
 
         # pylint: disable=assignment-from-no-return
         vp = services.window.get_viewport()

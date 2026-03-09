@@ -67,6 +67,17 @@ class DefaultGameHooks:
                 self.game.services.window.on_window_resized(w, h)
 
             if e.type == EventType.KEYDOWN:
+                input_entry = self.game.managers.scenes.input_entry()
+                scene = input_entry.scene if input_entry is not None else None
+                if (
+                    e.key == Key.ESCAPE
+                    and scene is not None
+                    and scene.uses_builtin_escape_handling()
+                ):
+                    escape_cmd = scene.configured_escape_command()
+                    if escape_cmd is not None:
+                        self.game.managers.command_queue.push(escape_cmd)
+                        continue
                 if overlay_key is not None and e.key == overlay_key:
                     self.game.managers.command_queue.push(
                         ToggleDebugOverlayCommand()

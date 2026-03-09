@@ -9,7 +9,7 @@ import math
 
 from mini_arcade_core.backend.backend import Backend
 from mini_arcade_core.backend.keys import Key
-from mini_arcade_core.engine.commands import ChangeSceneCommand, QuitCommand
+from mini_arcade_core.engine.commands import ChangeSceneCommand
 from mini_arcade_core.engine.render.packet import RenderPacket
 from mini_arcade_core.runtime.context import RuntimeContext
 from mini_arcade_core.runtime.input_frame import InputFrame
@@ -56,8 +56,6 @@ class _ChangeSceneBase(SimScene):
                 )
             if Key.NUM_3 in pressed:
                 self.context.command_queue.push(ChangeSceneCommand(SCENE_LAB))
-            if Key.ESCAPE in pressed:
-                self.context.command_queue.push(QuitCommand())
 
         services = self.context.services
         # pylint: disable=assignment-from-no-return
@@ -135,4 +133,3 @@ class ChangeSceneLab(_ChangeSceneBase):
     TITLE = "LAB"
     PANEL_COLOR = (8, 24, 18, 225)
     ACCENT_COLOR = (166, 248, 175, 255)
-

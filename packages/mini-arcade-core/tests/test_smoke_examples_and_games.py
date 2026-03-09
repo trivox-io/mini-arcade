@@ -27,6 +27,7 @@ _bootstrap_repo_imports()
 from examples._shared.runner import load_example_spec  # noqa: E402
 from mini_arcade.modules.settings import Settings  # noqa: E402
 from mini_arcade_core.backend.events import Event, EventType  # noqa: E402
+from mini_arcade_core.backend.keys import Key  # noqa: E402
 from mini_arcade_core.engine.engine_config import (  # noqa: E402
     EngineConfig,
     SceneConfig,
@@ -35,7 +36,12 @@ from mini_arcade_core.engine.game import (  # noqa: E402
     Engine,
     EngineDependencies,
 )
+from mini_arcade_core.engine.render.packet import RenderPacket  # noqa: E402
+from mini_arcade_core.runtime.context import RuntimeContext  # noqa: E402
+from mini_arcade_core.runtime.input_frame import InputFrame  # noqa: E402
+from mini_arcade_core.scenes.autoreg import register_scene  # noqa: E402
 from mini_arcade_core.scenes.registry import SceneRegistry  # noqa: E402
+from mini_arcade_core.scenes.sim_scene import SimScene  # noqa: E402
 
 
 EXAMPLE_IDS = [
@@ -89,6 +95,20 @@ class _FakeInput:
         if self.frame_index >= 3:
             return [Event(type=EventType.QUIT)]
         return []
+
+
+@dataclass
+class _QueuedFakeInput:
+    events_by_frame: list[list[Event]]
+    frame_index: int = 0
+
+    def poll(self) -> Iterable[Event]:
+        if self.frame_index < len(self.events_by_frame):
+            events = self.events_by_frame[self.frame_index]
+        else:
+            events = []
+        self.frame_index += 1
+        return list(events)
 
 
 @dataclass
@@ -279,6 +299,42 @@ def _run_scene(
     return backend
 
 
+_ESCAPE_VISITED: list[str] = []
+
+
+@register_scene("test_escape_source")
+class _EscapeSourceScene(SimScene):
+    def on_enter(self):
+        _ESCAPE_VISITED.append("source")
+
+    def tick(self, input_frame: InputFrame, dt: float) -> RenderPacket:
+        del input_frame, dt
+        return RenderPacket.from_ops([])
+
+
+@register_scene("test_escape_target")
+class _EscapeTargetScene(SimScene):
+    def on_enter(self):
+        _ESCAPE_VISITED.append("target")
+
+    def tick(self, input_frame: InputFrame, dt: float) -> RenderPacket:
+        del input_frame, dt
+        return RenderPacket.from_ops([])
+
+
+@register_scene("test_escape_menu")
+class _EscapeMenuScene(SimScene):
+    def uses_builtin_escape_handling(self) -> bool:
+        return False
+
+    def on_enter(self):
+        _ESCAPE_VISITED.append("menu")
+
+    def tick(self, input_frame: InputFrame, dt: float) -> RenderPacket:
+        del input_frame, dt
+        return RenderPacket.from_ops([])
+
+
 def test_catalog_examples_smoke() -> None:
     for example_id in EXAMPLE_IDS:
         spec = load_example_spec(example_id)
@@ -312,3 +368,71 @@ def test_games_smoke() -> None:
                 engine_config=engine_config,
                 gameplay_config=gameplay_config,
             )
+
+
+def test_scene_escape_config_changes_scene() -> None:
+    _ESCAPE_VISITED.clear()
+    backend = _FakeBackend(
+        input=_QueuedFakeInput(
+            events_by_frame=[
+                [Event(type=EventType.KEYDOWN, key=Key.ESCAPE)],
+                [Event(type=EventType.QUIT)],
+            ]
+        )
+    )
+    registry = SceneRegistry(_factories={})
+    registry.register_cls("test_escape_source", _EscapeSourceScene)
+    registry.register_cls("test_escape_target", _EscapeTargetScene)
+    engine = Engine(
+        EngineConfig(fps=60),
+        EngineDependencies(
+            backend=backend,
+            scene_registry=registry.discover("mini_arcade_core.scenes"),
+            gameplay_settings={
+                "scenes": {
+                    "test_escape_source": {
+                        "escape": {
+                            "command": "change_scene",
+                            "scene_id": "test_escape_target",
+                        }
+                    }
+                }
+            },
+        ),
+    )
+    engine.run(initial_scene="test_escape_source")
+    assert _ESCAPE_VISITED[:2] == ["source", "target"]
+
+
+def test_scene_escape_config_skips_scene_opt_out() -> None:
+    _ESCAPE_VISITED.clear()
+    backend = _FakeBackend(
+        input=_QueuedFakeInput(
+            events_by_frame=[
+                [Event(type=EventType.KEYDOWN, key=Key.ESCAPE)],
+                [Event(type=EventType.QUIT)],
+            ]
+        )
+    )
+    registry = SceneRegistry(_factories={})
+    registry.register_cls("test_escape_menu", _EscapeMenuScene)
+    registry.register_cls("test_escape_target", _EscapeTargetScene)
+    engine = Engine(
+        EngineConfig(fps=60),
+        EngineDependencies(
+            backend=backend,
+            scene_registry=registry,
+            gameplay_settings={
+                "scenes": {
+                    "test_escape_menu": {
+                        "escape": {
+                            "command": "change_scene",
+                            "scene_id": "test_escape_target",
+                        }
+                    }
+                }
+            },
+        ),
+    )
+    engine.run(initial_scene="test_escape_menu")
+    assert _ESCAPE_VISITED == ["menu"]

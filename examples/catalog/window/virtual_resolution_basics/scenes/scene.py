@@ -8,7 +8,6 @@ import math
 
 from mini_arcade_core.backend.backend import Backend
 from mini_arcade_core.backend.keys import Key
-from mini_arcade_core.engine.commands import QuitCommand
 from mini_arcade_core.engine.render.packet import RenderPacket
 from mini_arcade_core.runtime.context import RuntimeContext
 from mini_arcade_core.runtime.input_frame import InputFrame
@@ -48,8 +47,6 @@ class VirtualResolutionBasicsScene(SimScene):
                 self.context.services.window.set_virtual_resolution(*PRESETS[1])
             if Key.NUM_3 in input_frame.keys_pressed:
                 self.context.services.window.set_virtual_resolution(*PRESETS[2])
-            if Key.ESCAPE in input_frame.keys_pressed:
-                self.context.command_queue.push(QuitCommand())
 
         # pylint: disable=assignment-from-no-return
         vp = self.context.services.window.get_viewport()
