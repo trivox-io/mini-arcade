@@ -109,6 +109,22 @@ For full details and patterns (main menu vs pause overlay):
 - `docs/source/concepts/menu_scenes.md`
 - `docs/source/tutorials/scene/menu_scene_base.md`
 
+## Scene transition semantics
+
+The most important stack mutations are:
+
+- `change(scene_id)`:
+  full stack replacement (`clean()` + `push()`)
+- `push(scene_id, as_overlay=...)`:
+  keep current stack and append one scene
+- `pop()` / `remove_scene(scene_id)`:
+  unwind temporary scenes
+
+Detailed transition behavior and when to use each command:
+
+- `docs/source/concepts/scene_transitions.md`
+- `docs/source/tutorials/scene/change_scene.md`
+
 ## Scene lifecycle
 
 Base class:

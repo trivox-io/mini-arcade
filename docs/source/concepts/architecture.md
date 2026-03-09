@@ -237,3 +237,5 @@ mini-arcade/
 - Configuration internals: `concepts/configuration.md`
 - Backend internals: `concepts/backends.md`
 - Scene internals: `concepts/scenes_internals.md`
+- Menu scenes internals: `concepts/menu_scenes.md`
+- Scene transitions internals: `concepts/scene_transitions.md`

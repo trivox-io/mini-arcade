@@ -12,6 +12,7 @@ Developer internals (recommended alongside tutorials):
 - [Backends Internals](../concepts/backends.md)
 - [Scene Internals](../concepts/scenes_internals.md)
 - [Menu Scenes Internals](../concepts/menu_scenes.md)
+- [Scene Transitions Internals](../concepts/scene_transitions.md)
 
 ## Before You Start: Game Structure
 
@@ -186,6 +187,7 @@ create_game
 scene/minimal_scene
 scene/debug_overlay_builtin
 scene/menu_scene_base
+scene/change_scene
 config/engine_config_basics
 config/backend_swap
 ```

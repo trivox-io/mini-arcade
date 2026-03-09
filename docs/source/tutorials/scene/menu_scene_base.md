@@ -153,6 +153,12 @@ and different quit behavior.
   [../../concepts/menu_scenes.md](../../concepts/menu_scenes.md)
 - Scene stack internals:
   [../../concepts/scenes_internals.md](../../concepts/scenes_internals.md)
+- Scene transitions internals:
+  [../../concepts/scene_transitions.md](../../concepts/scene_transitions.md)
 - Configuration internals:
   [../../concepts/configuration.md](../../concepts/configuration.md)
 
+## Next step
+
+- Deep-dive transition behavior:
+  [change_scene.md](change_scene.md)
