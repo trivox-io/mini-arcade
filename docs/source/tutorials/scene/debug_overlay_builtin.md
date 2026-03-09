@@ -151,3 +151,7 @@ Those overlays usually set `blocks_update=True` and `blocks_input=True`.
 - Backend internals:
   [../../concepts/backends.md](../../concepts/backends.md)
 
+## Next step
+
+- Build a command-driven menu scene:
+  [menu_scene_base.md](menu_scene_base.md)

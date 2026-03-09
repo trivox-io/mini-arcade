@@ -80,6 +80,7 @@ Capabilities <concepts/capabilities>
 Configuration Internals <concepts/configuration>
 Backends Internals <concepts/backends>
 Scene Internals <concepts/scenes_internals>
+Menu Scenes Internals <concepts/menu_scenes>
 Tutorials <tutorials/index>
 Games <games/index>
 Contributing <contributing/index>

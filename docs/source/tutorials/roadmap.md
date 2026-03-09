@@ -27,7 +27,7 @@ Status legend:
 
 - `scene/minimal_scene` (`DONE`)
 - `scene/debug_overlay_builtin` (`DONE`)
-- `scene/menu_scene_base` (`TODO`)
+- `scene/menu_scene_base` (`DONE`)
 - `scene/change_scene` (`TODO`)
 - `scene/pause_overlay_policy` (`TODO`)
 

@@ -83,6 +83,32 @@ Tutorial reference:
 
 - `docs/source/tutorials/scene/debug_overlay_builtin.md`
 
+## BaseMenuScene internals
+
+Base menu implementation:
+
+- `packages/mini-arcade-core/src/mini_arcade_core/ui/menu.py`
+
+`BaseMenuScene` is a `SimScene` specialization that wires a small system
+pipeline for menus:
+
+1. `MenuInputSystem` (`InputFrame` -> `MenuIntent`)
+2. `MenuNavigationSystem` (selection index and cooldown)
+3. `MenuActionSystem` (enqueue command from selected item)
+4. `MenuRenderSystem` (draw menu through UI render queue)
+
+Extension points in subclasses:
+
+- `menu_title`
+- `menu_style()`
+- `menu_items()`
+- optional `quit_command()`
+
+For full details and patterns (main menu vs pause overlay):
+
+- `docs/source/concepts/menu_scenes.md`
+- `docs/source/tutorials/scene/menu_scene_base.md`
+
 ## Scene lifecycle
 
 Base class:

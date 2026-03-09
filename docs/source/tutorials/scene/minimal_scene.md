@@ -163,6 +163,8 @@ Reference next levels:
 
 - built-in scene-stack telemetry overlay:
   [debug_overlay_builtin.md](debug_overlay_builtin.md)
+- base menu scene pattern:
+  [menu_scene_base.md](menu_scene_base.md)
 - config-first scene setup:
   [../config/engine_config_basics.md](../config/engine_config_basics.md)
 - full game architecture:

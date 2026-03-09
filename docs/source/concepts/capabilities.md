@@ -14,6 +14,7 @@ Legend:
 | Input snapshot (`InputFrame`) | Yes | Yes | Yes | Keys/buttons/axes/quit state |
 | Scene registry and discovery | Yes | N/A | N/A | `SceneRegistry.discover()` |
 | Scene stack and overlays | Yes | N/A | N/A | `SceneAdapter` + `ScenePolicy` |
+| Base menu scenes (`BaseMenuScene`) | Yes | N/A | N/A | Menu systems + style + command actions |
 | Built-in debug overlay (F1 toggle) | Yes | N/A | N/A | `ToggleDebugOverlayCommand` + `debug_overlay` scene |
 | System pipeline | Yes | N/A | N/A | Ordered `SystemPipeline.step(ctx)` |
 | Tick-level command queue | Yes | N/A | N/A | Commands drained each frame |
