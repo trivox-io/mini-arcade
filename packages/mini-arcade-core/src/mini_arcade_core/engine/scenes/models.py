@@ -5,8 +5,10 @@ Models for scene management in the engine.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from mini_arcade_core.scenes.sim_scene import SimScene
+if TYPE_CHECKING:
+    from mini_arcade_core.scenes.sim_scene import SimScene
 
 
 @dataclass(frozen=True)

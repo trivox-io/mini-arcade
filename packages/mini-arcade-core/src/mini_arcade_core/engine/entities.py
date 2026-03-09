@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 from mini_arcade_core.engine.animation import Animation
 from mini_arcade_core.engine.components import Anim2D, Life, Sprite2D
-from mini_arcade_core.engine.render.style import RenderStyle
+from mini_arcade_core.engine.render.style import Fill, RenderStyle, Stroke
 from mini_arcade_core.spaces.collision.specs import (
     CircleColliderSpec,
     ColliderSpec,
@@ -202,9 +202,32 @@ class BaseEntity:  # pylint: disable=too-many-instance-attributes
         """
         if data.get("style"):
             st = data["style"]
+            fill = None
+            fill_raw = st.get("fill", None)
+            if isinstance(fill_raw, Fill):
+                fill = fill_raw
+            elif isinstance(fill_raw, dict):
+                fill = Fill(color=tuple(fill_raw.get("color", (255, 255, 255, 255))))
+            elif isinstance(fill_raw, (list, tuple)):
+                fill = Fill(color=tuple(fill_raw))
+
+            stroke = None
+            stroke_raw = st.get("stroke", None)
+            if isinstance(stroke_raw, Stroke):
+                stroke = stroke_raw
+            elif isinstance(stroke_raw, dict):
+                stroke = Stroke(
+                    color=tuple(
+                        stroke_raw.get("color", (255, 255, 255, 255))
+                    ),
+                    thickness=float(stroke_raw.get("thickness", 1.0)),
+                )
+            elif isinstance(stroke_raw, (list, tuple)):
+                stroke = Stroke(color=tuple(stroke_raw))
+
             return RenderStyle(
-                fill=st.get("fill", None),
-                stroke=st.get("stroke", None),
+                fill=fill,
+                stroke=stroke,
             )
         return None
 

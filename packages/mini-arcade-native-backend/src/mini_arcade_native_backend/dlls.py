@@ -22,6 +22,13 @@ def setup_windows_dll_search_paths():
         except FileNotFoundError:
             pass
 
+    local_native_dlls = Path.cwd() / "native_dlls"
+    if local_native_dlls.is_dir():
+        try:
+            os.add_dll_directory(str(local_native_dlls))
+        except FileNotFoundError:
+            pass
+
     # vcpkg fallback
     vcpkg_root = os.environ.get("VCPKG_ROOT")
     if vcpkg_root:
@@ -31,3 +38,14 @@ def setup_windows_dll_search_paths():
                 os.add_dll_directory(str(sdl_bin))
             except FileNotFoundError:
                 pass
+
+    for entry in map(Path, sys.path):
+        pygame_dir = entry / "pygame"
+        if not pygame_dir.is_dir():
+            continue
+        if not (pygame_dir / "SDL2.dll").exists():
+            continue
+        try:
+            os.add_dll_directory(str(pygame_dir))
+        except FileNotFoundError:
+            continue

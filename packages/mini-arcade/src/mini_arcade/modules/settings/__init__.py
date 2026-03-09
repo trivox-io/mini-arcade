@@ -598,14 +598,15 @@ class Settings:
         difficulty = src.get("difficulty")
         if isinstance(difficulty, str):
             out["difficulty"] = {"level": difficulty}
-            return out
+        elif isinstance(difficulty, dict):
+            level = difficulty.get("level", difficulty.get("default"))
+            if level is not None:
+                out["difficulty"] = {"level": str(level)}
 
-        if not isinstance(difficulty, dict):
-            return out
+        controls = src.get("controls")
+        if isinstance(controls, dict):
+            out["controls"] = self._deep_copy_dict(controls)
 
-        level = difficulty.get("level", difficulty.get("default"))
-        if level is not None:
-            out["difficulty"] = {"level": str(level)}
         return out
 
     def backend_defaults(

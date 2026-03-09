@@ -4,6 +4,7 @@ Gameplay settings that can be modified during gameplay.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any, Literal, cast
 
@@ -47,6 +48,7 @@ class GamePlaySettings:
     """
 
     difficulty: DifficultySettings = field(default_factory=DifficultySettings)
+    controls: dict[str, Any] = field(default_factory=dict)
     effects_stack: EffectStack | None = None
 
     @classmethod
@@ -60,11 +62,13 @@ class GamePlaySettings:
             settings.difficulty = DifficultySettings(
                 level=_normalize_difficulty(raw_difficulty)
             )
-            return settings
-
-        if isinstance(raw_difficulty, dict):
+        elif isinstance(raw_difficulty, dict):
             settings.difficulty = DifficultySettings.from_dict(
                 raw_difficulty
             )
+
+        raw_controls = data.get("controls")
+        if isinstance(raw_controls, dict):
+            settings.controls = deepcopy(raw_controls)
 
         return settings

@@ -24,9 +24,11 @@ from mini_arcade_core.engine.entities import BaseEntity
 from mini_arcade_core.engine.render.packet import DrawOp, RenderPacket
 from mini_arcade_core.runtime.context import RuntimeContext
 from mini_arcade_core.runtime.input_frame import InputFrame
-from mini_arcade_core.scenes.systems.capture_controls import (
-    CaptureControlsSystem,
+from mini_arcade_core.scenes.systems.builtins.capture_hotkeys import (
+    CaptureHotkeysConfig,
+    CaptureHotkeysSystem,
     SceneCaptureConfig,
+    action_map_from_scene_capture_config,
 )
 from mini_arcade_core.scenes.systems.system_pipeline import SystemPipeline
 from mini_arcade_core.spaces.math.vec2 import Vec2
@@ -779,10 +781,14 @@ class SimScene(Generic[TContext, TWorld]):
 
         cfg = self.capture_config.with_scene_defaults(self._resolve_scene_id())
         if cfg.any_enabled():
+            hotkeys_cfg = CaptureHotkeysConfig.from_scene_capture_config(cfg)
             self.systems.add(
-                CaptureControlsSystem(
+                CaptureHotkeysSystem(
                     services=self.context.services,
-                    cfg=cfg,
+                    action_map=action_map_from_scene_capture_config(
+                        cfg, hotkeys_cfg=hotkeys_cfg
+                    ),
+                    cfg=hotkeys_cfg,
                 )
             )
         self._capture_controls_installed = True

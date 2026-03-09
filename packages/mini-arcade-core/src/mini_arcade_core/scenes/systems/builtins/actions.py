@@ -5,13 +5,25 @@ Action-map based input bindings for scene systems.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable, Generic, Mapping, Protocol, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Generic,
+    Mapping,
+    Protocol,
+    TypeVar,
+)
 
 from mini_arcade_core.backend.keys import Key
 from mini_arcade_core.runtime.input_frame import ButtonState, InputFrame
-from mini_arcade_core.scenes.sim_scene import BaseIntent
 from mini_arcade_core.scenes.systems.base_system import BaseSystem
 from mini_arcade_core.scenes.systems.phases import SystemPhase
+
+if TYPE_CHECKING:
+    from mini_arcade_core.scenes.sim_scene import BaseIntent
+else:
+    BaseIntent = object
 
 # pylint: disable=invalid-name
 TContext = TypeVar("TContext")
@@ -231,6 +243,118 @@ class ActionMap:
         return ActionSnapshot(states)
 
 
+def _to_str_seq(value: object) -> tuple[str, ...]:
+    if not isinstance(value, (list, tuple)):
+        return ()
+    return tuple(str(item) for item in value if isinstance(item, str))
+
+
+def _to_key_seq(value: object) -> tuple[Key, ...]:
+    keys: list[Key] = []
+    for name in _to_str_seq(value):
+        normalized = name.strip().upper()
+        if not normalized:
+            continue
+        try:
+            keys.append(Key[normalized])
+        except KeyError:
+            continue
+    return tuple(keys)
+
+
+def action_map_from_bindings_config(
+    bindings: Mapping[str, Any] | None,
+) -> ActionMap:
+    """
+    Build an ActionMap from YAML-friendly binding dictionaries.
+
+    Supported entry formats per action:
+    - digital:
+        type: digital
+        keys: [ESCAPE]
+        buttons: [pad_start]
+    - axis:
+        type: axis
+        axes: [left_y]
+        positive_keys: [S]
+        negative_keys: [W]
+        positive_buttons: [pad_down]
+        negative_buttons: [pad_up]
+        deadzone: 0.15
+        scale: 1.0
+    """
+    if not isinstance(bindings, Mapping):
+        return ActionMap()
+
+    parsed: dict[str, ActionBinding] = {}
+    for action_name, raw_cfg in bindings.items():
+        if not isinstance(action_name, str) or not isinstance(
+            raw_cfg, Mapping
+        ):
+            continue
+
+        kind = str(raw_cfg.get("type", "")).strip().lower()
+        has_axis_shape = any(
+            key in raw_cfg
+            for key in (
+                "axes",
+                "positive_keys",
+                "negative_keys",
+                "positive_buttons",
+                "negative_buttons",
+            )
+        )
+        if not kind:
+            kind = "axis" if has_axis_shape else "digital"
+
+        if kind == "axis":
+            parsed[action_name] = AxisActionBinding(
+                axes=_to_str_seq(raw_cfg.get("axes")),
+                positive_keys=_to_key_seq(raw_cfg.get("positive_keys")),
+                negative_keys=_to_key_seq(raw_cfg.get("negative_keys")),
+                positive_buttons=_to_str_seq(raw_cfg.get("positive_buttons")),
+                negative_buttons=_to_str_seq(raw_cfg.get("negative_buttons")),
+                deadzone=float(raw_cfg.get("deadzone", 0.15)),
+                scale=float(raw_cfg.get("scale", 1.0)),
+            )
+            continue
+
+        parsed[action_name] = DigitalActionBinding(
+            keys=_to_key_seq(raw_cfg.get("keys")),
+            buttons=_to_str_seq(raw_cfg.get("buttons")),
+        )
+
+    return ActionMap(bindings=parsed)
+
+
+def action_map_from_controls_config(
+    controls_cfg: Mapping[str, Any] | None,
+    *,
+    scene_key: str,
+    default_action_map: ActionMap,
+) -> ActionMap:
+    """
+    Resolve one scene ActionMap from gameplay.controls config.
+
+    Expected layout:
+      gameplay:
+        controls:
+          <scene_key>:
+            bindings: {...}
+    """
+    if not isinstance(controls_cfg, Mapping):
+        return default_action_map
+
+    scene_cfg = controls_cfg.get(scene_key)
+    if not isinstance(scene_cfg, Mapping):
+        return default_action_map
+
+    parsed = action_map_from_bindings_config(scene_cfg.get("bindings"))
+    if parsed.bindings:
+        return parsed
+    return default_action_map
+
+
 @dataclass
 class ActionIntentSystem(BaseSystem[TContext], Generic[TContext, TIntent]):
     """
@@ -261,3 +385,50 @@ class ActionIntentSystem(BaseSystem[TContext], Generic[TContext, TIntent]):
 
         if self.write_to_ctx_intent:
             setattr(ctx, "intent", intent)
+
+
+class ConfiguredActionIntentSystem(
+    ActionIntentSystem[TContext, TIntent], Generic[TContext, TIntent]
+):
+    """
+    Action-intent system configured directly from gameplay.controls settings.
+    """
+
+    def __init__(
+        self,
+        *,
+        controls: Mapping[str, Any] | None,
+        scene_key: str,
+        intent_factory: Callable[[ActionSnapshot, TContext], TIntent],
+        fallback_bindings: Mapping[str, Any] | None = None,
+        name: str = "action_intent",
+        phase: int = SystemPhase.INPUT,
+        order: int = 10,
+        channel: str | None = None,
+        write_to_ctx_intent: bool = True,
+    ):
+        action_map = action_map_from_controls_config(
+            controls,
+            scene_key=scene_key,
+            default_action_map=ActionMap(),
+        )
+        if not action_map.bindings and fallback_bindings is not None:
+            action_map = action_map_from_bindings_config(fallback_bindings)
+
+        if not action_map.bindings:
+            raise ValueError(
+                "No action bindings configured for "
+                f"scene_key={scene_key!r}. "
+                "Add gameplay.controls.<scene_key>.bindings to settings "
+                "or provide fallback_bindings."
+            )
+
+        super().__init__(
+            action_map=action_map,
+            intent_factory=intent_factory,
+            name=name,
+            phase=phase,
+            order=order,
+            channel=channel,
+            write_to_ctx_intent=write_to_ctx_intent,
+        )
