@@ -186,6 +186,11 @@ Per frame (simplified):
 6. collect visible scene packets
 7. run render pipeline
 
+Window/viewport details used by scenes and render passes:
+
+- `docs/source/concepts/window_viewports.md`
+- `docs/source/concepts/input_coordinate_mapping.md`
+
 ## Render paths in scenes
 
 Two common patterns:

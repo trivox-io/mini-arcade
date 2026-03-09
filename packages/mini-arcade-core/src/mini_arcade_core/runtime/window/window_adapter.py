@@ -27,11 +27,13 @@ class WindowAdapter(WindowPort):
         self.backend.init()
 
         w, h = self.backend.window.size()
+        dw, dh = self.backend.window.drawable_size()
         self.size = (w, h)
+        self._drawable_size = (dw, dh)
         self._initialized = True
 
         self._viewport = Viewport(w, h, mode=ViewportMode.FIT)
-        self._viewport.resize(w, h)
+        self._viewport.resize(dw, dh)
         self._apply_viewport_transform()
 
     def _apply_viewport_transform(self):
@@ -48,8 +50,10 @@ class WindowAdapter(WindowPort):
     def set_virtual_resolution(self, width: int, height: int):
         self._viewport.set_virtual_resolution(int(width), int(height))
         w, h = self.backend.window.size()
+        dw, dh = self.backend.window.drawable_size()
         self.size = (w, h)
-        self._viewport.resize(w, h)
+        self._drawable_size = (dw, dh)
+        self._viewport.resize(dw, dh)
         self._apply_viewport_transform()
 
     def set_viewport_mode(self, mode: ViewportMode):

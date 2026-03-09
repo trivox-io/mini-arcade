@@ -27,6 +27,8 @@ Legend:
 | Text render and measure | Yes | Yes | Yes | Backend text ports |
 | Audio load/play | Yes | Yes | Yes | Runtime adapter calls backend audio |
 | Virtual resolution and viewport transforms | Yes | Yes | Yes | Window service + backend transform |
+| Viewport modes (FIT/FILL) | Yes | Yes | Yes | `WindowPort.set_viewport_mode()` |
+| Screen-to-virtual coordinate mapping | Yes | Yes | Yes | `WindowPort.screen_to_virtual()` |
 | Capture: screenshots | Yes | Yes | Yes | `CaptureService.screenshot()` |
 | Capture: replay record/playback | Yes | Yes | Yes | Input stream serialization |
 | Capture: video frame sequence | Yes | Yes | Yes | Post-render frame capture |

@@ -124,3 +124,7 @@ Pause overlay:
 - Menu scenes internals:
   [../../concepts/menu_scenes.md](../../concepts/menu_scenes.md)
 
+## Next step
+
+- Move to window/viewport fundamentals:
+  [../window/virtual_resolution_basics.md](../window/virtual_resolution_basics.md)

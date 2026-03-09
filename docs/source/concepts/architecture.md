@@ -240,3 +240,5 @@ mini-arcade/
 - Menu scenes internals: `concepts/menu_scenes.md`
 - Scene transitions internals: `concepts/scene_transitions.md`
 - Overlay policies internals: `concepts/overlay_policies.md`
+- Window and viewport internals: `concepts/window_viewports.md`
+- Input coordinate mapping internals: `concepts/input_coordinate_mapping.md`

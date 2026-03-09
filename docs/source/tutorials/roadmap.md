@@ -26,23 +26,23 @@ Status legend:
 ### Group A: Scene stack core
 
 - `scene/minimal_scene` (`DONE`)
-- `scene/debug_overlay_builtin` (`DONE`)
-- `scene/menu_scene_base` (`DONE`)
 - `scene/change_scene` (`DONE`)
+- `scene/menu_scene_base` (`DONE`)
 - `scene/pause_overlay_policy` (`DONE`)
+- `scene/debug_overlay_builtin` (`DONE`)
 
-### Group B: Entities and shapes
+### Group B: Window, viewport, resize
+
+- `window/virtual_resolution_basics` (`DONE`)
+- `window/fit_vs_fill` (`DONE`)
+- `window/resize_reflow` (`DONE`)
+- `window/screen_to_virtual_input` (`DONE`)
+
+### Group C: Entities and shapes
 
 - `entity/base_entity_from_dict` (`TODO`)
 - `entity/shape_primitives_gallery` (`TODO`)
 - `entity/z_index_and_layer_intuition` (`TODO`)
-
-### Group C: Window, viewport, resize
-
-- `window/virtual_resolution_basics` (`TODO`)
-- `window/fit_vs_fill` (`TODO`)
-- `window/resize_reflow` (`TODO`)
-- `window/screen_to_virtual_input` (`TODO`)
 
 ### Group D: Input and systems
 

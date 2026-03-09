@@ -14,6 +14,8 @@ Developer internals (recommended alongside tutorials):
 - [Menu Scenes Internals](../concepts/menu_scenes.md)
 - [Scene Transitions Internals](../concepts/scene_transitions.md)
 - [Overlay Policies Internals](../concepts/overlay_policies.md)
+- [Window and Viewport Internals](../concepts/window_viewports.md)
+- [Input Coordinate Mapping Internals](../concepts/input_coordinate_mapping.md)
 
 ## Before You Start: Game Structure
 
@@ -185,13 +187,17 @@ Notes:
 :maxdepth: 1
 
 create_game
-scene/minimal_scene
-scene/debug_overlay_builtin
-scene/menu_scene_base
-scene/change_scene
-scene/pause_overlay_policy
 config/engine_config_basics
 config/backend_swap
+scene/minimal_scene
+scene/change_scene
+scene/menu_scene_base
+scene/pause_overlay_policy
+scene/debug_overlay_builtin
+window/virtual_resolution_basics
+window/fit_vs_fill
+window/resize_reflow
+window/screen_to_virtual_input
 ```
 
 ```{toctree}
