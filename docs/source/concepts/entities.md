@@ -43,6 +43,9 @@ That makes it a good fit for:
 - test fixtures
 - runtime spawn templates
 
+`kinematic` data by itself does not move anything. A scene system has to consume
+it, either through custom gameplay code or the built-in movement systems.
+
 ## Render precedence
 
 The built-in queued renderer uses this priority:
@@ -59,4 +62,3 @@ shape examples.
 - `docs/source/tutorials/entity/base_entity_from_dict.md`
 - `docs/source/tutorials/entity/sprite_texture_basics.md`
 - `docs/source/tutorials/entity/animation_frames_basics.md`
-

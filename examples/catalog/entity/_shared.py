@@ -20,7 +20,11 @@ from mini_arcade_core.scenes.sim_scene import (
 from mini_arcade_core.scenes.systems.base_system import BaseSystem
 from mini_arcade_core.scenes.systems.builtins import (
     ConfiguredQueuedRenderSystem,
+    KinematicMotionSystem,
+    MotionBinding,
     RenderOverlay,
+    ViewportConstraintBinding,
+    ViewportConstraintSystem,
 )
 from mini_arcade_core.scenes.systems.phases import SystemPhase
 
@@ -99,21 +103,52 @@ class WorldClockSystem(BaseSystem[EntityExampleTickContext]):
 @dataclass
 class ExampleMotionSystem(BaseSystem[EntityExampleTickContext]):
     """
-    Moves tagged entities and bounces them inside the viewport.
+    Moves tagged entities using built-in motion helpers, then adds bounce rules.
     """
 
     name: str = "entity_example_motion"
     phase: int = SystemPhase.SIMULATION
     order: int = 20
+    _motion: KinematicMotionSystem[EntityExampleTickContext] = field(
+        init=False,
+        repr=False,
+    )
+    _constraints: ViewportConstraintSystem[EntityExampleTickContext] = field(
+        init=False,
+        repr=False,
+    )
+
+    def __post_init__(self) -> None:
+        def _moving_entities(
+            ctx: EntityExampleTickContext,
+        ) -> tuple[BaseEntity, ...]:
+            return tuple(
+                entity
+                for entity in ctx.world.entities
+                if bool(getattr(entity, "example_motion_enabled", False))
+            )
+
+        self._motion = KinematicMotionSystem(
+            bindings=(MotionBinding(entities_getter=_moving_entities),),
+        )
+        self._constraints = ViewportConstraintSystem(
+            bindings=(
+                ViewportConstraintBinding(
+                    entities_getter=_moving_entities,
+                    policy="clamp",
+                ),
+            ),
+        )
 
     def step(self, ctx: EntityExampleTickContext) -> None:
         vw, vh = ctx.world.viewport
+        self._motion.step(ctx)
+
         for entity in ctx.world.entities:
             if not bool(getattr(entity, "example_motion_enabled", False)):
                 continue
             if entity.kinematic is None:
                 continue
-            entity.kinematic.step(entity.transform, ctx.dt)
 
             max_x = max(vw - entity.transform.size.width, 0.0)
             max_y = max(vh - entity.transform.size.height, 0.0)
@@ -122,10 +157,11 @@ class ExampleMotionSystem(BaseSystem[EntityExampleTickContext]):
 
             if x <= 0.0 or x >= max_x:
                 entity.kinematic.velocity.x *= -1.0
-                entity.transform.center.x = max(0.0, min(max_x, x))
             if y <= 0.0 or y >= max_y:
                 entity.kinematic.velocity.y *= -1.0
-                entity.transform.center.y = max(0.0, min(max_y, y))
+
+        # Bounce inversion is example-specific; position clamping is built-in.
+        self._constraints.step(ctx)
 
 
 @dataclass

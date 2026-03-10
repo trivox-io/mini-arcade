@@ -18,7 +18,8 @@ need to understand the plain entity payload shape:
 - `z_index`
 
 This tutorial keeps the example small and shows that one dictionary is enough
-to produce a moving world object.
+to produce a moving world object. The courier motion itself now goes through the
+built-in movement helpers instead of ad hoc scene math.
 
 ## Source map
 
@@ -79,6 +80,10 @@ That payload is enough for:
 - simulation data attachment
 - built-in rendering
 
+The example scene then hands the courier to the shared entity tutorial motion
+stack, which uses `KinematicMotionSystem` plus `ViewportConstraintSystem` for
+movement and bounds handling.
+
 ## Related concepts
 
 - [Entities Internals](../../concepts/entities.md)
@@ -87,4 +92,3 @@ That payload is enough for:
 ## Next step
 
 - [entity/shape_primitives_gallery](shape_primitives_gallery.md)
-
