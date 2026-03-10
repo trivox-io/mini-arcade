@@ -56,6 +56,11 @@ EXAMPLE_IDS = [
     "window/resize_reflow",
     "window/screen_to_virtual_input",
     "window/virtual_resolution_basics",
+    "entity/base_entity_from_dict",
+    "entity/shape_primitives_gallery",
+    "entity/z_index_and_layer_intuition",
+    "entity/sprite_texture_basics",
+    "entity/animation_frames_basics",
 ]
 
 GAME_CASES = [

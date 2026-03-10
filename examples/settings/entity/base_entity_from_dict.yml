@@ -1,0 +1,34 @@
+# Example-specific settings profile:
+# Settings.for_example("entity/base_entity_from_dict")
+scene:
+  initial_scene: base_entity_from_dict
+  scene_registry:
+    discover_packages:
+      - examples.catalog.entity.base_entity_from_dict
+      - mini_arcade_core.scenes
+
+engine_config:
+  fps: 60
+  virtual_resolution: [800, 600]
+  enable_profiler: false
+  postfx:
+    enabled: false
+    active: []
+
+backend:
+  provider: pygame
+  window:
+    width: 960
+    height: 540
+    title: entity/base_entity_from_dict
+    resizable: true
+  renderer:
+    background_color: [15, 19, 31]
+  audio:
+    enable: false
+
+cli_examples:
+  - "--backend pygame"
+  - "--backend native"
+  - "--virtual-width 960 --virtual-height 540"
+

@@ -341,12 +341,13 @@ class BaseEntity:  # pylint: disable=too-many-instance-attributes
                 texture=frames[0] if frames else None,
             )
 
-        return BaseEntity(
+        entity = BaseEntity(
             id=int(data.get("id", 0)),
             name=name,
             codename=codename,
             transform=Transform2D(center=center, size=size),
             shape=shape,
+            z_index=int(data.get("z_index", 0)),
             style=style,
             rotation_deg=float(t.get("rotation_deg", 0.0)),
             kinematic=kinematic,
@@ -355,3 +356,8 @@ class BaseEntity:  # pylint: disable=too-many-instance-attributes
             anim=anim,
             life=life,
         )
+        if "render_layer" in data:
+            setattr(entity, "render_layer", str(data.get("render_layer") or "world"))
+        if "render_visible" in data:
+            setattr(entity, "render_visible", bool(data.get("render_visible", True)))
+        return entity

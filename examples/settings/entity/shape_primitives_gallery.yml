@@ -1,0 +1,33 @@
+# Example-specific settings profile:
+# Settings.for_example("entity/shape_primitives_gallery")
+scene:
+  initial_scene: shape_primitives_gallery
+  scene_registry:
+    discover_packages:
+      - examples.catalog.entity.shape_primitives_gallery
+      - mini_arcade_core.scenes
+
+engine_config:
+  fps: 60
+  virtual_resolution: [800, 600]
+  enable_profiler: false
+  postfx:
+    enabled: false
+    active: []
+
+backend:
+  provider: pygame
+  window:
+    width: 960
+    height: 540
+    title: entity/shape_primitives_gallery
+    resizable: true
+  renderer:
+    background_color: [18, 17, 28]
+  audio:
+    enable: false
+
+cli_examples:
+  - "--backend pygame"
+  - "--backend native"
+

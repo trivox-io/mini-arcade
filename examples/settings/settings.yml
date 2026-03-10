@@ -24,6 +24,21 @@ gameplay:
     minimal_scene:
       escape:
         command: quit
+    base_entity_from_dict:
+      escape:
+        command: quit
+    shape_primitives_gallery:
+      escape:
+        command: quit
+    z_index_and_layer_intuition:
+      escape:
+        command: quit
+    sprite_texture_basics:
+      escape:
+        command: quit
+    animation_frames_basics:
+      escape:
+        command: quit
     fit_vs_fill:
       escape:
         command: quit

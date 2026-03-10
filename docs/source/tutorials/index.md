@@ -15,6 +15,9 @@ Developer internals (recommended alongside tutorials):
 - [Scene Transitions Internals](../concepts/scene_transitions.md)
 - [Overlay Policies Internals](../concepts/overlay_policies.md)
 - [Window and Viewport Internals](../concepts/window_viewports.md)
+- [Entities Internals](../concepts/entities.md)
+- [Shapes and Layering Internals](../concepts/shapes_layers.md)
+- [Sprites and Animations Internals](../concepts/sprites_animations.md)
 - [Input Coordinate Mapping Internals](../concepts/input_coordinate_mapping.md)
 
 ## Before You Start: Game Structure
@@ -198,6 +201,11 @@ window/virtual_resolution_basics
 window/fit_vs_fill
 window/resize_reflow
 window/screen_to_virtual_input
+entity/base_entity_from_dict
+entity/shape_primitives_gallery
+entity/z_index_and_layer_intuition
+entity/sprite_texture_basics
+entity/animation_frames_basics
 ```
 
 ```{toctree}

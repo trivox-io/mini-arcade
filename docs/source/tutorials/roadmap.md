@@ -38,11 +38,13 @@ Status legend:
 - `window/resize_reflow` (`DONE`)
 - `window/screen_to_virtual_input` (`DONE`)
 
-### Group C: Entities and shapes
+### Group C: Entities, shapes, sprites, animation
 
-- `entity/base_entity_from_dict` (`TODO`)
-- `entity/shape_primitives_gallery` (`TODO`)
-- `entity/z_index_and_layer_intuition` (`TODO`)
+- `entity/base_entity_from_dict` (`DONE`)
+- `entity/shape_primitives_gallery` (`DONE`)
+- `entity/z_index_and_layer_intuition` (`DONE`)
+- `entity/sprite_texture_basics` (`DONE`)
+- `entity/animation_frames_basics` (`DONE`)
 
 ### Group D: Input and systems
 

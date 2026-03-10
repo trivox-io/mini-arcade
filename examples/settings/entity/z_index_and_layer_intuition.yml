@@ -1,0 +1,33 @@
+# Example-specific settings profile:
+# Settings.for_example("entity/z_index_and_layer_intuition")
+scene:
+  initial_scene: z_index_and_layer_intuition
+  scene_registry:
+    discover_packages:
+      - examples.catalog.entity.z_index_and_layer_intuition
+      - mini_arcade_core.scenes
+
+engine_config:
+  fps: 60
+  virtual_resolution: [800, 600]
+  enable_profiler: false
+  postfx:
+    enabled: false
+    active: []
+
+backend:
+  provider: pygame
+  window:
+    width: 960
+    height: 540
+    title: entity/z_index_and_layer_intuition
+    resizable: true
+  renderer:
+    background_color: [20, 16, 22]
+  audio:
+    enable: false
+
+cli_examples:
+  - "--backend pygame"
+  - "--backend native"
+

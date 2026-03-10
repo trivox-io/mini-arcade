@@ -26,6 +26,7 @@ from asteroids.entities import build_ship  # noqa: E402
 from asteroids.entities.entity_id import EntityId as AsteroidsEntityId  # noqa: E402
 from deja_bounce.entities import DottedLine, EntityId as PongEntityId  # noqa: E402
 from mini_arcade_core.engine.commands import CommandQueue  # noqa: E402
+from mini_arcade_core.engine.entities import BaseEntity  # noqa: E402
 from mini_arcade_core.engine.gameplay_settings import GamePlaySettings  # noqa: E402
 from mini_arcade_core.runtime.context import RuntimeContext  # noqa: E402
 from mini_arcade_core.runtime.input_frame import InputFrame  # noqa: E402
@@ -198,3 +199,20 @@ def test_asteroids_template_ship_uses_runtime_ship_id() -> None:
 
     assert ship.id == int(AsteroidsEntityId.SHIP)
     assert ship.kinematic is not None
+
+
+def test_base_entity_from_dict_preserves_z_index() -> None:
+    entity = BaseEntity.from_dict(
+        {
+            "id": 99,
+            "name": "Layered Card",
+            "z_index": 7,
+            "transform": {
+                "center": {"x": 10.0, "y": 20.0},
+                "size": {"width": 30.0, "height": 40.0},
+            },
+            "shape": {"kind": "rect"},
+        }
+    )
+
+    assert entity.z_index == 7

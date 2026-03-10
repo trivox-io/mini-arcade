@@ -1,0 +1,33 @@
+# Example-specific settings profile:
+# Settings.for_example("entity/sprite_texture_basics")
+scene:
+  initial_scene: sprite_texture_basics
+  scene_registry:
+    discover_packages:
+      - examples.catalog.entity.sprite_texture_basics
+      - mini_arcade_core.scenes
+
+engine_config:
+  fps: 60
+  virtual_resolution: [800, 600]
+  enable_profiler: false
+  postfx:
+    enabled: false
+    active: []
+
+backend:
+  provider: pygame
+  window:
+    width: 960
+    height: 540
+    title: entity/sprite_texture_basics
+    resizable: true
+  renderer:
+    background_color: [14, 22, 24]
+  audio:
+    enable: false
+
+cli_examples:
+  - "--backend pygame"
+  - "--backend native"
+
