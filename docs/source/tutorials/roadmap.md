@@ -96,5 +96,6 @@ Status legend:
 ## Notes
 
 - Keep docs pages aligned with runnable example IDs.
+- `mini-arcade cli examples tour` should follow the implemented roadmap order.
 - Keep one primary concept per tutorial page.
 - Include next-step links so the grouped path still feels guided.

@@ -34,7 +34,7 @@ class MenuSceneBaseMenuScene(BaseMenuScene):
             button_selected_border=(170, 232, 255, 255),
             normal=(220, 228, 238, 255),
             selected=(255, 255, 255, 255),
-            hint="UP/DOWN move  ENTER select  ESC quit  F1 debug overlay",
+            hint="UP/DOWN move  ENTER select  ESC quit",
             hint_color=(168, 180, 198, 255),
         )
 
@@ -54,4 +54,3 @@ class MenuSceneBaseMenuScene(BaseMenuScene):
             ),
             MenuItem("quit", "QUIT", QuitCommand),
         ]
-

@@ -50,8 +50,7 @@ class EngineConfigBasicsScene(SimScene):
             f"viewport scale: {vp.scale:.3f}",
             "",
             "Controls:",
-            "  F1 toggle debug overlay",
-            "  ESC exit",
+            "  ESC -> quit",
         ]
 
         def draw(backend: Backend):

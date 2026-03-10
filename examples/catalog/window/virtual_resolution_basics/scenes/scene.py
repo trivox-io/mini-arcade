@@ -76,7 +76,6 @@ class VirtualResolutionBasicsScene(SimScene):
             "  1 -> virtual 640x360",
             "  2 -> virtual 800x600",
             "  3 -> virtual 960x540",
-            "  F1 -> debug overlay",
             "  ESC -> quit",
         ]
 

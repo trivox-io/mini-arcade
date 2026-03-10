@@ -4,6 +4,7 @@ Scene for window/fit_vs_fill tutorial example.
 
 from __future__ import annotations
 
+from examples._shared.text_layout import draw_text_block, fit_text_block
 from mini_arcade_core.backend.backend import Backend
 from mini_arcade_core.backend.keys import Key
 from mini_arcade_core.engine.render.packet import RenderPacket
@@ -52,32 +53,33 @@ class FitVsFillScene(SimScene):
         # pylint: enable=assignment-from-no-return
         vis_x0, vis_y0, vis_x1, vis_y1 = _visible_virtual_rect(vp)
 
-        lines = [
-            "window/fit_vs_fill",
-            "",
-            f"backend: {self._last_backend_name}",
-            f"mode: {vp.mode}",
-            f"virtual: {vp.virtual_w}x{vp.virtual_h}",
-            f"window: {vp.window_w}x{vp.window_h}",
-            f"scale: {vp.scale:.3f}",
-            f"viewport rect: {vp.viewport_w}x{vp.viewport_h} @ ({vp.offset_x},{vp.offset_y})",
-            (
-                "visible virtual bounds: "
-                f"x[{vis_x0:.1f},{vis_x1:.1f}] y[{vis_y0:.1f},{vis_y1:.1f}]"
-            ),
-            "",
-            "FIT: entire virtual world visible, bars may appear.",
-            "FILL: no bars, but virtual edges are cropped.",
-            "",
-            "Controls:",
-            "  1 -> FIT",
-            "  2 -> FILL",
-            "  F1 -> debug overlay",
-            "  ESC -> quit",
-        ]
-
         def draw(backend: Backend):
             self._last_backend_name = backend.__class__.__name__
+            lines = [
+                "window/fit_vs_fill",
+                "",
+                f"backend: {self._last_backend_name}",
+                f"mode: {vp.mode}",
+                f"virtual: {vp.virtual_w}x{vp.virtual_h}",
+                f"window: {vp.window_w}x{vp.window_h}",
+                f"scale: {vp.scale:.3f}",
+                (
+                    "viewport rect: "
+                    f"{vp.viewport_w}x{vp.viewport_h} @ ({vp.offset_x},{vp.offset_y})"
+                ),
+                (
+                    "visible virtual bounds: "
+                    f"x[{vis_x0:.1f},{vis_x1:.1f}] y[{vis_y0:.1f},{vis_y1:.1f}]"
+                ),
+                "",
+                "FIT: entire virtual world visible, bars may appear.",
+                "FILL: no bars, but virtual edges are cropped.",
+                "",
+                "Controls:",
+                "  1 -> FIT",
+                "  2 -> FILL",
+                "  ESC -> quit",
+            ]
 
             # Background and virtual-space frame.
             backend.render.draw_rect(
@@ -134,16 +136,30 @@ class FitVsFillScene(SimScene):
                 font_size=18,
             )
 
-            backend.render.draw_rect(16, 16, 760, 390, color=(0, 0, 0, 210))
-            y = 28
-            for line in lines:
-                backend.text.draw(
-                    28,
-                    y,
-                    line,
-                    color=(230, 230, 236),
-                    font_size=18,
-                )
-                y += 21
+            panel_x = 16
+            panel_y = 78
+            panel_w = 760
+            panel_h = 336
+            pad_x = 12
+            pad_y = 14
+            backend.render.draw_rect(
+                panel_x, panel_y, panel_w, panel_h, color=(0, 0, 0, 210)
+            )
+            text_layout = fit_text_block(
+                backend,
+                lines,
+                max_width=panel_w - (pad_x * 2),
+                max_height=panel_h - (pad_y * 2),
+                preferred_font_size=18,
+                min_font_size=8,
+            )
+            draw_text_block(
+                backend,
+                x=panel_x + pad_x,
+                y=panel_y + pad_y,
+                lines=lines,
+                layout=text_layout,
+                color=(230, 230, 236),
+            )
 
         return RenderPacket.from_ops([draw])

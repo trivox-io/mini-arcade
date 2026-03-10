@@ -6,8 +6,8 @@ from __future__ import annotations
 
 import math
 
+from examples._shared.text_layout import draw_text_block, fit_text_block
 from mini_arcade_core.backend.backend import Backend
-from mini_arcade_core.backend.keys import Key
 from mini_arcade_core.engine.render.packet import RenderPacket
 from mini_arcade_core.runtime.context import RuntimeContext
 from mini_arcade_core.runtime.input_frame import InputFrame
@@ -32,14 +32,13 @@ class ResizeReflowScene(SimScene):
     def __init__(self, ctx: RuntimeContext):
         super().__init__(ctx)
         self._elapsed = 0.0
-        self._frames = 0
         self._last_backend_name = "unknown"
         self._last_window = (0, 0)
         self._resize_count = 0
 
     def tick(self, input_frame: InputFrame, dt: float) -> RenderPacket:
+        del input_frame
         self._elapsed += dt
-        self._frames += 1
 
         # pylint: disable=assignment-from-no-return
         vp = self.context.services.window.get_viewport()
@@ -80,7 +79,6 @@ class ResizeReflowScene(SimScene):
             "",
             "Controls:",
             "  Resize window to observe reflow",
-            "  F1 -> debug overlay",
             "  ESC -> quit",
         ]
 
@@ -99,32 +97,47 @@ class ResizeReflowScene(SimScene):
 
         def draw_ui(backend: Backend):
             # Screen-space UI (UIPass): no viewport transform.
+            panel_pad_x = 14
+            panel_pad_y = 12
+            panel_layout = fit_text_block(
+                backend,
+                ui_lines,
+                max_width=panel_w - (panel_pad_x * 2),
+                max_height=panel_h - (panel_pad_y * 2),
+                preferred_font_size=17,
+                min_font_size=8,
+            )
+            footer_text = "Panel follows width. Footer follows the window."
+            footer_layout = fit_text_block(
+                backend,
+                [footer_text],
+                max_width=footer_w - 28,
+                max_height=footer_h - 16,
+                preferred_font_size=16,
+                min_font_size=8,
+            )
             backend.render.draw_rect(
                 panel_x, panel_y, panel_w, panel_h, color=(0, 0, 0, 215)
             )
-            y = panel_y + 12
-            for line in ui_lines:
-                backend.text.draw(
-                    panel_x + 14,
-                    y,
-                    line,
-                    color=(232, 232, 236),
-                    font_size=17,
-                )
-                y += 20
+            draw_text_block(
+                backend,
+                x=panel_x + panel_pad_x,
+                y=panel_y + panel_pad_y,
+                lines=ui_lines,
+                layout=panel_layout,
+                color=(232, 232, 236),
+            )
 
             backend.render.draw_rect(
                 footer_x, footer_y, footer_w, footer_h, color=(20, 30, 56, 230)
             )
-            backend.text.draw(
-                footer_x + 14,
-                footer_y + 12,
-                (
-                    "Resize-driven reflow: panel(width=36% of window), "
-                    "footer(stretched to window width)"
-                ),
+            draw_text_block(
+                backend,
+                x=footer_x + 14,
+                y=footer_y + max(4, (footer_h - footer_layout.total_height) // 2),
+                lines=[footer_text],
+                layout=footer_layout,
                 color=(220, 228, 240),
-                font_size=16,
             )
 
         return RenderPacket.from_ops(

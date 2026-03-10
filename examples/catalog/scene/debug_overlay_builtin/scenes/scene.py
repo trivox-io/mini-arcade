@@ -39,11 +39,7 @@ class DebugOverlayBuiltinScene(SimScene):
         self._frames += 1
 
         services = self.context.services
-        # pylint: disable=assignment-from-no-return
-        vp = services.window.get_viewport()
         stack = list(services.scenes.visible_entries())
-        input_owner = services.scenes.input_entry()
-        # pylint: enable=assignment-from-no-return
 
         overlay_active = any(
             entry.scene_id == DEBUG_OVERLAY_ID for entry in stack
@@ -52,42 +48,25 @@ class DebugOverlayBuiltinScene(SimScene):
             self._overlay_active = overlay_active
             self._toggle_count += 1
 
-        input_scene_id = input_owner.scene_id if input_owner else "(none)"
         pulse = (math.sin(self._elapsed * 2.0) + 1.0) * 0.5
         bar_x = int(40 + pulse * 320)
-        stack_lines = [
-            f"  - {entry.scene_id} overlay={entry.is_overlay}"
-            for entry in stack
-        ] or ["  - (empty)"]
-
-        lines = [
-            "scene/debug_overlay_builtin",
-            "",
-            "The overlay is enabled from gameplay settings.",
-            "Press F1 to toggle the built-in debug overlay.",
-            "This scene contributes extra lines through debug_overlay_lines().",
-            "",
-            f"backend: {self._last_backend_name}",
-            f"frame: {self._frames}",
-            f"dt: {dt * 1000.0:.2f} ms",
-            f"overlay active: {overlay_active}",
-            f"overlay toggles observed: {self._toggle_count}",
-            f"input owner scene: {input_scene_id}",
-            "",
-            f"window: {vp.window_w}x{vp.window_h}",
-            f"viewport scale: {vp.scale:.3f}",
-            "",
-            "Visible stack:",
-            *stack_lines,
-            "",
-            "Controls:",
-            "  F1 toggle built-in debug overlay",
-            "  ESC exit",
-        ]
 
         def draw(backend: Backend):
             self._last_backend_name = backend.__class__.__name__
-            backend.render.draw_rect(16, 16, 760, 470, color=(0, 0, 0, 220))
+            lines = [
+                "scene/debug_overlay_builtin",
+                "Overlay is enabled from gameplay settings.",
+                "This scene contributes extra lines through debug_overlay_lines().",
+                "",
+                f"overlay active: {overlay_active}",
+                f"overlay toggles observed: {self._toggle_count}",
+                f"backend: {self._last_backend_name}",
+                f"scene frames: {self._frames}",
+                "",
+                "F1 -> toggle built-in debug overlay",
+                "ESC -> quit",
+            ]
+            backend.render.draw_rect(16, 16, 760, 256, color=(0, 0, 0, 220))
             backend.render.draw_rect(bar_x, 410, 120, 22, color=(110, 210, 255, 255))
             y = 28
             for line in lines:

@@ -33,7 +33,7 @@ class PauseOverlayPolicyPauseScene(BaseMenuScene):
             button_selected_border=(170, 232, 255, 255),
             normal=(225, 230, 238, 255),
             selected=(255, 255, 255, 255),
-            hint="ENTER select  ESC resume  F1 debug overlay",
+            hint="ENTER select  ESC resume",
             hint_color=(170, 182, 198, 255),
         )
 
@@ -42,4 +42,3 @@ class PauseOverlayPolicyPauseScene(BaseMenuScene):
             MenuItem("continue", "CONTINUE", ResumeOverlayCommand),
             MenuItem("quit", "QUIT", QuitCommand),
         ]
-

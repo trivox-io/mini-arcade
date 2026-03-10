@@ -48,14 +48,15 @@ class _ChangeSceneBase(SimScene):
 
         pressed = input_frame.keys_pressed
         if self.context.command_queue is not None:
-            if Key.NUM_1 in pressed:
-                self.context.command_queue.push(ChangeSceneCommand(SCENE_HUB))
-            if Key.NUM_2 in pressed:
-                self.context.command_queue.push(
-                    ChangeSceneCommand(SCENE_ARENA)
-                )
-            if Key.NUM_3 in pressed:
-                self.context.command_queue.push(ChangeSceneCommand(SCENE_LAB))
+            for key, target_scene_id in (
+                (Key.NUM_1, SCENE_HUB),
+                (Key.NUM_2, SCENE_ARENA),
+                (Key.NUM_3, SCENE_LAB),
+            ):
+                if key in pressed and target_scene_id != self.SCENE_ID:
+                    self.context.command_queue.push(
+                        ChangeSceneCommand(target_scene_id)
+                    )
 
         services = self.context.services
         # pylint: disable=assignment-from-no-return
@@ -87,7 +88,6 @@ class _ChangeSceneBase(SimScene):
             "  1 -> change_scene_hub",
             "  2 -> change_scene_arena",
             "  3 -> change_scene_lab",
-            "  F1 -> debug overlay",
             "  ESC -> quit",
         ]
 

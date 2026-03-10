@@ -11,10 +11,6 @@ engine_config:
     active: []
 
 gameplay:
-  debug_overlay:
-    enabled: true
-    title: Example Debug Overlay
-    sections: [timing, render, viewport, stack, scene]
   scenes:
     backend_swap:
       escape:

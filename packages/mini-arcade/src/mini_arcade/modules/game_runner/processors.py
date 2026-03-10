@@ -615,6 +615,36 @@ def _normalize_target_id(raw_value: str) -> str:
     return normalized
 
 
+ROADMAP_EXAMPLE_ORDER: tuple[str, ...] = (
+    "config/engine_config_basics",
+    "config/backend_swap",
+    "scene/minimal_scene",
+    "scene/change_scene",
+    "scene/menu_scene_base",
+    "scene/pause_overlay_policy",
+    "scene/debug_overlay_builtin",
+    "window/virtual_resolution_basics",
+    "window/fit_vs_fill",
+    "window/resize_reflow",
+    "window/screen_to_virtual_input",
+)
+
+
+def _sort_example_ids(ids: list[str]) -> list[str]:
+    order_index = {
+        example_id: index for index, example_id in enumerate(ROADMAP_EXAMPLE_ORDER)
+    }
+
+    return sorted(
+        ids,
+        key=lambda example_id: (
+            0 if example_id in order_index else 1,
+            order_index.get(example_id, len(ROADMAP_EXAMPLE_ORDER)),
+            example_id,
+        ),
+    )
+
+
 def _discover_example_ids(examples_parent: Path) -> list[str]:
     ids: list[str] = []
     base = examples_parent.resolve()
@@ -628,7 +658,8 @@ def _discover_example_ids(examples_parent: Path) -> list[str]:
             ids.append(rel_id)
 
     # preserve order, remove duplicates
-    return list(dict.fromkeys(ids))
+    deduped = list(dict.fromkeys(ids))
+    return _sort_example_ids(deduped)
 
 
 class ExamplesTourProcessor(BaseCommandProcessor):

@@ -77,7 +77,6 @@ class PauseOverlayPolicyPlayScene(SimScene):
             "",
             "Controls:",
             "  P or ESC -> pause overlay",
-            "  F1 -> debug overlay",
         ]
 
         def draw(backend: Backend):
@@ -96,4 +95,3 @@ class PauseOverlayPolicyPlayScene(SimScene):
                 y += 21
 
         return RenderPacket.from_ops([draw])
-

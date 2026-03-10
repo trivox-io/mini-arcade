@@ -51,7 +51,6 @@ class MenuSceneBasePreviewScene(SimScene):
             "",
             "Controls:",
             "  ESC back to menu",
-            "  F1 toggle debug overlay",
         ]
 
         def draw(backend: Backend):

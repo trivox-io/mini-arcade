@@ -4,6 +4,7 @@ Scene for window/screen_to_virtual_input tutorial example.
 
 from __future__ import annotations
 
+from examples._shared.text_layout import draw_text_block, fit_text_block
 from mini_arcade_core.backend.backend import Backend
 from mini_arcade_core.backend.keys import Key
 from mini_arcade_core.engine.render.packet import RenderPacket
@@ -15,6 +16,10 @@ from mini_arcade_core.scenes.sim_scene import SimScene
 
 SCENE_ID = "screen_to_virtual_input"
 MAX_TRAIL = 120
+
+
+def _clamp(value: int, lo: int, hi: int) -> int:
+    return max(lo, min(hi, value))
 
 
 # Justification: This scene overrides tick directly and does not use a tick context.
@@ -78,7 +83,6 @@ class ScreenToVirtualInputScene(SimScene):
             "  1 -> FIT mode",
             "  2 -> FILL mode",
             "  C -> clear virtual trail",
-            "  F1 -> debug overlay",
             "  ESC -> quit",
         ]
 
@@ -136,17 +140,28 @@ class ScreenToVirtualInputScene(SimScene):
                 color=(255, 255, 255, 255),
             )
 
-            backend.render.draw_rect(16, 16, 430, 410, color=(0, 0, 0, 220))
-            y = 28
-            for line in panel_lines:
-                backend.text.draw(
-                    28,
-                    y,
-                    line,
-                    color=(230, 230, 236),
-                    font_size=17,
-                )
-                y += 20
+            panel_w = _clamp(int(vp.window_w * 0.42), 420, 520)
+            panel_h = _clamp(int(vp.window_h * 0.72), 320, 460)
+            panel_pad_x = 12
+            panel_pad_y = 12
+            panel_layout = fit_text_block(
+                backend,
+                panel_lines,
+                max_width=panel_w - (panel_pad_x * 2),
+                max_height=panel_h - (panel_pad_y * 2),
+                preferred_font_size=17,
+                min_font_size=8,
+            )
+
+            backend.render.draw_rect(16, 16, panel_w, panel_h, color=(0, 0, 0, 220))
+            draw_text_block(
+                backend,
+                x=16 + panel_pad_x,
+                y=16 + panel_pad_y,
+                lines=panel_lines,
+                layout=panel_layout,
+                color=(230, 230, 236),
+            )
 
         return RenderPacket.from_ops(
             [],

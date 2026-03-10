@@ -27,16 +27,11 @@ class MinimalScene(SimScene):
     def __init__(self, ctx: RuntimeContext):
         super().__init__(ctx)
         self._elapsed = 0.0
-        self._frames = 0
         self._last_backend_name = "unknown"
 
     def tick(self, input_frame: InputFrame, dt: float) -> RenderPacket:
         del input_frame
         self._elapsed += dt
-        self._frames += 1
-
-        cfg = self.context.config
-        vp = self.context.services.window.get_viewport()
 
         pulse = (math.sin(self._elapsed * 2.0) + 1.0) * 0.5
         block_x = int(80 + (pulse * 320))
@@ -45,25 +40,19 @@ class MinimalScene(SimScene):
         lines = [
             "scene/minimal_scene",
             "",
-            f"backend: {self._last_backend_name}",
-            f"scene: {SCENE_ID}",
-            f"frame: {self._frames}",
-            f"dt: {dt * 1000.0:.2f} ms",
-            f"fps target: {cfg.fps}",
-            f"virtual_resolution: {cfg.virtual_resolution[0]}x{cfg.virtual_resolution[1]}",
+            "Hello world.",
+            "This scene only draws text and one moving rectangle.",
             "",
-            f"window: {vp.window_w}x{vp.window_h}",
-            f"viewport mode: {vp.mode}",
-            f"viewport scale: {vp.scale:.3f}",
+            f"backend: {self._last_backend_name}",
+            f"entity x: {block_x}",
             "",
             "Controls:",
-            "  F1 toggle debug overlay",
-            "  ESC exit",
+            "  ESC -> quit",
         ]
 
         def draw(backend: Backend):
             self._last_backend_name = backend.__class__.__name__
-            backend.render.draw_rect(24, 24, 640, 390, color=(0, 0, 0, 220))
+            backend.render.draw_rect(24, 24, 640, 280, color=(0, 0, 0, 220))
             backend.render.draw_rect(
                 block_x, block_y, 80, 30, color=(120, 220, 255, 255)
             )

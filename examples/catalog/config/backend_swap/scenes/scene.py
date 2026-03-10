@@ -25,41 +25,32 @@ class BackendSwapScene(SimScene):
         self._last_backend_name = "unknown"
 
     def tick(self, input_frame: InputFrame, dt: float) -> RenderPacket:
+        del input_frame, dt
         cfg = self.context.config
-        vp = self.context.services.window.get_viewport()
         active = ", ".join(cfg.postfx.active) if cfg.postfx.active else "(none)"
-
-        lines = [
-            "config/backend_swap",
-            "",
-            f"runtime backend: {self._last_backend_name}",
-            f"scene: {SCENE_ID}",
-            f"fps target: {cfg.fps}",
-            f"virtual_resolution: {cfg.virtual_resolution[0]}x{cfg.virtual_resolution[1]}",
-            f"postfx.enabled: {cfg.postfx.enabled}",
-            f"postfx.active: {active}",
-            "",
-            "Parity checklist:",
-            "  - window opens and closes cleanly",
-            "  - same virtual resolution",
-            "  - same clear color",
-            "",
-            f"window: {vp.window_w}x{vp.window_h}",
-            f"viewport mode: {vp.mode}",
-            f"viewport scale: {vp.scale:.3f}",
-            "",
-            "Controls:",
-            "  F1 toggle debug overlay",
-            "  ESC exit",
-        ]
 
         def draw(backend: Backend):
             self._last_backend_name = backend.__class__.__name__
-            backend.render.draw_rect(12, 12, 700, 470, color=(0, 0, 0, 0.75))
-            y = 24
+            lines = [
+                "config/backend_swap",
+                "Swap only the backend provider and keep the scene identical.",
+                "",
+                f"current backend: {self._last_backend_name}",
+                f"virtual resolution: {cfg.virtual_resolution[0]}x{cfg.virtual_resolution[1]}",
+                f"fps target: {cfg.fps}",
+                f"postfx: {active}",
+                "",
+                "Parity checklist:",
+                "  - same timing and motion",
+                "  - same clear color",
+                "  - same text placement",
+                "",
+                "ESC -> quit",
+            ]
+            backend.render.draw_rect(18, 18, 660, 340, color=(0, 0, 0, 0.75))
+            y = 34
             for line in lines:
                 backend.text.draw(20, y, line, color=(230, 230, 235), font_size=18)
                 y += 22
 
         return RenderPacket(ops=[draw])
-
