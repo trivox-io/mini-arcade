@@ -777,10 +777,7 @@ class SimScene(Generic[TContext, TWorld]):
         """
         Resolve the configured ESC command for this scene, if any.
         """
-        scene_settings = getattr(self.context.settings, "scene_settings", None)
-        if not callable(scene_settings):
-            return None
-        cfg = scene_settings(self._resolve_scene_id())
+        cfg = self.scene_runtime_settings()
         if cfg is None or cfg.escape is None:
             return None
 
@@ -807,6 +804,15 @@ class SimScene(Generic[TContext, TWorld]):
                 target_scene, as_overlay=bool(action.as_overlay)
             )
         return None
+
+    def scene_runtime_settings(self):
+        """
+        Resolve per-scene gameplay config from runtime settings.
+        """
+        scene_settings = getattr(self.context.settings, "scene_settings", None)
+        if not callable(scene_settings):
+            return None
+        return scene_settings(self._resolve_scene_id())
 
     def _load_texture(self, path: str) -> int:
         return self.context.services.render.load_texture(path)

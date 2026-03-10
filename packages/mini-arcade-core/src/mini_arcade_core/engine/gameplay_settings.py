@@ -215,14 +215,21 @@ class SceneRuntimeSettings:
     """
 
     escape: SceneActionSettings | None = None
+    data: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: Any) -> "SceneRuntimeSettings":
         if not isinstance(data, dict):
             return cls()
+        payload = deepcopy(data)
+        payload.pop("escape", None)
         return cls(
             escape=SceneActionSettings.from_dict(data.get("escape")),
+            data=payload,
         )
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return deepcopy(self.data.get(key, default))
 
 
 @dataclass

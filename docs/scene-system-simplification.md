@@ -123,6 +123,55 @@ Supported `escape.command` values are:
 - `push_scene`
 - `push_scene_if_missing`
 
+## Data-Driven Entities
+
+Initial gameplay entities are now configurable from `settings.yml` under
+`gameplay.scenes.<scene_id>.entities`.
+
+The core now preserves arbitrary scene payloads in runtime gameplay settings and
+includes a viewport-aware transform resolver for entity config. This supports
+placement like:
+
+```yaml
+transform:
+  size:
+    width: 20
+    height: 100
+  position:
+    x:
+      anchor: right
+      offset: 20
+    y:
+      anchor: center
+```
+
+That model is now used in the shipped games:
+
+- Deja Bounce initial entities are loaded from YAML, including right-edge paddle
+  placement and ball reset defaults
+- Space Invaders initial entities and runtime spawn templates are loaded from
+  YAML for ship, alien grid, shelters, bullets, missiles, and UFOs
+- Asteroids initial entities and runtime spawn templates are loaded from YAML
+  for ship, bullets, asteroid waves, and asteroid splits
+
+This keeps scene bootstrap code focused on loading config and wiring systems,
+instead of hardcoding entity creation and viewport math.
+
+Recent follow-up fixes after the entity migration:
+
+- Deja Bounce dotted center line now spans the full configured viewport height
+  when built from YAML
+- Space Invaders runtime spawn systems now resolve bullet templates from world
+  config correctly, shelter templates keep their sprite texture, and alien
+  descent once again ends the round on bottom reach / ship collision
+- Asteroids template-built ship now keeps the canonical `SHIP` entity id so the
+  control, motion, collision, and HUD systems resolve the player entity
+  correctly
+- `remove_scene`
+- `change_scene`
+- `push_scene`
+- `push_scene_if_missing`
+
 Behavior:
 
 - `BaseMenuScene.quit_command()` now resolves from scene config first, then

@@ -528,6 +528,18 @@ class Settings:
                 out[key] = value
         return out
 
+    def _expand_tokens_in_value(self, value: Any) -> Any:
+        if isinstance(value, dict):
+            return {
+                key: self._expand_tokens_in_value(item)
+                for key, item in value.items()
+            }
+        if isinstance(value, list):
+            return [self._expand_tokens_in_value(item) for item in value]
+        if isinstance(value, str):
+            return self._expand_tokens(value)
+        return value
+
     def engine_config_defaults(self) -> dict[str, Any]:
         """
         Engine settings defaults aligned to
@@ -617,7 +629,7 @@ class Settings:
         if isinstance(scenes, dict):
             out["scenes"] = self._deep_copy_dict(scenes)
 
-        return out
+        return self._expand_tokens_in_value(out)
 
     def backend_defaults(
         self, *, resolve_paths: bool = False
