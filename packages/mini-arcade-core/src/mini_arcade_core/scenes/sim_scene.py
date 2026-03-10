@@ -67,6 +67,30 @@ class BaseWorld:
     """
 
     entities: list[BaseEntity]
+    _entities_by_id: dict[int, BaseEntity] = field(
+        init=False, default_factory=dict, repr=False
+    )
+    _entities_by_range: dict[tuple[int, int], list[BaseEntity]] = field(
+        init=False, default_factory=dict, repr=False
+    )
+
+    def __setattr__(self, name: str, value: object) -> None:
+        if name == "entities" and isinstance(value, list):
+            if not isinstance(value, _TrackedEntityList):
+                value = _TrackedEntityList(self, value)
+        super().__setattr__(name, value)
+        if name == "entities" and hasattr(self, "_entities_by_id"):
+            self._rebuild_entity_indexes()
+
+    def __post_init__(self) -> None:
+        self.entities = list(self.entities)
+        self._rebuild_entity_indexes()
+
+    def _rebuild_entity_indexes(self) -> None:
+        self._entities_by_id = {
+            int(entity.id): entity for entity in list(self.entities)
+        }
+        self._entities_by_range.clear()
 
     def get_entity_by_id(self, entity_id: int) -> BaseEntity | None:
         """
@@ -77,10 +101,7 @@ class BaseWorld:
         :return: The entity with the specified ID, or None if not found.
         :rtype: BaseEntity | None
         """
-        for entity in self.entities:
-            if entity.id == entity_id:
-                return entity
-        return None
+        return self._entities_by_id.get(int(entity_id))
 
     def get_entities_by_id_range(
         self, start_id: int, end_id: int
@@ -95,11 +116,79 @@ class BaseWorld:
         :return: A list of entities with IDs in the specified range.
         :rtype: list[BaseEntity]
         """
-        return [
+        cache_key = (int(start_id), int(end_id))
+        cached = self._entities_by_range.get(cache_key)
+        if cached is not None:
+            return cached
+
+        entities = [
             entity
             for entity in self.entities
-            if start_id <= entity.id <= end_id
+            if cache_key[0] <= int(entity.id) <= cache_key[1]
         ]
+        self._entities_by_range[cache_key] = entities
+        return entities
+
+
+class _TrackedEntityList(list[BaseEntity]):
+    """
+    List wrapper that keeps BaseWorld indexes in sync after mutation.
+    """
+
+    def __init__(
+        self, owner: BaseWorld, values: list[BaseEntity] | tuple[BaseEntity, ...]
+    ):
+        self._owner = owner
+        super().__init__(values)
+
+    def _did_change(self) -> None:
+        self._owner._rebuild_entity_indexes()
+
+    def append(self, item: BaseEntity) -> None:
+        super().append(item)
+        self._did_change()
+
+    def extend(self, values) -> None:
+        super().extend(values)
+        self._did_change()
+
+    def insert(self, index: int, item: BaseEntity) -> None:
+        super().insert(index, item)
+        self._did_change()
+
+    def pop(self, index: int = -1):
+        item = super().pop(index)
+        self._did_change()
+        return item
+
+    def remove(self, item: BaseEntity) -> None:
+        super().remove(item)
+        self._did_change()
+
+    def clear(self) -> None:
+        super().clear()
+        self._did_change()
+
+    def __delitem__(self, index) -> None:
+        super().__delitem__(index)
+        self._did_change()
+
+    def __setitem__(self, index, value) -> None:
+        super().__setitem__(index, value)
+        self._did_change()
+
+    def __iadd__(self, values):
+        result = super().__iadd__(values)
+        self._did_change()
+        return result
+
+    def sort(self, *, key=None, reverse: bool = False) -> None:
+        super().sort(key=key, reverse=reverse)
+        self._did_change()
+
+    def reverse(self) -> None:
+        super().reverse()
+        self._did_change()
 
 
 class BaseIntent:

@@ -22,6 +22,8 @@ def _bootstrap_repo_imports() -> None:
 
 _bootstrap_repo_imports()
 
+from dataclasses import dataclass
+
 from asteroids.entities import build_ship  # noqa: E402
 from asteroids.entities.entity_id import EntityId as AsteroidsEntityId  # noqa: E402
 from deja_bounce.entities import DottedLine, EntityId as PongEntityId  # noqa: E402
@@ -30,6 +32,7 @@ from mini_arcade_core.engine.entities import BaseEntity  # noqa: E402
 from mini_arcade_core.engine.gameplay_settings import GamePlaySettings  # noqa: E402
 from mini_arcade_core.runtime.context import RuntimeContext  # noqa: E402
 from mini_arcade_core.runtime.input_frame import InputFrame  # noqa: E402
+from mini_arcade_core.scenes.sim_scene import BaseWorld  # noqa: E402
 from space_invaders.entities import Alien, EntityId, Ship  # noqa: E402
 from space_invaders.scenes.space_invaders.models import (  # noqa: E402
     SpaceInvadersIntent,
@@ -216,3 +219,59 @@ def test_base_entity_from_dict_preserves_z_index() -> None:
     )
 
     assert entity.z_index == 7
+
+
+def test_base_world_indexes_stay_in_sync_after_mutation() -> None:
+    @dataclass
+    class _World(BaseWorld):
+        pass
+
+    entity_a = BaseEntity.from_dict(
+        {
+            "id": 10,
+            "name": "A",
+            "transform": {
+                "center": {"x": 0.0, "y": 0.0},
+                "size": {"width": 10.0, "height": 10.0},
+            },
+            "shape": {"kind": "rect"},
+        }
+    )
+    entity_b = BaseEntity.from_dict(
+        {
+            "id": 150,
+            "name": "B",
+            "transform": {
+                "center": {"x": 0.0, "y": 0.0},
+                "size": {"width": 10.0, "height": 10.0},
+            },
+            "shape": {"kind": "rect"},
+        }
+    )
+    entity_c = BaseEntity.from_dict(
+        {
+            "id": 175,
+            "name": "C",
+            "transform": {
+                "center": {"x": 0.0, "y": 0.0},
+                "size": {"width": 10.0, "height": 10.0},
+            },
+            "shape": {"kind": "rect"},
+        }
+    )
+
+    world = _World(entities=[entity_a, entity_b])
+
+    assert world.get_entity_by_id(10) is entity_a
+    assert world.get_entities_by_id_range(100, 199) == [entity_b]
+
+    world.entities.append(entity_c)
+
+    assert world.get_entity_by_id(175) is entity_c
+    assert world.get_entities_by_id_range(100, 199) == [entity_b, entity_c]
+
+    world.entities = [entity_c]
+
+    assert world.get_entity_by_id(10) is None
+    assert world.get_entity_by_id(175) is entity_c
+    assert world.get_entities_by_id_range(100, 199) == [entity_c]
