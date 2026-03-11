@@ -216,9 +216,12 @@ For non-trivial games, use this separation:
 
 - `entities/`: reusable entity builders and IDs
 - `scenes/<mode>/models.py`: world state, intent, tick context
+- `scenes/<mode>/bootstrap.py`: world builders and asset/bootstrap helpers
+- `scenes/<mode>/pipeline.py`: ordered system registration helpers
+- `scenes/<mode>/spawn.py`: typed spawn specs and spawn policies when needed
 - `scenes/<mode>/systems/*.py`: input, simulation rules, collisions, rendering
 - `scenes/<mode>/draw_ops.py`: reusable `Drawable` overlays and specialized visuals
-- `scenes/<mode>/scene.py`: scene registration, world creation, system wiring
+- `scenes/<mode>/scene.py`: scene registration and orchestration only
 
 This is the same structure used in reference games:
 
@@ -460,36 +463,64 @@ class PlayRenderSystem(BaseSystem[PlayTickContext]):
         ctx.packet = RenderPacket.from_ops([draw])
 ```
 
+`scenes/play/bootstrap.py`:
+
+```python
+from my_first_game.scenes.play.models import PlayWorld
+
+
+def build_play_world(*, viewport: tuple[float, float]) -> PlayWorld:
+    vw, vh = viewport
+    return PlayWorld(
+        entities=[],
+        viewport=viewport,
+        player_x=vw * 0.5,
+    )
+```
+
+`scenes/play/pipeline.py`:
+
+```python
+from my_first_game.scenes.play.systems.render import PlayRenderSystem
+from my_first_game.scenes.play.systems.rules import PlayRulesSystem
+
+
+def build_play_systems():
+    return (
+        PlayRulesSystem(),
+        PlayRenderSystem(),
+    )
+```
+
 `scenes/play/scene.py`:
 
 ```python
 from mini_arcade_core.scenes.autoreg import register_scene
-from mini_arcade_core.scenes.game_scene import GameScene
+from mini_arcade_core.scenes.bootstrap import scene_viewport
+from mini_arcade_core.scenes.game_scene import GameScene, GameSceneSystemsConfig
 
+from my_first_game.scenes.commands import PauseGameCommand
+from my_first_game.scenes.play.bootstrap import build_play_world
 from my_first_game.scenes.play.models import PlayTickContext, PlayWorld
-from my_first_game.scenes.play.systems.input import PlayInputSystem
-from my_first_game.scenes.play.systems.render import PlayRenderSystem
-from my_first_game.scenes.play.systems.rules import PlayRulesSystem
+from my_first_game.scenes.play.pipeline import build_play_systems
+
+
+def _build_intent(actions, _ctx: PlayTickContext):
+    ...
 
 
 @register_scene("play")
 class PlayScene(GameScene[PlayTickContext, PlayWorld]):
     tick_context_type = PlayTickContext
+    systems_config = GameSceneSystemsConfig(
+        controls_scene_key="play",
+        intent_factory=_build_intent,
+        pause_command_factory=lambda _ctx: PauseGameCommand(),
+    )
 
     def on_enter(self):
-        vw, vh = self.context.services.window.get_virtual_size()
-        self.world = PlayWorld(
-            entities=[],
-            viewport=(vw, vh),
-            player_x=vw * 0.5,
-        )
-        self.systems.extend(
-            [
-                PlayInputSystem(),
-                PlayRulesSystem(),
-                PlayRenderSystem(),
-            ]
-        )
+        self.world = build_play_world(viewport=scene_viewport(self))
+        self.systems.extend(build_play_systems())
 ```
 
 ## Entities Deep Dive (How to model game objects)
@@ -662,6 +693,8 @@ Rule of thumb:
 - Keep each system focused on one responsibility.
 - Use `SystemBundle` when one feature is made from several reusable atomic
   processors.
+- Keep long ordered system lists out of `scene.py`; prefer a local
+  `pipeline.py` builder.
 
 ## GameScene shell
 
@@ -677,12 +710,20 @@ Typical responsibilities:
 
 That keeps scene code focused on world bootstrap and custom gameplay systems.
 
+In the reference games, that usually means:
+
+- `scene.py` calls shared helpers such as `scene_viewport(...)` and
+  `scene_entities_config(...)`
+- `bootstrap.py` builds the initial world
+- `pipeline.py` returns the ordered gameplay systems
+
 ## Asset and Texture Patterns
 
 Use these patterns from reference games:
 
 - Resolve asset root once (`find_assets_root()` helpers).
-- Load static texture IDs in `scene.on_enter()`.
+- Put larger asset/template loaders in `bootstrap.py`, not directly in
+  `scene.py`.
 - Cache texture lookups in scene methods (`self._tex(path)` pattern).
 - Keep logical projectile/animation specs in `world` (not global module state).
 
@@ -745,6 +786,8 @@ This gives a deterministic baseline that matches the current Mini Arcade runtime
 Deja Bounce (balanced baseline):
 
 - `games/deja-bounce/src/deja_bounce/scenes/pong/scene.py`
+- `games/deja-bounce/src/deja_bounce/scenes/pong/bootstrap.py`
+- `games/deja-bounce/src/deja_bounce/scenes/pong/pipeline.py`
 - `games/deja-bounce/src/deja_bounce/scenes/pong/models.py`
 - `games/deja-bounce/src/deja_bounce/scenes/pong/draw_ops.py`
 - `games/deja-bounce/src/deja_bounce/scenes/pong/systems/`
@@ -753,6 +796,9 @@ Deja Bounce (balanced baseline):
 Asteroids (shape-heavy rendering and bounded spawn domains):
 
 - `games/asteroids/src/asteroids/scenes/asteroids/scene.py`
+- `games/asteroids/src/asteroids/scenes/asteroids/bootstrap.py`
+- `games/asteroids/src/asteroids/scenes/asteroids/pipeline.py`
+- `games/asteroids/src/asteroids/scenes/asteroids/spawn.py`
 - `games/asteroids/src/asteroids/scenes/asteroids/models.py`
 - `games/asteroids/src/asteroids/scenes/asteroids/draw_ops.py`
 - `games/asteroids/src/asteroids/scenes/asteroids/systems/render.py`

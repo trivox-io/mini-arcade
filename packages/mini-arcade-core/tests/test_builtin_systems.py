@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Iterable
 from pathlib import Path
 
@@ -25,7 +25,7 @@ def _bootstrap_repo_imports() -> None:
 _bootstrap_repo_imports()
 
 from mini_arcade_core.engine.entities import BaseEntity  # noqa: E402
-from mini_arcade_core.scenes.sim_scene import BaseWorld  # noqa: E402
+from mini_arcade_core.scenes.sim_scene import BaseWorld, EntityIdDomain  # noqa: E402
 from mini_arcade_core.scenes.systems import SystemPipeline  # noqa: E402
 from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     AnimationTickSystem,
@@ -34,8 +34,14 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     IntentAxisVelocitySystem,
     KinematicMotionSystem,
     MotionBinding,
+    ProjectileLifecycleBinding,
+    ProjectileLifecycleBundle,
+    SpawnBinding,
+    SpawnSystem,
     ViewportConstraintBinding,
     ViewportConstraintSystem,
+    WaveProgressionBinding,
+    WaveProgressionSystem,
 )
 
 
@@ -311,3 +317,114 @@ def test_system_pipeline_flattens_bundles_into_ordered_systems() -> None:
     pipeline.step(ctx)
 
     assert seen == ["first", "second"]
+
+
+def test_spawn_system_inserts_entities_and_runs_callback() -> None:
+    seen: list[int] = []
+    world = _World(entities=[])
+
+    SpawnSystem(
+        bindings=(
+            SpawnBinding(
+                should_spawn=lambda _ctx: True,
+                spawn=lambda _ctx: BaseEntity.from_dict(
+                    {
+                        "id": 10,
+                        "name": "Spawned",
+                        "transform": {
+                            "center": {"x": 0.0, "y": 0.0},
+                            "size": {"width": 4.0, "height": 4.0},
+                        },
+                        "shape": {"kind": "rect"},
+                    }
+                ),
+                on_spawned=lambda _ctx, spawned: seen.extend(
+                    int(entity.id) for entity in spawned
+                ),
+            ),
+        )
+    ).step(_Ctx(dt=0.0, world=world))
+
+    assert [entity.id for entity in world.entities] == [10]
+    assert seen == [10]
+
+
+def test_wave_progression_system_advances_and_spawns_next_wave() -> None:
+    @dataclass
+    class _WaveWorld(BaseWorld):
+        level: int = 1
+
+    world = _WaveWorld(entities=[])
+
+    WaveProgressionSystem(
+        bindings=(
+            WaveProgressionBinding(
+                is_complete=lambda _ctx: True,
+                advance=lambda ctx: setattr(ctx.world, "level", ctx.world.level + 1),
+                spawn_next=lambda ctx: (
+                    BaseEntity.from_dict(
+                        {
+                            "id": 20 + ctx.world.level,
+                            "name": "Wave Enemy",
+                            "transform": {
+                                "center": {"x": 0.0, "y": 0.0},
+                                "size": {"width": 6.0, "height": 6.0},
+                            },
+                            "shape": {"kind": "rect"},
+                        }
+                    ),
+                ),
+            ),
+        )
+    ).step(_Ctx(dt=0.0, world=world))
+
+    assert world.level == 2
+    assert [entity.id for entity in world.entities] == [22]
+
+
+def test_projectile_lifecycle_bundle_culls_and_cleans_dead_entities() -> None:
+    @dataclass
+    class _ProjectileWorld(BaseWorld):
+        entity_id_domains = {
+            "projectile": EntityIdDomain(start_id=100, end_id=199)
+        }
+        projectiles: list[int] = field(default_factory=list)
+        viewport: tuple[float, float] = (100.0, 100.0)
+
+    projectile = BaseEntity.from_dict(
+        {
+            "id": 100,
+            "name": "Projectile",
+            "transform": {
+                "center": {"x": 140.0, "y": 10.0},
+                "size": {"width": 4.0, "height": 4.0},
+            },
+            "shape": {"kind": "rect"},
+            "kinematic": {
+                "velocity": {"vx": 0.0, "vy": 0.0},
+                "max_speed": 40.0,
+            },
+            "life": {"alive": True},
+        }
+    )
+    world = _ProjectileWorld(entities=[projectile], projectiles=[100])
+
+    pipeline = SystemPipeline[_Ctx]()
+    pipeline.add(
+        ProjectileLifecycleBundle(
+            bindings=(
+                ProjectileLifecycleBinding(
+                    entities_getter=lambda ctx: ctx.world.entities,
+                    tracked_ids_attr="projectiles",
+                    tracked_domain_name="projectile",
+                ),
+            ),
+            include_motion=False,
+            boundary_order=10,
+            cleanup_order=11,
+        )
+    )
+    pipeline.step(_Ctx(dt=0.0, world=world))
+
+    assert world.entities == []
+    assert world.projectiles == []

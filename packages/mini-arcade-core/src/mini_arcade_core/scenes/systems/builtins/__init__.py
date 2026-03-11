@@ -41,6 +41,20 @@ from .movement import (  # noqa: E402  (re-export)
     ViewportConstraintBinding,
     ViewportConstraintSystem,
 )
+from .projectiles import (  # noqa: E402  (re-export)
+    ProjectileBoundaryBinding,
+    ProjectileBoundarySystem,
+    ProjectileCleanupBinding,
+    ProjectileCleanupSystem,
+    ProjectileLifecycleBinding,
+    ProjectileLifecycleBundle,
+)
+from .spawn import (  # noqa: E402  (re-export)
+    SpawnBinding,
+    SpawnSystem,
+    WaveProgressionBinding,
+    WaveProgressionSystem,
+)
 from .animation import AnimationTickSystem  # noqa: E402  (re-export)
 from .pause import IntentPauseSystem  # noqa: E402  (re-export)
 
@@ -501,11 +515,21 @@ __all__ = [
     "IntentPauseSystem",
     "KinematicMotionSystem",
     "MotionBinding",
+    "ProjectileBoundaryBinding",
+    "ProjectileBoundarySystem",
+    "ProjectileCleanupBinding",
+    "ProjectileCleanupSystem",
+    "ProjectileLifecycleBinding",
+    "ProjectileLifecycleBundle",
     "RenderOverlay",
     "SceneCaptureConfig",
+    "SpawnBinding",
+    "SpawnSystem",
     "AxisIntentBinding",
     "ViewportConstraintBinding",
     "ViewportConstraintSystem",
+    "WaveProgressionBinding",
+    "WaveProgressionSystem",
     "action_map_from_bindings_config",
     "action_map_from_controls_config",
     "action_map_from_scene_capture_config",

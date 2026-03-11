@@ -8,6 +8,7 @@ Minimal Asteroids clone built on `mini-arcade-core` with the pygame backend.
 - Scene discovery and menu/game scene transitions
 - Shape-heavy rendering with declarative queued render composition
 - System bundles plus bounded spawn-id domains
+- Wave spawn specs plus extracted bootstrap/pipeline builders
 - Ship movement, projectiles, and arcade-style loop structure
 
 ## Run
@@ -42,5 +43,8 @@ python manage.py
   - `games/asteroids/src/asteroids/scenes/`
 - Good files to study:
   - `games/asteroids/src/asteroids/scenes/asteroids/scene.py`
+  - `games/asteroids/src/asteroids/scenes/asteroids/bootstrap.py`
+  - `games/asteroids/src/asteroids/scenes/asteroids/pipeline.py`
+  - `games/asteroids/src/asteroids/scenes/asteroids/spawn.py`
   - `games/asteroids/src/asteroids/scenes/asteroids/models.py`
   - `games/asteroids/src/asteroids/scenes/asteroids/systems/__init__.py`

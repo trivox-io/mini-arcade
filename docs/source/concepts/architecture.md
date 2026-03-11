@@ -134,6 +134,19 @@ Entity access follows the same pattern:
 - semantic queries use tags and world helper methods
 - named entity-id domains are reserved for constrained allocation and cleanup
 
+Gameplay scene code is now typically split into four layers:
+
+- `scene.py`: orchestration only
+- `bootstrap.py`: world builders and asset/bootstrap helpers
+- `pipeline.py`: ordered gameplay system registration
+- `systems/` and `spawn.py`: reusable gameplay processors, bundles, and spawn policies
+
+That keeps `on_enter()` focused on:
+
+- resolving runtime config
+- building the world
+- installing the ordered pipeline
+
 ## Frame lifecycle (actual loop order)
 
 `EngineRunner.run()` performs this order per frame:

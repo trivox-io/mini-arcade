@@ -152,6 +152,14 @@ Typical patterns:
   initialize `world` in `on_enter()`
   register systems in pipeline
 
+Current gameplay-scene structure in the reference games:
+
+- `scene.py`: scene registration plus high-level orchestration
+- `bootstrap.py`: asset resolution, template loading, and world construction
+- `pipeline.py`: ordered system/bundle list builders
+- `spawn.py`: typed spawn specs and spawn policies
+- `systems/`: atomic processors and feature bundles
+
 ## Tick context and system pipeline
 
 Core types (same module):
@@ -181,6 +189,15 @@ Terminology:
 Use bundles when a gameplay feature is made from several atomic processors
 (input-to-velocity, motion integration, viewport constraints), instead of
 packing those concerns into one large `step(...)` method.
+
+Builder pattern used by the reference games:
+
+- world construction usually lives in a local `build_<scene>_world(...)`
+  helper in `bootstrap.py`
+- gameplay system registration usually lives in a local
+  `build_<scene>_systems(...)` helper in `pipeline.py`
+- scene `on_enter()` should mostly compose those helpers rather than inline
+  entity creation and long system lists
 
 World query model:
 
