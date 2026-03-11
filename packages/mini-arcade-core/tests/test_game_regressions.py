@@ -32,7 +32,7 @@ from mini_arcade_core.engine.entities import BaseEntity  # noqa: E402
 from mini_arcade_core.engine.gameplay_settings import GamePlaySettings  # noqa: E402
 from mini_arcade_core.runtime.context import RuntimeContext  # noqa: E402
 from mini_arcade_core.runtime.input_frame import InputFrame  # noqa: E402
-from mini_arcade_core.scenes.sim_scene import BaseWorld  # noqa: E402
+from mini_arcade_core.scenes.sim_scene import BaseWorld, EntityIdDomain  # noqa: E402
 from space_invaders.entities import Alien, EntityId, Ship  # noqa: E402
 from space_invaders.scenes.space_invaders.models import (  # noqa: E402
     SpaceInvadersIntent,
@@ -43,6 +43,8 @@ from space_invaders.scenes.space_invaders.scene import (  # noqa: E402
     SpaceInvadersScene,
 )
 from space_invaders.scenes.space_invaders.systems import (  # noqa: E402
+    BulletBulletCollisionSystem,
+    BulletCleanupSystem,
     BulletSpawnSystem,
     RoundStateSystem,
 )
@@ -178,6 +180,49 @@ def test_space_invaders_round_ends_when_aliens_reach_bottom() -> None:
     assert world.game_over is True
 
 
+def test_space_invaders_bullet_cleanup_runs_after_collision_marking() -> None:
+    ship_bullet = BaseEntity.from_dict(
+        {
+            "id": int(EntityId.BULLET_START),
+            "name": "Ship Bullet",
+            "transform": {
+                "center": {"x": 120.0, "y": 200.0},
+                "size": {"width": 6.0, "height": 14.0},
+            },
+            "shape": {"kind": "rect"},
+            "life": {"alive": True},
+        }
+    )
+    ship_bullet.owner = "ship"
+
+    alien_bullet = BaseEntity.from_dict(
+        {
+            "id": int(EntityId.BULLET_START) + 1,
+            "name": "Alien Bullet",
+            "transform": {
+                "center": {"x": 120.0, "y": 200.0},
+                "size": {"width": 6.0, "height": 14.0},
+            },
+            "shape": {"kind": "rect"},
+            "life": {"alive": True},
+        }
+    )
+    alien_bullet.owner = "alien"
+
+    world = SpaceInvadersWorld(
+        viewport=(800.0, 600.0),
+        entities=[ship_bullet, alien_bullet],
+        bullets=[ship_bullet.id, alien_bullet.id],
+    )
+    ctx = _space_invaders_ctx(world)
+
+    BulletBulletCollisionSystem().step(ctx)
+    BulletCleanupSystem().step(ctx)
+
+    assert world.bullets == []
+    assert world.entities == []
+
+
 def test_asteroids_template_ship_uses_runtime_ship_id() -> None:
     ship = build_ship(
         template={
@@ -275,3 +320,125 @@ def test_base_world_indexes_stay_in_sync_after_mutation() -> None:
     assert world.get_entity_by_id(10) is None
     assert world.get_entity_by_id(175) is entity_c
     assert world.get_entities_by_id_range(100, 199) == [entity_c]
+
+
+def test_base_entity_and_world_support_tag_queries() -> None:
+    @dataclass
+    class _World(BaseWorld):
+        pass
+
+    ship = BaseEntity.from_dict(
+        {
+            "id": 1,
+            "name": "Ship",
+            "transform": {
+                "center": {"x": 0.0, "y": 0.0},
+                "size": {"width": 10.0, "height": 10.0},
+            },
+            "shape": {"kind": "rect"},
+            "tags": ["ship", "player", "ship"],
+        }
+    )
+    bullet = BaseEntity.from_dict(
+        {
+            "id": 2,
+            "name": "Bullet",
+            "transform": {
+                "center": {"x": 0.0, "y": 0.0},
+                "size": {"width": 2.0, "height": 2.0},
+            },
+            "shape": {"kind": "rect"},
+            "tags": ["bullet"],
+        }
+    )
+
+    world = _World(entities=[ship, bullet])
+
+    assert ship.tags == ("ship", "player")
+    assert world.get_entities_by_tag("ship") == [ship]
+    assert world.find_entity(tag="bullet") is bullet
+    assert world.find_entities(predicate=lambda entity: "player" in entity.tags) == [ship]
+
+
+def test_base_world_supports_id_allocation_removal_and_tracked_compaction() -> None:
+    @dataclass
+    class _World(BaseWorld):
+        entity_id_domains = {
+            "tracked": EntityIdDomain(start_id=100, end_id=105)
+        }
+        tracked: list[int]
+
+    entity_a = BaseEntity.from_dict(
+        {
+            "id": 100,
+            "name": "A",
+            "transform": {
+                "center": {"x": 0.0, "y": 0.0},
+                "size": {"width": 10.0, "height": 10.0},
+            },
+            "shape": {"kind": "rect"},
+            "life": {"alive": True},
+        }
+    )
+    entity_b = BaseEntity.from_dict(
+        {
+            "id": 101,
+            "name": "B",
+            "transform": {
+                "center": {"x": 0.0, "y": 0.0},
+                "size": {"width": 10.0, "height": 10.0},
+            },
+            "shape": {"kind": "rect"},
+            "life": {"alive": False},
+        }
+    )
+    entity_c = BaseEntity.from_dict(
+        {
+            "id": 104,
+            "name": "C",
+            "transform": {
+                "center": {"x": 0.0, "y": 0.0},
+                "size": {"width": 10.0, "height": 10.0},
+            },
+            "shape": {"kind": "rect"},
+            "life": {"alive": True},
+        }
+    )
+
+    world = _World(entities=[entity_a, entity_b, entity_c], tracked=[100, 101, 101])
+
+    assert world.allocate_entity_id(100, 105) == 102
+    assert world.allocate_entity_id(100, 105, reserved_ids={102, 103}) == 105
+    assert world.allocate_entity_id_for("tracked") == 102
+    assert (
+        world.allocate_entity_id_for("tracked", reserved_ids={102, 103}) == 105
+    )
+
+    world.remove_entities_by_ids({104})
+
+    assert world.get_entity_by_id(104) is None
+
+    kept = world.compact_tracked_entity_ids(
+        attr_name="tracked",
+        start_id=100,
+        end_id=105,
+        keep_entity=lambda entity: bool(
+            getattr(getattr(entity, "life", None), "alive", True)
+        ),
+    )
+
+    assert kept == [100]
+    assert world.tracked == [100]
+    assert [entity.id for entity in world.entities] == [100]
+    assert world.get_entities_in_domain("tracked") == [entity_a]
+
+    world.entities.append(entity_c)
+    kept_from_domain = world.compact_tracked_entity_ids_for(
+        attr_name="tracked",
+        domain_name="tracked",
+        keep_entity=lambda entity: bool(
+            getattr(getattr(entity, "life", None), "alive", True)
+        ),
+    )
+
+    assert kept_from_domain == [100]

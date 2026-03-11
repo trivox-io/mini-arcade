@@ -13,6 +13,7 @@ from typing import (
     Callable,
     ClassVar,
     Generic,
+    Iterable,
     Literal,
     Type,
     TypeVar,
@@ -51,6 +52,16 @@ TContext = TypeVar("TContext", bound="BaseTickContext")
 # pylint: enable=invalid-name
 
 
+@dataclass(frozen=True)
+class EntityIdDomain:
+    """
+    Named entity-id allocation domain.
+    """
+
+    start_id: int
+    end_id: int
+
+
 @dataclass
 class BaseWorld:
     """
@@ -66,8 +77,12 @@ class BaseWorld:
     The engine will create it during scene init and provide it to systems each tick.
     """
 
+    entity_id_domains: ClassVar[dict[str, EntityIdDomain]] = {}
     entities: list[BaseEntity]
     _entities_by_id: dict[int, BaseEntity] = field(
+        init=False, default_factory=dict, repr=False
+    )
+    _entities_by_tag: dict[str, list[BaseEntity]] = field(
         init=False, default_factory=dict, repr=False
     )
     _entities_by_range: dict[tuple[int, int], list[BaseEntity]] = field(
@@ -87,9 +102,15 @@ class BaseWorld:
         self._rebuild_entity_indexes()
 
     def _rebuild_entity_indexes(self) -> None:
-        self._entities_by_id = {
-            int(entity.id): entity for entity in list(self.entities)
-        }
+        self._entities_by_id = {}
+        self._entities_by_tag = {}
+        for entity in list(self.entities):
+            self._entities_by_id[int(entity.id)] = entity
+            for raw_tag in getattr(entity, "tags", ()) or ():
+                tag = str(raw_tag).strip().lower()
+                if not tag:
+                    continue
+                self._entities_by_tag.setdefault(tag, []).append(entity)
         self._entities_by_range.clear()
 
     def get_entity_by_id(self, entity_id: int) -> BaseEntity | None:
@@ -128,6 +149,188 @@ class BaseWorld:
         ]
         self._entities_by_range[cache_key] = entities
         return entities
+
+    def get_entities_by_tag(self, tag: str) -> list[BaseEntity]:
+        """
+        Get entities registered with a normalized tag.
+        """
+        normalized = str(tag).strip().lower()
+        if not normalized:
+            return []
+        return list(self._entities_by_tag.get(normalized, ()))
+
+    @classmethod
+    def entity_id_domain(cls, domain_name: str) -> EntityIdDomain:
+        """
+        Resolve a named entity-id domain declared by the world class.
+        """
+        normalized = str(domain_name).strip().lower()
+        domain = cls.entity_id_domains.get(normalized)
+        if domain is None:
+            raise KeyError(
+                f"{cls.__name__} has no entity-id domain named "
+                f"{domain_name!r}"
+            )
+        return domain
+
+    def get_entities_in_domain(self, domain_name: str) -> list[BaseEntity]:
+        """
+        Return entities within a named entity-id domain.
+        """
+        domain = self.entity_id_domain(domain_name)
+        return self.get_entities_by_id_range(domain.start_id, domain.end_id)
+
+    def allocate_entity_id(
+        self,
+        start_id: int,
+        end_id: int,
+        *,
+        reserved_ids: Iterable[int] | None = None,
+    ) -> int | None:
+        """
+        Allocate the first free entity id within [start_id, end_id].
+        """
+        start = int(start_id)
+        end = int(end_id)
+        used = {
+            int(entity.id)
+            for entity in self.get_entities_by_id_range(start, end)
+        }
+        if reserved_ids is not None:
+            used.update(
+                int(entity_id)
+                for entity_id in reserved_ids
+                if start <= int(entity_id) <= end
+            )
+        for candidate in range(start, end + 1):
+            if candidate not in used:
+                return candidate
+        return None
+
+    def allocate_entity_id_for(
+        self,
+        domain_name: str,
+        *,
+        reserved_ids: Iterable[int] | None = None,
+    ) -> int | None:
+        """
+        Allocate the first free entity id inside a named domain.
+        """
+        domain = self.entity_id_domain(domain_name)
+        return self.allocate_entity_id(
+            domain.start_id,
+            domain.end_id,
+            reserved_ids=reserved_ids,
+        )
+
+    def remove_entities_by_ids(self, entity_ids: Iterable[int]) -> None:
+        """
+        Remove all entities whose ids match the provided iterable.
+        """
+        ids = {int(entity_id) for entity_id in entity_ids}
+        if not ids:
+            return
+        self.entities = [
+            entity for entity in self.entities if int(entity.id) not in ids
+        ]
+
+    def compact_tracked_entity_ids(
+        self,
+        *,
+        attr_name: str,
+        start_id: int,
+        end_id: int,
+        keep_entity: Callable[[BaseEntity], bool] | None = None,
+    ) -> list[int]:
+        """
+        Compact a tracked id list and remove entities in the associated id
+        window that no longer satisfy ``keep_entity``.
+        """
+        tracked = getattr(self, attr_name, []) or []
+        keep_entity = keep_entity or (lambda _entity: True)
+        kept_ids: list[int] = []
+        kept_id_set: set[int] = set()
+
+        for entity_id in tracked:
+            normalized = int(entity_id)
+            if normalized in kept_id_set:
+                continue
+            entity = self.get_entity_by_id(normalized)
+            if entity is None or not keep_entity(entity):
+                continue
+            kept_ids.append(normalized)
+            kept_id_set.add(normalized)
+
+        setattr(self, attr_name, kept_ids)
+
+        stale_ids = {
+            int(entity.id)
+            for entity in self.get_entities_by_id_range(
+                int(start_id), int(end_id)
+            )
+            if int(entity.id) not in kept_id_set
+        }
+        self.remove_entities_by_ids(stale_ids)
+        return kept_ids
+
+    def compact_tracked_entity_ids_for(
+        self,
+        *,
+        attr_name: str,
+        domain_name: str,
+        keep_entity: Callable[[BaseEntity], bool] | None = None,
+    ) -> list[int]:
+        """
+        Compact a tracked id list against a named entity-id domain.
+        """
+        domain = self.entity_id_domain(domain_name)
+        return self.compact_tracked_entity_ids(
+            attr_name=attr_name,
+            start_id=domain.start_id,
+            end_id=domain.end_id,
+            keep_entity=keep_entity,
+        )
+
+    def find_entities(
+        self,
+        *,
+        tag: str | None = None,
+        entity_type: type[BaseEntity] | None = None,
+        predicate: Callable[[BaseEntity], bool] | None = None,
+    ) -> list[BaseEntity]:
+        """
+        Query entities by tag, type, and/or predicate.
+        """
+        if tag is not None:
+            entities: Iterable[BaseEntity] = self.get_entities_by_tag(tag)
+        else:
+            entities = self.entities
+
+        out: list[BaseEntity] = []
+        for entity in entities:
+            if entity_type is not None and not isinstance(entity, entity_type):
+                continue
+            if predicate is not None and not predicate(entity):
+                continue
+            out.append(entity)
+        return out
+
+    def find_entity(
+        self,
+        *,
+        tag: str | None = None,
+        entity_type: type[BaseEntity] | None = None,
+        predicate: Callable[[BaseEntity], bool] | None = None,
+    ) -> BaseEntity | None:
+        """
+        Return the first entity that matches the query.
+        """
+        matches = self.find_entities(
+            tag=tag,
+            entity_type=entity_type,
+            predicate=predicate,
+        )
+        return matches[0] if matches else None
 
 
 class _TrackedEntityList(list[BaseEntity]):

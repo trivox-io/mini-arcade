@@ -115,6 +115,25 @@ Scenes are `SimScene` subclasses. A scene tick:
 
 The world state is scene-owned (`scene.world`), while side effects are emitted through commands/services.
 
+For gameplay scenes, `GameScene` adds a declarative shell on top of `SimScene`
+through `GameSceneSystemsConfig`. That lets a scene class describe:
+
+- controls-to-intent wiring
+- pause intent handling
+- one-shot intent-to-command bindings
+- extra gameplay systems
+- render system installation
+
+The system pipeline now distinguishes between:
+
+- atomic systems: one `step(ctx)` responsibility
+- system bundles: composition helpers that expand into several atomic systems
+
+Entity access follows the same pattern:
+
+- semantic queries use tags and world helper methods
+- named entity-id domains are reserved for constrained allocation and cleanup
+
 ## Frame lifecycle (actual loop order)
 
 `EngineRunner.run()` performs this order per frame:

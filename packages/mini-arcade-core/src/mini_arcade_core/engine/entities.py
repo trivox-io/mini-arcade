@@ -4,7 +4,7 @@ Engine entities for mini-arcade-core.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from mini_arcade_core.engine.animation import Animation
 from mini_arcade_core.engine.components import Anim2D, Life, Sprite2D
@@ -84,6 +84,7 @@ class BaseEntity:  # pylint: disable=too-many-instance-attributes
     sprite: Sprite2D | None = None
     anim: Anim2D | None = None
     life: Life | None = None
+    tags: tuple[str, ...] = field(default_factory=tuple)
 
     @staticmethod
     def _get_shape_by_kind(kind: str, shape_data: dict) -> Shape2D:
@@ -285,6 +286,24 @@ class BaseEntity:  # pylint: disable=too-many-instance-attributes
 
         return None
 
+    @staticmethod
+    def _get_tags(data: dict) -> tuple[str, ...]:
+        raw_tags = data.get("tags", ()) or ()
+        if not isinstance(raw_tags, (list, tuple, set)):
+            return ()
+
+        seen: set[str] = set()
+        tags: list[str] = []
+        for raw_tag in raw_tags:
+            if not isinstance(raw_tag, str):
+                continue
+            tag = raw_tag.strip().lower()
+            if not tag or tag in seen:
+                continue
+            seen.add(tag)
+            tags.append(tag)
+        return tuple(tags)
+
     # TODO: Think about refactoring this method later, it's a bit long but it does a lot
     # of parsing and construction of the entity from a dict.
     # Justification: A bit long but it's mostly data parsing and construction
@@ -355,6 +374,7 @@ class BaseEntity:  # pylint: disable=too-many-instance-attributes
             sprite=sprite,
             anim=anim,
             life=life,
+            tags=cls._get_tags(data),
         )
         if "render_layer" in data:
             setattr(entity, "render_layer", str(data.get("render_layer") or "world"))

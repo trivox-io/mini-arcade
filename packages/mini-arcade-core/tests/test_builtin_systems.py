@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass
+from typing import Iterable
 from pathlib import Path
 
 
@@ -25,6 +26,7 @@ _bootstrap_repo_imports()
 
 from mini_arcade_core.engine.entities import BaseEntity  # noqa: E402
 from mini_arcade_core.scenes.sim_scene import BaseWorld  # noqa: E402
+from mini_arcade_core.scenes.systems import SystemPipeline  # noqa: E402
 from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     AnimationTickSystem,
     AxisIntentBinding,
@@ -52,6 +54,24 @@ class _World(BaseWorld):
 @dataclass(frozen=True)
 class _Intent:
     move_x: float = 0.0
+
+
+@dataclass
+class _RecorderSystem:
+    label: str
+    seen: list[str]
+    name: str = "recorder"
+
+    def step(self, _ctx: object) -> None:
+        self.seen.append(self.label)
+
+
+@dataclass
+class _Bundle:
+    systems: tuple[object, ...]
+
+    def iter_systems(self) -> Iterable[object]:
+        return self.systems
 
 
 def test_animation_tick_system_advances_anim2d_entities() -> None:
@@ -272,3 +292,22 @@ def test_viewport_constraint_system_clamps_wraps_and_culls() -> None:
     assert wrapped.transform.center.x == 0.0
     assert culled.life is not None
     assert culled.life.alive is False
+
+
+def test_system_pipeline_flattens_bundles_into_ordered_systems() -> None:
+    seen: list[str] = []
+    ctx = object()
+
+    pipeline = SystemPipeline[object]()
+    pipeline.add(
+        _Bundle(
+            systems=(
+                _RecorderSystem(label="first", seen=seen, name="first"),
+                _RecorderSystem(label="second", seen=seen, name="second"),
+            )
+        )
+    )
+
+    pipeline.step(ctx)
+
+    assert seen == ["first", "second"]

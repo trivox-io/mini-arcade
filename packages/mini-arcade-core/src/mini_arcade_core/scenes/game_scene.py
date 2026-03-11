@@ -5,13 +5,15 @@ Game scene base class with replay capture controls enabled.
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Callable, ClassVar, Generic, Iterable, Mapping, TypeVar
+from typing import Any, Callable, ClassVar, Generic, Iterable, Mapping, TypeVar
 
 from mini_arcade_core.backend.keys import Key
 from mini_arcade_core.runtime.context import RuntimeContext
 from mini_arcade_core.scenes.sim_scene import SimScene
 from mini_arcade_core.scenes.systems.base_system import BaseSystem
 from mini_arcade_core.scenes.systems.builtins import (
+    ActionSnapshot,
+    ConfiguredActionIntentSystem,
     IntentCommandSystem,
     IntentPauseSystem,
 )
@@ -34,6 +36,12 @@ class GameSceneSystemsConfig(Generic[TContext]):
     Declarative configuration for common gameplay scene systems.
     """
 
+    controls_scene_key: str | None = None
+    intent_factory: Callable[[ActionSnapshot, TContext], object] | None = None
+    input_system_name: str = "action_intent"
+    input_channel: str | None = "player_1"
+    input_write_to_ctx_intent: bool = True
+    input_fallback_bindings: Mapping[str, Any] | None = None
     input_system_factory: Callable[
         [RuntimeContext], BaseSystem[TContext] | None
     ] | None = None
@@ -87,6 +95,21 @@ class GameScene(SimScene[TContext, TWorld], Generic[TContext, TWorld]):
             input_system = cfg.input_system_factory(self.context)
             if input_system is not None:
                 systems.append(input_system)
+        elif (
+            cfg.controls_scene_key is not None
+            and cfg.intent_factory is not None
+        ):
+            systems.append(
+                ConfiguredActionIntentSystem(
+                    controls=getattr(self.context.settings, "controls", None),
+                    scene_key=cfg.controls_scene_key,
+                    intent_factory=cfg.intent_factory,
+                    fallback_bindings=cfg.input_fallback_bindings,
+                    name=cfg.input_system_name,
+                    channel=cfg.input_channel,
+                    write_to_ctx_intent=cfg.input_write_to_ctx_intent,
+                )
+            )
 
         if cfg.pause_command_factory is not None:
             systems.append(

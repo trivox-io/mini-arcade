@@ -13,6 +13,7 @@ from mini_arcade_core.scenes.systems.base_system import (
     TSystemContext,
 )
 from mini_arcade_core.scenes.systems.phases import SystemPhase
+from mini_arcade_core.scenes.systems.system_bundle import SystemBundle
 
 
 @dataclass
@@ -43,22 +44,35 @@ class SystemPipeline(Generic[TSystemContext]):
             arr[j + 1] = key
         return arr
 
-    def add(self, system: BaseSystem[TSystemContext]):
+    def add(
+        self,
+        system: BaseSystem[TSystemContext] | SystemBundle[TSystemContext],
+    ):
         """
         Add a system to the pipeline and sort by order.
 
         :param system: The system to add.
-        :type system: BaseSystem[TSystemContext]
+        :type system: BaseSystem[TSystemContext] | SystemBundle[TSystemContext]
         """
+        if isinstance(system, SystemBundle):
+            for nested in system.iter_systems():
+                self.add(nested)
+            return
+
         self.systems.append(system)
         self.systems.sort(key=self._sort_key)
 
-    def extend(self, systems: Iterable[BaseSystem[TSystemContext]]):
+    def extend(
+        self,
+        systems: Iterable[
+            BaseSystem[TSystemContext] | SystemBundle[TSystemContext]
+        ],
+    ):
         """
         Extend the pipeline with multiple systems.
 
         :param systems: An iterable of systems to add.
-        :type systems: Iterable[BaseSystem[TSystemContext]]
+        :type systems: Iterable[BaseSystem[TSystemContext] | SystemBundle[TSystemContext]]
         """
         for s in systems:
             self.add(s)

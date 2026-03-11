@@ -160,6 +160,36 @@ Core types (same module):
 - `BaseIntent`
 - `BaseTickContext`
 - `SystemPipeline`
+- `EntityIdDomain`
+
+Gameplay scene shell:
+
+- `packages/mini-arcade-core/src/mini_arcade_core/scenes/game_scene.py`
+- `GameSceneSystemsConfig` declaratively installs common gameplay systems for:
+  - action-to-intent input
+  - pause intent handling
+  - one-shot intent-to-command bindings
+  - extra scene-specific systems
+  - render system wiring
+
+Terminology:
+
+- a **system** is one phase-ordered processor with a single `step(ctx)` job
+- a **system bundle** is just a composition helper that expands into multiple
+  systems before pipeline ordering
+
+Use bundles when a gameplay feature is made from several atomic processors
+(input-to-velocity, motion integration, viewport constraints), instead of
+packing those concerns into one large `step(...)` method.
+
+World query model:
+
+- gameplay code should prefer semantic helpers like `world.ship()` or
+  `world.aliens()`
+- those helpers are usually backed by `BaseWorld.find_entity(...)`,
+  `get_entities_by_tag(...)`, and scene-specific convenience methods
+- named `entity_id_domains` exist for constrained spawn allocation and tracked
+  cleanup, not as the primary gameplay query API
 
 Each frame:
 
@@ -198,12 +228,14 @@ Two common patterns:
 1. Direct `RenderPacket` ops in scene `tick` (good for minimal examples)
 2. Queued render systems with `RenderQueue` + `DrawCall` + `Drawable` classes
    (good for complex games)
+3. Declarative queued rendering via `ConfiguredQueuedRenderSystem`,
+   `RenderOverlay`, and `EntityRenderRule` (preferred for medium/large games)
 
 Reference implementations:
 
 - minimal direct packet:
   `examples/catalog/scene/minimal_scene/scenes/scene.py`
-- queued render + draw ops:
+- declarative queued render + draw ops:
   `games/deja-bounce/src/deja_bounce/scenes/pong/systems/render.py`
   `games/deja-bounce/src/deja_bounce/scenes/pong/draw_ops.py`
   `games/asteroids/src/asteroids/scenes/asteroids/systems/render.py`

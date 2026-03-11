@@ -548,7 +548,9 @@ class PlayerShip(BaseEntity):
 Practical guidance:
 
 - Keep builder methods deterministic and free of side effects.
-- Keep IDs grouped by ranges when you need fast selection by category.
+- Add `tags` for gameplay-facing categories you will query often.
+- Declare `entity_id_domains` on `World` only when you need constrained runtime
+  allocation or tracked cleanup.
 - Keep scene-global state in `world`, not in entity classes.
 - Use entity dynamic fields for per-entity runtime details only.
 
@@ -566,6 +568,9 @@ Scale-up pattern from Space Invaders:
 - Put score/lives/round flags in world (`score`, `lives`, `game_over`)
 - Put transient VFX state in world (`effects`, `fx_ttl`)
 - Add helper selectors in world (`ship()`, `asteroids()`, `bullets()`)
+- Prefer helper selectors backed by tags.
+- Add `entity_id_domains` only for content that needs bounded spawn ids such as
+  `bullet`, `missile`, or `asteroid`.
 
 ## DrawOps Deep Dive (Recommended for complex scenes)
 
@@ -574,8 +579,10 @@ For simple scenes, generating one `RenderPacket` with inline draw call is fine.
 For medium/large scenes, use:
 
 1. `draw_ops.py` classes that implement `Drawable[TContext]`
-2. `BaseQueuedRenderSystem` to emit entity rendering + custom layered overlays
-3. `DrawCall(drawable=..., ctx=ctx)` wrappers in render system
+2. `ConfiguredQueuedRenderSystem` to compose default entity rendering, overlays,
+   and targeted entity overrides
+3. `RenderOverlay.from_drawable(...)` or `DrawCall(...)` wrappers for custom
+   layered drawables
 
 This is how Deja Bounce, Asteroids, and Space Invaders handle overlays/HUD/VFX.
 
@@ -600,8 +607,10 @@ Minimal queued render system using draw ops:
 ```python
 from dataclasses import dataclass
 
-from mini_arcade_core.scenes.sim_scene import DrawCall
-from mini_arcade_core.scenes.systems.builtins import BaseQueuedRenderSystem
+from mini_arcade_core.scenes.systems.builtins import (
+    ConfiguredQueuedRenderSystem,
+    RenderOverlay,
+)
 from mini_arcade_core.scenes.systems.phases import SystemPhase
 
 from my_first_game.scenes.play.draw_ops import DrawHud
@@ -609,14 +618,13 @@ from my_first_game.scenes.play.models import PlayTickContext
 
 
 @dataclass
-class PlayRenderSystem(BaseQueuedRenderSystem[PlayTickContext]):
+class PlayRenderSystem(ConfiguredQueuedRenderSystem[PlayTickContext]):
     name: str = "play_render"
     phase: int = SystemPhase.RENDERING
     order: int = 100
-
-    def emit(self, ctx: PlayTickContext, rq):
-        super().emit(ctx, rq)
-        rq.custom(op=DrawCall(drawable=DrawHud(), ctx=ctx), layer="ui", z=90)
+    overlays = (
+        RenderOverlay.from_drawable(DrawHud(), layer="ui", z=90),
+    )
 ```
 
 Layer guidance:
@@ -638,17 +646,36 @@ A robust system order for gameplay scenes:
 Example from real games:
 
 - Deja Bounce:
-  - input -> pause/hotkeys -> movement/collision/rules -> render
+  - declarative gameplay shell -> intent commands -> movement bundles ->
+    collision/rules -> render
 - Asteroids:
-  - input -> pause -> ship control/motion/collision -> render
+  - declarative gameplay shell -> ship control -> motion bundle -> collision ->
+    render
 - Space Invaders:
-  - input -> pause/hotkeys -> many gameplay systems -> render
+  - declarative gameplay shell -> feature bundles + gameplay processors ->
+    render
 
 Rule of thumb:
 
 - Systems mutate `ctx.world` and enqueue commands in `ctx.commands`.
 - Exactly one render path must set `ctx.packet` each tick.
 - Keep each system focused on one responsibility.
+- Use `SystemBundle` when one feature is made from several reusable atomic
+  processors.
+
+## GameScene shell
+
+For most gameplay scenes, prefer `GameScene` plus `GameSceneSystemsConfig`
+instead of hand-wiring input/pause/render every time.
+
+Typical responsibilities:
+
+- `controls_scene_key` + `intent_factory`: action bindings to typed intent
+- `pause_command_factory`: built-in pause intent handling
+- `intent_command_bindings`: one-shot command toggles
+- `render_system_factory`: attach the scene render system
+
+That keeps scene code focused on world bootstrap and custom gameplay systems.
 
 ## Asset and Texture Patterns
 
@@ -723,7 +750,7 @@ Deja Bounce (balanced baseline):
 - `games/deja-bounce/src/deja_bounce/scenes/pong/systems/`
 - `games/deja-bounce/src/deja_bounce/entities/`
 
-Asteroids (shape-heavy rendering and ID ranges):
+Asteroids (shape-heavy rendering and bounded spawn domains):
 
 - `games/asteroids/src/asteroids/scenes/asteroids/scene.py`
 - `games/asteroids/src/asteroids/scenes/asteroids/models.py`

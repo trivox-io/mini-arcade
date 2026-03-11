@@ -7,6 +7,8 @@ Space Invaders clone used as a Mini Arcade reference game.
 - Sprite-based rendering
 - Projectile/cooldown gameplay loops
 - Multi-entity update systems
+- Declarative gameplay shell plus feature-specific processors
+- Tags and named id domains for large-scene entity management
 - Scene transitions and command flow
 - Asset loading patterns in a larger game module
 
@@ -38,3 +40,7 @@ inspect and debug.
   - `games/space-invaders/settings/settings.yml`
 - Scene package:
   - `games/space-invaders/src/space_invaders/scenes/`
+- Good files to study:
+  - `games/space-invaders/src/space_invaders/scenes/space_invaders/scene.py`
+  - `games/space-invaders/src/space_invaders/scenes/space_invaders/models.py`
+  - `games/space-invaders/src/space_invaders/scenes/space_invaders/systems/__init__.py`
