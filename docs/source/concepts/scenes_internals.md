@@ -197,6 +197,14 @@ re-implementing timing and free-cell queries in each scene:
 - `GridBounds` / `GridLayout` for grid-space ownership and rendering
 - `GridCellSpawnSystem` for cell-based item spawning
 
+For falling-block scenes, prefer the dedicated board helpers instead of
+embedding board collapse and piece layout logic inside scene classes:
+
+- `BlockBoard` for settled-cell state
+- `FallingBlockPieceSpec` / `FallingBlockPiece` for active pieces
+- `BoardRowClearSystem` for filled-row collapse
+- `BagRandomizer` for deterministic piece bags
+
 Builder pattern used by the reference games:
 
 - world construction usually lives in a local `build_<scene>_world(...)`

@@ -32,6 +32,16 @@ from .capture_hotkeys import (  # noqa: E402  (re-export)
     action_map_from_scene_capture_config,
 )
 from .cull import CullOutOfViewportSystem  # noqa: E402  (re-export)
+from .falling_blocks import (  # noqa: E402  (re-export)
+    BagRandomizer,
+    BlockBoard,
+    BoardRowClearBinding,
+    BoardRowClearSystem,
+    FallingBlockPiece,
+    FallingBlockPieceSpec,
+    block_cells_from_strings,
+    piece_fits,
+)
 from .intent_commands import IntentCommandSystem  # noqa: E402  (re-export)
 from .grid import (  # noqa: E402  (re-export)
     CadenceBinding,
@@ -540,6 +550,12 @@ __all__ = [
     "AxisActionBinding",
     "BaseQueuedRenderSystem",
     "BaseRenderSystem",
+    "BagRandomizer",
+    "BlockBoard",
+    "BoardRowClearBinding",
+    "BoardRowClearSystem",
+    "FallingBlockPiece",
+    "FallingBlockPieceSpec",
     "CaptureHotkey",
     "CaptureHotkeysConfig",
     "CaptureHotkeysSystem",
@@ -598,12 +614,14 @@ __all__ = [
     "action_map_from_bindings_config",
     "action_map_from_controls_config",
     "action_map_from_scene_capture_config",
+    "block_cells_from_strings",
     "choose_first_grid_cell",
     "fire_particle_binding",
     "free_grid_cells",
     "magic_particle_binding",
     "occupied_grid_cells",
     "particle_binding_with_profile",
+    "piece_fits",
     "potion_particle_binding",
     "smoke_particle_binding",
     "ProceduralParticleProfile",

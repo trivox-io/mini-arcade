@@ -81,6 +81,7 @@ Configuration Internals <concepts/configuration>
 Backends Internals <concepts/backends>
 Scene Internals <concepts/scenes_internals>
 Grid Gameplay Internals <concepts/grid_gameplay>
+Falling Blocks Internals <concepts/falling_blocks_gameplay>
 Menu Scenes Internals <concepts/menu_scenes>
 Scene Transitions Internals <concepts/scene_transitions>
 Overlay Policies Internals <concepts/overlay_policies>

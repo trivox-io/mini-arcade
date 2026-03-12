@@ -135,6 +135,13 @@ For discrete or cell-based games, core also exposes a small grid-gameplay layer:
 - `GridCoord`, `GridBounds`, and `GridLayout` for cell-space modeling
 - `GridCellSpawnSystem` plus occupancy helpers for free-cell spawning
 
+For stacking puzzle games, core also exposes a falling-block layer:
+
+- `BlockBoard` for dense board occupancy
+- `FallingBlockPieceSpec` / `FallingBlockPiece` for active piece state
+- `BoardRowClearSystem` for filled-row collapse
+- `BagRandomizer` for deterministic bag-based piece sequencing
+
 Entity access follows the same pattern:
 
 - semantic queries use tags and world helper methods

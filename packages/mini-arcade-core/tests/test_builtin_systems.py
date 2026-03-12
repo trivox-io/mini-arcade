@@ -30,10 +30,16 @@ from mini_arcade_core.scenes.systems import SystemPipeline  # noqa: E402
 from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     AnimationTickSystem,
     AxisIntentBinding,
+    BagRandomizer,
+    BlockBoard,
+    BoardRowClearBinding,
+    BoardRowClearSystem,
     CadenceBinding,
     CadenceState,
     CadenceSystem,
     CullOutOfViewportSystem,
+    FallingBlockPiece,
+    FallingBlockPieceSpec,
     IntentAxisVelocitySystem,
     KinematicMotionSystem,
     MotionBinding,
@@ -53,10 +59,12 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     ViewportConstraintSystem,
     WaveProgressionBinding,
     WaveProgressionSystem,
+    block_cells_from_strings,
     free_grid_cells,
     fire_particle_binding,
     magic_particle_binding,
     occupied_grid_cells,
+    piece_fits,
 )
 
 
@@ -173,8 +181,11 @@ def test_cull_out_of_viewport_system_uses_transform_and_life() -> None:
 
 def test_builtins_package_reexports_utility_systems() -> None:
     assert AnimationTickSystem.__name__ == "AnimationTickSystem"
+    assert BlockBoard.__name__ == "BlockBoard"
+    assert BoardRowClearSystem.__name__ == "BoardRowClearSystem"
     assert CadenceSystem.__name__ == "CadenceSystem"
     assert CullOutOfViewportSystem.__name__ == "CullOutOfViewportSystem"
+    assert FallingBlockPieceSpec.__name__ == "FallingBlockPieceSpec"
     assert GridCellSpawnSystem.__name__ == "GridCellSpawnSystem"
     assert IntentAxisVelocitySystem.__name__ == "IntentAxisVelocitySystem"
     assert KinematicMotionSystem.__name__ == "KinematicMotionSystem"
@@ -494,6 +505,88 @@ def test_grid_cell_spawn_system_uses_free_cells_only() -> None:
     assert len(world.entities) == 1
     assert world.target_cell == GridCoord(col=2, row=0)
     assert world.entities[0].transform.center.x == 2.0
+
+
+def test_block_board_piece_fit_and_row_clear_system() -> None:
+    board = BlockBoard[str](cols=4, rows=4)
+    board.set(GridCoord(col=0, row=3), "A")
+    board.set(GridCoord(col=1, row=3), "A")
+    board.set(GridCoord(col=2, row=3), "A")
+
+    piece_spec = FallingBlockPieceSpec(
+        name="I2",
+        rotations=(
+            (
+                GridCoord(col=0, row=0),
+                GridCoord(col=1, row=0),
+            ),
+            (
+                GridCoord(col=0, row=0),
+                GridCoord(col=0, row=1),
+            ),
+        ),
+    )
+    piece = FallingBlockPiece(
+        spec_name="I2",
+        origin=GridCoord(col=2, row=0),
+        rotation=1,
+    )
+
+    assert piece.cells(piece_spec) == (
+        GridCoord(col=2, row=0),
+        GridCoord(col=2, row=1),
+    )
+    assert piece_fits(board, piece, piece_spec) is True
+    assert piece_fits(
+        board,
+        piece.translated(drow=3),
+        piece_spec,
+    ) is False
+
+    board.set(GridCoord(col=3, row=3), "B")
+
+    @dataclass
+    class _BoardWorld(BaseWorld):
+        board: BlockBoard[str] = field(
+            default_factory=lambda: BlockBoard[str](cols=4, rows=4)
+        )
+        cleared_rows: tuple[int, ...] = ()
+
+    world = _BoardWorld(entities=[], board=board)
+    BoardRowClearSystem(
+        bindings=(
+            BoardRowClearBinding(
+                board_getter=lambda ctx: ctx.world.board,
+                on_cleared=lambda ctx, rows: setattr(
+                    ctx.world, "cleared_rows", rows
+                ),
+            ),
+        )
+    ).step(_Ctx(dt=0.0, world=world))
+
+    assert world.cleared_rows == (3,)
+    assert world.board.row_values(0) == (None, None, None, None)
+
+
+def test_block_cells_from_strings_and_bag_randomizer_are_deterministic() -> None:
+    cells = block_cells_from_strings(
+        ".##.",
+        "..#.",
+    )
+    assert cells == (
+        GridCoord(col=1, row=0),
+        GridCoord(col=2, row=0),
+        GridCoord(col=2, row=1),
+    )
+
+    left = BagRandomizer(items=("I", "J", "L", "O"), seed=7)
+    right = BagRandomizer(items=("I", "J", "L", "O"), seed=7)
+
+    left_draws = [left.next() for _ in range(6)]
+    right_draws = [right.next() for _ in range(6)]
+
+    assert left_draws == right_draws
+    assert set(left_draws[:4]) == {"I", "J", "L", "O"}
 
 
 def test_projectile_lifecycle_bundle_culls_and_cleans_dead_entities() -> None:

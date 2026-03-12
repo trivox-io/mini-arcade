@@ -250,6 +250,15 @@ helpers in `mini_arcade_core.scenes.systems.builtins`:
 
 Use those when your gameplay advances by cells rather than continuous velocity.
 
+For falling-block or stacking puzzle games, core also provides:
+
+- `BlockBoard` for dense board state
+- `FallingBlockPieceSpec` / `FallingBlockPiece` for active piece rotations
+- `BoardRowClearSystem` for full-row collapse
+- `BagRandomizer` for deterministic bag-based piece sequencing
+
+Use those instead of hand-rolling board arrays and row-clear loops in each game.
+
 ## Step 5: Scene Commands (`scenes/commands.py`)
 
 ```python
