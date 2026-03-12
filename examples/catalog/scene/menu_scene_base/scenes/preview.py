@@ -56,7 +56,9 @@ class MenuSceneBasePreviewScene(SimScene):
         def draw(backend: Backend):
             self._last_backend_name = backend.__class__.__name__
             backend.render.draw_rect(22, 22, 680, 360, color=(0, 0, 0, 220))
-            backend.render.draw_rect(bar_x, 300, 120, 24, color=(130, 214, 255, 255))
+            backend.render.draw_rect(
+                bar_x, 300, 120, 24, color=(130, 214, 255, 255)
+            )
             y = 36
             for line in lines:
                 backend.text.draw(

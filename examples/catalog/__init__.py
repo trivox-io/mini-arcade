@@ -1,4 +1,3 @@
 """
 Grouped tutorial examples catalog.
 """
-

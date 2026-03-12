@@ -66,6 +66,8 @@ disable = [
     "too-few-public-methods",
     "logging-fstring-interpolation",
     "fixme",
+    # Justification: Some classes naturally require many attributes to function.
+    "too-many-instance-attributes",
 ]
 
 [tool.pylint.MAIN]

@@ -42,11 +42,17 @@ class VirtualResolutionBasicsScene(SimScene):
 
         if self.context.command_queue is not None:
             if Key.NUM_1 in input_frame.keys_pressed:
-                self.context.services.window.set_virtual_resolution(*PRESETS[0])
+                self.context.services.window.set_virtual_resolution(
+                    *PRESETS[0]
+                )
             if Key.NUM_2 in input_frame.keys_pressed:
-                self.context.services.window.set_virtual_resolution(*PRESETS[1])
+                self.context.services.window.set_virtual_resolution(
+                    *PRESETS[1]
+                )
             if Key.NUM_3 in input_frame.keys_pressed:
-                self.context.services.window.set_virtual_resolution(*PRESETS[2])
+                self.context.services.window.set_virtual_resolution(
+                    *PRESETS[2]
+                )
 
         # pylint: disable=assignment-from-no-return
         vp = self.context.services.window.get_viewport()
@@ -127,7 +133,9 @@ class VirtualResolutionBasicsScene(SimScene):
 
             panel_w = min(760, max(vp.virtual_w - 40, 200))
             panel_h = min(420, max(vp.virtual_h - 40, 200))
-            backend.render.draw_rect(20, 20, panel_w, panel_h, color=(0, 0, 0, 210))
+            backend.render.draw_rect(
+                20, 20, panel_w, panel_h, color=(0, 0, 0, 210)
+            )
             y = 32
             for line in lines:
                 backend.text.draw(

@@ -4,9 +4,9 @@ Processor for creating starter Mini Arcade game projects.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
-import re
 
 from mini_arcade.cli.base_command_processor import BaseCommandProcessor
 from mini_arcade.cli.exceptions import CommandException
@@ -48,6 +48,19 @@ def _validate_package_name(package: str) -> str:
 
 @dataclass(frozen=True)
 class ScaffoldSpec:
+    """
+    Specification for generating a game scaffold, containing all necessary information
+    about the game and project structure.
+
+    :ivar game_id: The unique identifier for the game, used for package naming and
+        project structure.
+    :ivar package: The Python package name for the game's source code.
+    :ivar title: The human-readable title for the game.
+    :ivar target_dir: The target directory where the game scaffold will be created.
+    :ivar dependency_series: The version series (e.g. "0.1") of
+        mini-arcade dependencies to use in the generated pyproject.toml.
+    """
+
     game_id: str
     package: str
     title: str
@@ -66,7 +79,8 @@ def _template_files(spec: ScaffoldSpec) -> dict[Path, str]:
     systems_dir = play_dir / "systems"
 
     return {
-        project_dir / "pyproject.toml": f'''[build-system]
+        project_dir
+        / "pyproject.toml": f"""[build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
@@ -92,13 +106,16 @@ packages = [{{ include = "{package}", from = "src" }}]
 id = "{game_id}"
 entrypoint = "manage.py"
 source_roots = ["src"]
-''',
-        project_dir / "manage.py": f'''from {package}.app import run
+""",
+        project_dir
+        / "manage.py": f"""from {package}.app import run
 
 if __name__ == "__main__":
     run()
-''',
-        project_dir / "settings" / "settings.yml": f'''game:
+""",
+        project_dir
+        / "settings"
+        / "settings.yml": f"""game:
   id: {game_id}
 
 project:
@@ -132,14 +149,16 @@ backend:
 gameplay:
   difficulty:
     default: normal
-''',
+""",
         src_dir / "__init__.py": "",
-        src_dir / "__main__.py": f'''from {package}.app import run
+        src_dir
+        / "__main__.py": f"""from {package}.app import run
 
 if __name__ == "__main__":
     run()
-''',
-        src_dir / "app.py": f'''from __future__ import annotations
+""",
+        src_dir
+        / "app.py": f"""from __future__ import annotations
 
 from mini_arcade.modules.backend_loader import BackendLoader
 from mini_arcade.modules.settings import Settings
@@ -166,11 +185,15 @@ def run() -> None:
 
 if __name__ == "__main__":
     run()
-''',
-        src_dir / "scenes" / "__init__.py": '''from . import menu, pause
+""",
+        src_dir
+        / "scenes"
+        / "__init__.py": """from . import menu, pause
 from .play import scene
-''',
-        src_dir / "scenes" / "commands.py": f'''from mini_arcade_core.engine.commands import (
+""",
+        src_dir
+        / "scenes"
+        / "commands.py": """from mini_arcade_core.engine.commands import (
     Command,
     CommandContext,
     PushSceneIfMissingCommand,
@@ -206,8 +229,10 @@ class ContinueCommand(Command):
 class BackToMenuCommand(Command):
     def execute(self, context: CommandContext):
         context.managers.scenes.change("menu")
-''',
-        src_dir / "scenes" / "menu.py": f'''from __future__ import annotations
+""",
+        src_dir
+        / "scenes"
+        / "menu.py": f"""from __future__ import annotations
 
 from mini_arcade_core.engine.commands import QuitCommand
 from mini_arcade_core.scenes.autoreg import register_scene
@@ -227,8 +252,10 @@ class MenuScene(BaseMenuScene):
             MenuItem("start", "START", StartGameCommand),
             MenuItem("quit", "QUIT", QuitCommand),
         ]
-''',
-        src_dir / "scenes" / "pause.py": f'''from __future__ import annotations
+""",
+        src_dir
+        / "scenes"
+        / "pause.py": f"""from __future__ import annotations
 
 from mini_arcade_core.scenes.autoreg import register_scene
 from mini_arcade_core.ui.menu import BaseMenuScene, MenuItem
@@ -250,9 +277,10 @@ class PauseScene(BaseMenuScene):
 
     def quit_command(self):
         return ContinueCommand()
-''',
+""",
         play_dir / "__init__.py": "",
-        play_dir / "models.py": '''from dataclasses import dataclass
+        play_dir
+        / "models.py": """from dataclasses import dataclass
 
 from mini_arcade_core.scenes.sim_scene import BaseIntent, BaseTickContext, BaseWorld
 
@@ -273,8 +301,9 @@ class PlayIntent(BaseIntent):
 @dataclass
 class PlayTickContext(BaseTickContext[PlayWorld, PlayIntent]):
     pass
-''',
-        play_dir / "bootstrap.py": '''from __future__ import annotations
+""",
+        play_dir
+        / "bootstrap.py": """from __future__ import annotations
 
 from .models import PlayWorld
 
@@ -286,8 +315,9 @@ def build_play_world(*, viewport: tuple[float, float]) -> PlayWorld:
         viewport=viewport,
         player_x=vw * 0.5,
     )
-''',
-        play_dir / "pipeline.py": '''from __future__ import annotations
+""",
+        play_dir
+        / "pipeline.py": """from __future__ import annotations
 
 from .systems import PlayRenderSystem, PlayRulesSystem
 
@@ -297,8 +327,9 @@ def build_play_systems() -> tuple[object, ...]:
         PlayRulesSystem(),
         PlayRenderSystem(),
     )
-''',
-        play_dir / "scene.py": f'''from __future__ import annotations
+""",
+        play_dir
+        / "scene.py": f"""from __future__ import annotations
 
 from mini_arcade_core.scenes.autoreg import register_scene
 from mini_arcade_core.scenes.bootstrap import scene_viewport
@@ -340,16 +371,18 @@ class PlayScene(GameScene[PlayTickContext, PlayWorld]):
     def on_enter(self):
         self.world = build_play_world(viewport=scene_viewport(self))
         self.systems.extend(build_play_systems())
-''',
-        systems_dir / "__init__.py": '''from .render import PlayRenderSystem
+""",
+        systems_dir
+        / "__init__.py": """from .render import PlayRenderSystem
 from .rules import PlayRulesSystem
 
 __all__ = [
     "PlayRenderSystem",
     "PlayRulesSystem",
 ]
-''',
-        systems_dir / "rules.py": '''from dataclasses import dataclass
+""",
+        systems_dir
+        / "rules.py": """from dataclasses import dataclass
 
 from mini_arcade_core.scenes.systems.base_system import BaseSystem
 from mini_arcade_core.scenes.systems.phases import SystemPhase
@@ -370,8 +403,9 @@ class PlayRulesSystem(BaseSystem[PlayTickContext]):
         world = ctx.world
         world.player_x += ctx.intent.move_x * world.player_speed * ctx.dt
         world.player_x = max(20.0, min(world.viewport[0] - 20.0, world.player_x))
-''',
-        systems_dir / "render.py": '''from dataclasses import dataclass
+""",
+        systems_dir
+        / "render.py": """from dataclasses import dataclass
 
 from mini_arcade_core.engine.render.packet import RenderPacket
 from mini_arcade_core.scenes.systems.base_system import BaseSystem
@@ -408,7 +442,7 @@ class PlayRenderSystem(BaseSystem[PlayTickContext]):
             )
 
         ctx.packet = RenderPacket.from_ops([draw])
-''',
+""",
         src_dir / "entities" / "__init__.py": "",
         src_dir / "controllers" / "__init__.py": "",
         project_dir / "assets" / "sprites" / ".gitkeep": "",
@@ -419,6 +453,21 @@ class PlayRenderSystem(BaseSystem[PlayTickContext]):
 
 @dataclass(init=False)
 class GameScaffoldProcessor(BaseCommandProcessor):
+    """
+    Processor for creating starter Mini Arcade game projects.
+
+    :ivar game_id (str): The unique identifier for the game, used for package naming and
+        project structure.
+    :ivar package (str | None): Optional custom package name for the game's source code.
+    :ivar title (str | None): Optional human-readable title for the game.
+    :ivar destination (str): The parent directory where the game scaffold will be created (default
+        is "games").
+    :ivar force (bool): Whether to overwrite existing files if the target directory already exists
+        (default is False).
+    :ivar dry_run (bool): If True, do not create any files but print the intended
+        actions (default is False).
+    """
+
     game_id: str
     package: str | None = None
     title: str | None = None
@@ -440,7 +489,7 @@ class GameScaffoldProcessor(BaseCommandProcessor):
             self.package or _default_package_name(game_id)
         )
         title = (self.title or _default_title(game_id)).strip()
-        target_dir = (Path(self.destination).expanduser().resolve() / game_id)
+        target_dir = Path(self.destination).expanduser().resolve() / game_id
         dep = _dependency_series(APP.version)
         return ScaffoldSpec(
             game_id=game_id,

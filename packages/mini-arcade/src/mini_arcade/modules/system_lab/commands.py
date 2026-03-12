@@ -76,9 +76,13 @@ class SystemLabCommand(BaseCommand):
             raise CommandException(
                 "system-lab requires at least one --module to import cases"
             )
-        if not kwargs.get("list") and not kwargs.get("case"):
+        if (
+            not kwargs.get("list")
+            and not kwargs.get("case")
+            and not kwargs.get("visual")
+        ):
             raise CommandException(
-                "system-lab requires --case <name> or --list"
+                "system-lab requires --case <name>, --list, or --visual"
             )
         if kwargs.get("list") and kwargs.get("visual"):
             raise CommandException("--visual cannot be combined with --list")

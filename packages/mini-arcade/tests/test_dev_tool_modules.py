@@ -238,13 +238,13 @@ def test_system_lab_cli_parses_module_without_swallowing_flags() -> None:
         [
             "system-lab",
             "--module",
-            "experiments.system_lab.procedural_particles",
+            "experiments.procedural_fire_lab.system_lab_case",
             "--list",
             "--json",
         ]
     )
 
-    assert args.module == ["experiments.system_lab.procedural_particles"]
+    assert args.module == ["experiments.procedural_fire_lab.system_lab_case"]
     assert args.list is True
     assert args.json is True
 
@@ -287,6 +287,45 @@ class VisualCase(BaseSystemLabCase):
         == 0
     )
     assert "visual runner launched" in capsys.readouterr().out
+
+
+def test_system_lab_visual_runner_auto_selects_single_case(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    SystemLabRegistry.clear()
+    package_dir = tmp_path / "labcases_visual_auto"
+    package_dir.mkdir()
+    (package_dir / "__init__.py").write_text("", encoding="utf-8")
+    (package_dir / "sample_cases.py").write_text(
+        '''from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
+
+
+@SystemLabRegistry.implementation("visual_case")
+class VisualCase(BaseSystemLabCase):
+    def build_system(self):
+        raise RuntimeError("headless path should not be used")
+
+    def build_context(self):
+        raise RuntimeError("headless path should not be used")
+
+    def run_visual(self):
+        print("visual auto runner launched")
+        return 0
+''',
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    assert (
+        SystemLabProcessor(
+            module=["labcases_visual_auto.sample_cases"],
+            visual=True,
+        ).run()
+        == 0
+    )
+    assert "visual auto runner launched" in capsys.readouterr().out
 
 
 def test_load_command_packages_skips_non_command_modules(

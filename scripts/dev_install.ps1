@@ -1,4 +1,4 @@
-param(
+poetryparam(
   [string]$VcpkgRoot = "",
   [switch]$SetVcpkgEnv = $false,
   [ValidateSet("3.9","3.10","3.11")]

@@ -6,13 +6,14 @@ from __future__ import annotations
 
 import math
 
-from examples._shared.text_layout import draw_text_block, fit_text_block
 from mini_arcade_core.backend.backend import Backend
 from mini_arcade_core.engine.render.packet import RenderPacket
 from mini_arcade_core.runtime.context import RuntimeContext
 from mini_arcade_core.runtime.input_frame import InputFrame
 from mini_arcade_core.scenes.autoreg import register_scene
 from mini_arcade_core.scenes.sim_scene import SimScene
+
+from examples._shared.text_layout import draw_text_block, fit_text_block
 
 SCENE_ID = "resize_reflow"
 
@@ -92,7 +93,11 @@ class ResizeReflowScene(SimScene):
                 0, center_y, vp.virtual_w, center_y, color=(76, 98, 150, 255)
             )
             backend.render.draw_rect(
-                world_marker_x, center_y - 16, 32, 32, color=(120, 215, 255, 255)
+                world_marker_x,
+                center_y - 16,
+                32,
+                32,
+                color=(120, 215, 255, 255),
             )
 
         def draw_ui(backend: Backend):
@@ -134,7 +139,8 @@ class ResizeReflowScene(SimScene):
             draw_text_block(
                 backend,
                 x=footer_x + 14,
-                y=footer_y + max(4, (footer_h - footer_layout.total_height) // 2),
+                y=footer_y
+                + max(4, (footer_h - footer_layout.total_height) // 2),
                 lines=[footer_text],
                 layout=footer_layout,
                 color=(220, 228, 240),

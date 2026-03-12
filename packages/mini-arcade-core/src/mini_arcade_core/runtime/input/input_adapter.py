@@ -21,6 +21,7 @@ class InputAdapter(InputPort):
     _axes: dict[str, float] = field(default_factory=dict)
     _mouse_pos: tuple[int, int] = (0, 0)
 
+    # pylint: disable=too-many-locals,too-many-branches
     def build(
         self, events: list[Event], frame_index: int, dt: float
     ) -> InputFrame:

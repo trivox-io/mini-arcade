@@ -86,22 +86,34 @@ class BombField:
     bombs: dict[GridCoord, BombState] = field(default_factory=dict)
 
     def bomb_at(self, cell: GridCoord) -> BombState | None:
+        """Return the bomb currently occupying one cell, if any."""
+
         return self.bombs.get(cell)
 
     def active_bombs(self) -> tuple[BombState, ...]:
+        """Return all currently active bombs."""
+
         return tuple(self.bombs.values())
 
     def occupied_cells(self) -> tuple[GridCoord, ...]:
+        """Return every cell that currently contains a bomb."""
+
         return tuple(self.bombs.keys())
 
     def add(self, bomb: BombState) -> BombState:
+        """Insert or replace a bomb entry and return it."""
+
         self.bombs[bomb.cell] = bomb
         return bomb
 
     def remove(self, cell: GridCoord) -> BombState | None:
+        """Remove and return the bomb at one cell, if present."""
+
         return self.bombs.pop(cell, None)
 
     def count_for_owner(self, owner_id: int | None) -> int:
+        """Count bombs owned by a specific actor."""
+
         return sum(
             1
             for bomb in self.bombs.values()
@@ -130,11 +142,16 @@ class ExplosionField:
     cells: dict[GridCoord, ExplosionCellState] = field(default_factory=dict)
 
     def cell_at(self, cell: GridCoord) -> ExplosionCellState | None:
+        """Return the explosion metadata for one cell, if active."""
+
         return self.cells.get(cell)
 
     def active_cells(self) -> tuple[GridCoord, ...]:
+        """Return the cells currently covered by an active explosion."""
+
         return tuple(self.cells.keys())
 
+    # pylint: disable=too-many-arguments
     def set_or_refresh(
         self,
         cell: GridCoord,
@@ -144,6 +161,8 @@ class ExplosionField:
         origin: GridCoord | None = None,
         payload: Any = None,
     ) -> ExplosionCellState:
+        """Create or refresh the active explosion metadata for one cell."""
+
         state = self.cells.get(cell)
         if state is None:
             state = ExplosionCellState(
@@ -162,6 +181,8 @@ class ExplosionField:
         return state
 
     def tick(self, dt: float) -> tuple[GridCoord, ...]:
+        """Advance explosion lifetimes and return the cells that expired."""
+
         expired: list[GridCoord] = []
         for cell, state in list(self.cells.items()):
             state.ttl_seconds -= float(dt)
@@ -253,6 +274,8 @@ class BombPlacementSystem(Generic[TCtx]):
     bindings: tuple[BombPlacementBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Place bombs for every binding whose placement rule passes."""
+
         if not self.enabled_when(ctx):
             return
 
@@ -301,6 +324,8 @@ class BombFuseSystem(Generic[TCtx]):
     bindings: tuple[BombFuseBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Advance bomb fuses and notify bindings when bombs detonate."""
+
         if not self.enabled_when(ctx):
             return
 
@@ -347,6 +372,8 @@ class ExplosionLifetimeSystem(Generic[TCtx]):
     bindings: tuple[ExplosionLifetimeBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Tick active explosion cells and emit expiration callbacks."""
+
         if not self.enabled_when(ctx):
             return
         dt = max(0.0, float(getattr(ctx, "dt", 0.0)))
@@ -383,6 +410,8 @@ class ChainReactionSystem(Generic[TCtx]):
     bindings: tuple[ChainReactionBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Detonate bombs early when an active blast reaches them."""
+
         if not self.enabled_when(ctx):
             return
 
@@ -424,6 +453,8 @@ class DestructibleTileSystem(Generic[TCtx]):
     bindings: tuple[DestructibleTileBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Replace breakable tiles touched by active explosion cells."""
+
         if not self.enabled_when(ctx):
             return
 
@@ -462,6 +493,8 @@ class HazardCollisionSystem(Generic[TCtx]):
     bindings: tuple[HazardCollisionBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Invoke hit callbacks for targets occupying active hazard cells."""
+
         if not self.enabled_when(ctx):
             return
 

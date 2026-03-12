@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from typing import Callable
 
-
 Color = tuple[int, int, int, int]
 
 
@@ -59,14 +58,14 @@ def checker_texture(
     color_b: Color,
     cell: int = 4,
 ) -> int:
+    """Create a small checkerboard texture with alternating colors."""
+
     return create_texture(
         backend_render,
         width=width,
         height=height,
         pixel_fn=lambda x, y: (
-            color_a
-            if ((x // cell) + (y // cell)) % 2 == 0
-            else color_b
+            color_a if ((x // cell) + (y // cell)) % 2 == 0 else color_b
         ),
     )
 
@@ -79,6 +78,8 @@ def diamond_texture(
     outline: Color,
     background: Color = (0, 0, 0, 0),
 ) -> int:
+    """Create a diamond-shaped texture with fill and outline colors."""
+
     half = size / 2.0
 
     def _pixel(x: int, y: int) -> Color:
@@ -106,6 +107,8 @@ def stripe_texture(
     stripe: Color,
     stripe_width: int = 3,
 ) -> int:
+    """Create a striped texture with alternating vertical bands."""
+
     return create_texture(
         backend_render,
         width=width,
@@ -124,6 +127,8 @@ def orb_frame_texture(
     outer: Color,
     background: Color = (0, 0, 0, 0),
 ) -> int:
+    """Create a circular orb texture with separate inner and outer colors."""
+
     center = (size - 1) / 2.0
     outer_radius = size * 0.45
     inner_radius = size * 0.24
@@ -144,4 +149,3 @@ def orb_frame_texture(
         height=size,
         pixel_fn=_pixel,
     )
-

@@ -113,6 +113,8 @@ class _ChangeSceneBase(SimScene):
 
 @register_scene(SCENE_HUB)
 class ChangeSceneHub(_ChangeSceneBase):
+    """Hub scene that acts as the central navigation entry point."""
+
     SCENE_ID = SCENE_HUB
     TITLE = "HUB"
     PANEL_COLOR = (8, 14, 34, 225)
@@ -121,6 +123,8 @@ class ChangeSceneHub(_ChangeSceneBase):
 
 @register_scene(SCENE_ARENA)
 class ChangeSceneArena(_ChangeSceneBase):
+    """Alternate scene used to demonstrate direct scene transitions."""
+
     SCENE_ID = SCENE_ARENA
     TITLE = "ARENA"
     PANEL_COLOR = (28, 10, 12, 225)
@@ -129,6 +133,8 @@ class ChangeSceneArena(_ChangeSceneBase):
 
 @register_scene(SCENE_LAB)
 class ChangeSceneLab(_ChangeSceneBase):
+    """Secondary scene used to demonstrate branching scene transitions."""
+
     SCENE_ID = SCENE_LAB
     TITLE = "LAB"
     PANEL_COLOR = (8, 24, 18, 225)

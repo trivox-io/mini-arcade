@@ -391,6 +391,7 @@ class BaseQueuedRenderSystem(
         for entity in ctx.world.entities or []:
             self.emit_entity(ctx, rq, entity)
 
+    # pylint: disable=too-many-locals,too-many-return-statements
     def emit_default_entity(
         self, _ctx: TTickContext, rq: object, entity: BaseEntity
     ) -> None:

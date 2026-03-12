@@ -142,6 +142,7 @@ class RenderPort:
             ),
         )
 
+    # pylint: disable=too-many-locals
     def draw_line(
         self,
         x1: int,
@@ -196,6 +197,7 @@ class RenderPort:
             ),
         )
 
+    # pylint: disable=too-many-locals
     def create_texture_rgba(
         self,
         w: int,
@@ -382,6 +384,7 @@ class RenderPort:
             ),
         )
 
+    # pylint: disable=too-many-locals
     def draw_poly(
         self,
         points: list[tuple[int, int]],

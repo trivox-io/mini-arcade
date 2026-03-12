@@ -16,8 +16,8 @@ from mini_arcade_native_backend.ports.render import RenderPort
 from mini_arcade_native_backend.ports.text import TextPort
 from mini_arcade_native_backend.ports.window import WindowPort
 
-# Justification: native is a compiled extension module.
-# pylint: disable=no-name-in-module
+# Justification: native is a compiled extension module with stubbed members.
+# pylint: disable=no-name-in-module,no-member
 from . import _native as native  # type: ignore
 
 

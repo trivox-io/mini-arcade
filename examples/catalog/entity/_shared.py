@@ -5,9 +5,8 @@ Shared runtime helpers for Group C entity tutorials.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable, Iterable
+from typing import Callable, Iterable, cast
 
-from examples._shared.text_layout import draw_text_block, fit_text_block
 from mini_arcade_core.engine.entities import BaseEntity
 from mini_arcade_core.runtime.context import RuntimeContext
 from mini_arcade_core.scenes.game_scene import GameScene
@@ -27,6 +26,8 @@ from mini_arcade_core.scenes.systems.builtins import (
     ViewportConstraintSystem,
 )
 from mini_arcade_core.scenes.systems.phases import SystemPhase
+
+from examples._shared.text_layout import draw_text_block, fit_text_block
 
 
 @dataclass
@@ -56,7 +57,9 @@ class EntityExampleTickContext(
     """
 
 
-class EntityExampleScene(GameScene[EntityExampleTickContext, EntityExampleWorld]):
+class EntityExampleScene(
+    GameScene[EntityExampleTickContext, EntityExampleWorld]
+):
     """
     Base class for simple entity tutorial scenes.
     """
@@ -73,8 +76,9 @@ class EntityExampleScene(GameScene[EntityExampleTickContext, EntityExampleWorld]
         destroy = getattr(backend_render, "destroy_texture", None)
         if not callable(destroy):
             return
+        destroy_texture = cast(Callable[[int], None], destroy)
         for tex_id in self._texture_ids:
-            destroy(int(tex_id))
+            destroy_texture(int(tex_id))  # pylint: disable=not-callable
         self._texture_ids.clear()
 
     def remember_texture(self, tex_id: int) -> int:
@@ -179,7 +183,9 @@ class ExampleSpinSystem(BaseSystem[EntityExampleTickContext]):
             spin_deg = float(getattr(entity, "spin_deg", 0.0))
             if abs(spin_deg) <= 0.0001:
                 continue
-            entity.rotation_deg = (entity.rotation_deg + spin_deg * ctx.dt) % 360.0
+            entity.rotation_deg = (
+                entity.rotation_deg + spin_deg * ctx.dt
+            ) % 360.0
 
 
 @dataclass

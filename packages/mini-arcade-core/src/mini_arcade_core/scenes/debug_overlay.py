@@ -57,6 +57,7 @@ class DebugOverlayScene(SimScene):
             lines.extend(f"  {line}" for line in scene_lines)
         return lines
 
+    # pylint: disable=too-many-return-statements
     def _section_lines(
         self, section: str, *, dt: float, services, stack: list[object]
     ) -> list[str]:

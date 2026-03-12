@@ -67,7 +67,9 @@ class DebugOverlayBuiltinScene(SimScene):
                 "ESC -> quit",
             ]
             backend.render.draw_rect(16, 16, 760, 256, color=(0, 0, 0, 220))
-            backend.render.draw_rect(bar_x, 410, 120, 22, color=(110, 210, 255, 255))
+            backend.render.draw_rect(
+                bar_x, 410, 120, 22, color=(110, 210, 255, 255)
+            )
             y = 28
             for line in lines:
                 backend.text.draw(

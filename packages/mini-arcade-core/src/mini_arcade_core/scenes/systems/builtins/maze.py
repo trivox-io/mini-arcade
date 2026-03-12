@@ -33,6 +33,8 @@ class CardinalDirection(str, Enum):
 
     @property
     def vector(self) -> tuple[int, int]:
+        """Return the `(dcol, drow)` vector for this direction."""
+
         if self is CardinalDirection.UP:
             return (0, -1)
         if self is CardinalDirection.DOWN:
@@ -43,6 +45,8 @@ class CardinalDirection(str, Enum):
 
     @property
     def opposite(self) -> "CardinalDirection":
+        """Return the opposite cardinal direction."""
+
         if self is CardinalDirection.UP:
             return CardinalDirection.DOWN
         if self is CardinalDirection.DOWN:
@@ -85,14 +89,20 @@ class TileMap(Generic[TCell]):
         ]
 
     def contains(self, coord: GridCoord) -> bool:
+        """Return whether a coordinate falls inside the tile-map bounds."""
+
         return self.bounds.contains(coord)
 
     def get(self, coord: GridCoord) -> TCell | None:
+        """Return the stored tile value at one coordinate, if in bounds."""
+
         if not self.contains(coord):
             return None
         return self._cells[int(coord.row)][int(coord.col)]
 
     def set(self, coord: GridCoord, value: TCell | None) -> None:
+        """Store a tile value at one coordinate."""
+
         if not self.contains(coord):
             raise IndexError(f"Cell out of bounds: {coord!r}")
         self._cells[int(coord.row)][int(coord.col)] = value
@@ -211,6 +221,8 @@ class GridNavigationSystem(Generic[TCtx, TCell]):
     bindings: tuple[GridNavigationBinding[TCtx, TCell], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Advance bound navigators through the tile map with turn buffering."""
+
         if not self.enabled_when(ctx):
             return
 
@@ -269,6 +281,8 @@ class TunnelWrapSystem(Generic[TCtx]):
     bindings: tuple[TunnelWrapBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Wrap navigator states across configured map edges."""
+
         if not self.enabled_when(ctx):
             return
 
@@ -328,12 +342,18 @@ class CollectibleField:
     items: dict[GridCoord, CollectibleState] = field(default_factory=dict)
 
     def item_at(self, coord: GridCoord) -> CollectibleState | None:
+        """Return the collectible stored at one cell, if any."""
+
         return self.items.get(coord)
 
     def occupied_cells(self) -> tuple[GridCoord, ...]:
+        """Return the cells that currently contain collectibles."""
+
         return tuple(self.items.keys())
 
     def remove(self, coord: GridCoord) -> CollectibleState | None:
+        """Remove and return the collectible stored at one cell."""
+
         return self.items.pop(coord, None)
 
 
@@ -361,15 +381,17 @@ class CollectibleCollisionSystem(Generic[TCtx]):
     bindings: tuple[CollectibleCollisionBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Consume collectibles that share a cell with the collector."""
+
         if not self.enabled_when(ctx):
             return
 
         for binding in self.bindings:
-            field = binding.field_getter(ctx)
-            if field is None:
+            collectible_field = binding.field_getter(ctx)
+            if collectible_field is None:
                 continue
             coord = binding.collector_cell_getter(ctx)
-            item = field.remove(coord)
+            item = collectible_field.remove(coord)
             if item is None:
                 continue
             if binding.on_collect is not None:
@@ -423,6 +445,8 @@ class ModeTimerSystem(Generic[TCtx]):
     bindings: tuple[ModeTimerBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Advance scheduled timed modes using the current frame delta."""
+
         if not self.enabled_when(ctx):
             return
 

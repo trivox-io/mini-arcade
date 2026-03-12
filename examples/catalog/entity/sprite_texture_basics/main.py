@@ -12,6 +12,8 @@ DISCOVER_PACKAGE = "examples.catalog.entity.sprite_texture_basics"
 
 
 def build_example(**kwargs):
+    """Build the example spec for the sprite-texture tutorial scene."""
+
     return build_entity_example(
         example_id=EXAMPLE_ID,
         default_scene_id=SCENE_ID,
@@ -19,4 +21,3 @@ def build_example(**kwargs):
         kwargs=kwargs,
         default_background_color=(14, 22, 24),
     )
-

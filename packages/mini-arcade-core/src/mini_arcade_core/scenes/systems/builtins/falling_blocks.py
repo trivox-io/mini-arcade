@@ -360,6 +360,8 @@ class BoardRowClearSystem(Generic[TCtx]):
     bindings: tuple[BoardRowClearBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Collapse filled rows for each configured board and emit callbacks."""
+
         if not self.enabled_when(ctx):
             return
 

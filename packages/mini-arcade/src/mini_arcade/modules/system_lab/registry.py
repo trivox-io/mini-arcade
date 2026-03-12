@@ -27,16 +27,24 @@ class BaseSystemLabCase(ABC):
         Build the context passed into ``system.step(ctx)``.
         """
 
-    def before_step(self, *, step_index: int, system: object, ctx: object) -> None:
+    def before_step(
+        self, *, step_index: int, system: object, ctx: object
+    ) -> None:
         """
         Optional hook before each isolated step.
         """
 
-    def after_step(self, *, step_index: int, system: object, ctx: object) -> None:
+    def after_step(
+        self, *, step_index: int, system: object, ctx: object
+    ) -> None:
         """
         Optional hook after each isolated step.
         """
 
+    # Justification: This method is part of the public contract for system lab cases,
+    # and may be called by external code, so it should be included in the base class
+    # even if not all cases need to implement it.
+    # pylint: disable=unused-argument
     def summarize(
         self,
         *,
@@ -48,6 +56,8 @@ class BaseSystemLabCase(ABC):
         Optional summary data appended to command output.
         """
         return {}
+
+    # pylint: enable=unused-argument
 
     def run_visual(self) -> int | None:
         """

@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from examples.catalog.window._builder import build_window_example
 from examples._shared.spec import ExampleSpec
+from examples.catalog.window._builder import build_window_example
 
 
 def build_entity_example(
@@ -28,4 +28,3 @@ def build_entity_example(
         kwargs=kwargs,
         default_background_color=default_background_color,
     )
-

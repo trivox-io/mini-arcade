@@ -67,6 +67,7 @@ class BounceHit:
     penetration: float
 
 
+# pylint: disable=too-many-locals
 def resolve_rect_bounce(
     mover_rect: tuple[float, float, float, float],
     target_rect: tuple[float, float, float, float],
@@ -126,6 +127,7 @@ def apply_bounce_hit(entity: BaseEntity, hit: BounceHit) -> None:
     entity.kinematic.velocity.y = -float(entity.kinematic.velocity.y)
 
 
+# pylint: disable=too-many-arguments
 def reflect_from_viewport(
     entity: BaseEntity,
     *,
@@ -182,6 +184,7 @@ class PaddleBouncePolicy:
     vertical_bias: float = 1.0
     paddle_velocity_influence: float = 0.25
 
+    # pylint: disable=too-many-locals
     def apply(self, ball: BaseEntity, paddle: BaseEntity) -> None:
         """
         Apply paddle-shaped bounce to a ball-like entity.
@@ -190,8 +193,8 @@ class PaddleBouncePolicy:
         if ball.kinematic is None:
             return
 
-        bx, by, bw, bh = _entity_rect(ball)
-        px, py, pw, ph = _entity_rect(paddle)
+        bx, _, bw, _ = _entity_rect(ball)
+        px, _, pw, _ = _entity_rect(paddle)
         ball_center_x = bx + (bw * 0.5)
         paddle_center_x = px + (pw * 0.5)
         paddle_half = max(1.0, pw * 0.5)
@@ -237,6 +240,8 @@ class BrickState:
 
     @property
     def alive(self) -> bool:
+        """Return whether this brick still has hit points remaining."""
+
         return int(self.hit_points) > 0
 
 
@@ -321,6 +326,8 @@ class ViewportBounceSystem(Generic[TCtx]):
     bindings: tuple[ViewportBounceBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Reflect configured entities from the active viewport edges."""
+
         if not self.enabled_when(ctx):
             return
 
@@ -367,6 +374,8 @@ class BounceCollisionSystem(Generic[TCtx]):
     bindings: tuple[BounceCollisionBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Resolve mover collisions against rect targets and bounce them."""
+
         if not self.enabled_when(ctx):
             return
 
@@ -418,22 +427,32 @@ class BrickFieldCollisionSystem(Generic[TCtx]):
     enabled_when: Callable[[TCtx], bool] = _default_enabled_when
     bindings: tuple[BrickFieldCollisionBinding[TCtx], ...] = ()
 
+    # pylint: disable=too-many-locals
     def step(self, ctx: TCtx) -> None:
+        """Bounce a mover from the first hit brick cell and apply damage."""
+
         if not self.enabled_when(ctx):
             return
 
         for binding in self.bindings:
             mover = binding.mover_getter(ctx)
-            field = binding.field_getter(ctx)
-            if mover is None or mover.kinematic is None or field is None:
+            brick_field = binding.field_getter(ctx)
+            if (
+                mover is None
+                or mover.kinematic is None
+                or brick_field is None
+            ):
                 continue
 
             mover_rect = _entity_rect(mover)
             hit_cell: GridCoord | None = None
             hit_result: BounceHit | None = None
 
-            for cell in field.occupied_cells():
-                hit = resolve_rect_bounce(mover_rect, field.brick_rect(cell))
+            for cell in brick_field.occupied_cells():
+                hit = resolve_rect_bounce(
+                    mover_rect,
+                    brick_field.brick_rect(cell),
+                )
                 if hit is None:
                     continue
                 apply_bounce_hit(mover, hit)
@@ -444,7 +463,7 @@ class BrickFieldCollisionSystem(Generic[TCtx]):
             if hit_cell is None or hit_result is None:
                 continue
 
-            remaining = field.apply_damage(hit_cell, binding.damage)
+            remaining = brick_field.apply_damage(hit_cell, binding.damage)
             if binding.on_hit is not None:
                 binding.on_hit(ctx, mover, hit_cell, remaining, hit_result)
 

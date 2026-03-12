@@ -5,9 +5,9 @@ Processor for isolated system lab cases.
 from __future__ import annotations
 
 import importlib
+import json
 import sys
 from dataclasses import dataclass, field
-import json
 from typing import Any
 
 from mini_arcade.cli.base_command_processor import BaseCommandProcessor
@@ -25,6 +25,22 @@ def _import_case_modules(module_names: list[str]) -> None:
 
 @dataclass(init=False)
 class SystemLabProcessor(BaseCommandProcessor):
+    """
+    Command processor for running isolated system lab cases.
+
+    :ivar module (list[str]): List of registry module names to import before listing or
+        running cases.
+    :ivar case (str | None): Registered system lab case name to execute. If not provided,
+        the processor will attempt to infer the case to run based on the number of registered
+        cases (e.g. if exactly one case is registered, it will be run).
+    :ivar list (bool): Whether to list registered cases and exit instead of running a case.
+    :ivar steps (int): How many times to call system.step(ctx) when running a case (default is 1).
+    :ivar json (bool): Whether to emit machine-readable JSON summary output instead of
+        human-readable text.
+    :ivar visual (bool): Whether to launch the case's interactive visual runner instead of
+        stepping it headlessly.
+    """
+
     module: list[str] = field(default_factory=list)
     case: str | None = None
     list: bool = False
@@ -50,18 +66,36 @@ class SystemLabProcessor(BaseCommandProcessor):
             print(name)
         return 0
 
-    def _run_case(self) -> int:
-        if self.case is None:
-            raise CommandException("Missing --case")
-        if not SystemLabRegistry.contains(self.case):
-            raise CommandException(f"Unknown system lab case: {self.case}")
+    def _resolve_case_name(self) -> str:
+        if self.case is not None:
+            return self.case
 
-        case = SystemLabRegistry.instantiate(self.case)
+        names = sorted(SystemLabRegistry.names())
+        if self.visual and len(names) == 1:
+            return names[0]
+
+        if self.visual and not names:
+            raise CommandException("No system lab cases are registered")
+
+        if self.visual:
+            joined = ", ".join(names)
+            raise CommandException(
+                "Missing --case for visual run; available cases: " f"{joined}"
+            )
+
+        raise CommandException("Missing --case")
+
+    def _run_case(self) -> int:
+        case_name = self._resolve_case_name()
+        if not SystemLabRegistry.contains(case_name):
+            raise CommandException(f"Unknown system lab case: {case_name}")
+
+        case = SystemLabRegistry.instantiate(case_name)
         if self.visual:
             result = case.run_visual()
             if result is None:
                 raise CommandException(
-                    f"System lab case does not provide a visual runner: {self.case}"
+                    f"System lab case does not provide a visual runner: {case_name}"
                 )
             return int(result)
 
@@ -79,12 +113,14 @@ class SystemLabProcessor(BaseCommandProcessor):
             case.after_step(step_index=step_index, system=system, ctx=ctx)
 
         payload: dict[str, Any] = {
-            "case": self.case,
+            "case": case_name,
             "steps": int(self.steps),
             "system": getattr(system, "name", system.__class__.__name__),
             "context_type": ctx.__class__.__name__,
         }
-        payload.update(case.summarize(system=system, ctx=ctx, steps=int(self.steps)))
+        payload.update(
+            case.summarize(system=system, ctx=ctx, steps=int(self.steps))
+        )
 
         if self.json:
             print(json.dumps(payload, indent=2, sort_keys=True, default=str))

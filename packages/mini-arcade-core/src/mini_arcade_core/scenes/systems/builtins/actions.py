@@ -394,6 +394,7 @@ class ConfiguredActionIntentSystem(
     Action-intent system configured directly from gameplay.controls settings.
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         *,

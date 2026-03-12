@@ -3,6 +3,8 @@ Simulation scene protocol module.
 Defines the SimScene protocol for simulation scenes.
 """
 
+# pylint: disable=too-many-lines
+
 from __future__ import annotations
 
 import math
@@ -345,7 +347,7 @@ class _TrackedEntityList(list[BaseEntity]):
         super().__init__(values)
 
     def _did_change(self) -> None:
-        self._owner._rebuild_entity_indexes()
+        self._owner._rebuild_entity_indexes()  # pylint: disable=protected-access
 
     def append(self, item: BaseEntity) -> None:
         super().append(item)
@@ -1065,6 +1067,7 @@ class SimScene(Generic[TContext, TWorld]):
         """
         return True
 
+    # pylint: disable=too-many-return-statements
     def configured_escape_command(self):
         """
         Resolve the configured ESC command for this scene, if any.

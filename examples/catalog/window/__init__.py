@@ -1,4 +1,3 @@
 """
 Window-focused tutorial examples.
 """
-

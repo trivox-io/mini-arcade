@@ -45,9 +45,7 @@ def _normalize_key(value: Any) -> Key | None:
         return None
 
 
-def _normalize_color(
-    value: Any, default: tuple[int, ...]
-) -> tuple[int, ...]:
+def _normalize_color(value: Any, default: tuple[int, ...]) -> tuple[int, ...]:
     if not isinstance(value, (list, tuple)) or not value:
         return default
     out: list[int] = []
@@ -71,12 +69,23 @@ class DifficultySettings:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> "DifficultySettings":
+        """
+        Construct difficulty settings from a dict, typically parsed from a game config file.
+
+        :param data: The input data to parse.
+        :type data: dict or None
+        :return: A DifficultySettings instance populated with the parsed data.
+        :rtype: DifficultySettings
+        """
         if not isinstance(data, dict):
             return cls()
         raw_level = data.get("level", data.get("default", "normal"))
         return cls(level=_normalize_difficulty(raw_level))
 
 
+# Justification: Next 2 classes are a bit long but they're mostly data parsing and construction
+# of the settings from a dict, hard to break down more without overcomplicating it.
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class DebugOverlayStyleSettings:
     """
@@ -96,6 +105,15 @@ class DebugOverlayStyleSettings:
     def from_dict(
         cls, data: dict[str, Any] | None
     ) -> "DebugOverlayStyleSettings":
+        """
+        Construct debug overlay style settings from a dict, typically parsed
+        from a game config file.
+
+        :param data: The input data to parse.
+        :type data: dict or None
+        :return: A DebugOverlayStyleSettings instance populated with the parsed data.
+        :rtype: DebugOverlayStyleSettings
+        """
         if not isinstance(data, dict):
             return cls()
         defaults = cls()
@@ -134,6 +152,14 @@ class DebugOverlaySettings:
 
     @classmethod
     def from_dict(cls, data: Any) -> "DebugOverlaySettings":
+        """
+        Construct debug overlay settings from a dict, typically parsed from a game config file.
+
+        :param data: The input data to parse.
+        :type data: dict or any
+        :return: A DebugOverlaySettings instance populated with the parsed data.
+        :rtype: DebugOverlaySettings
+        """
         defaults = cls()
         if isinstance(data, bool):
             return cls(enabled=bool(data))
@@ -174,6 +200,9 @@ class DebugOverlaySettings:
         )
 
 
+# pylint: enable=too-many-instance-attributes
+
+
 @dataclass
 class SceneActionSettings:
     """
@@ -186,6 +215,15 @@ class SceneActionSettings:
 
     @classmethod
     def from_dict(cls, data: Any) -> "SceneActionSettings | None":
+        """
+        Construct scene action settings from a dict, typically parsed from a game config file.
+
+        :param data: The input data to parse.
+        :type data: dict or any
+        :return: A SceneActionSettings instance populated with the parsed data, or None if the
+            input data is invalid or does not specify a command.
+        :rtype: SceneActionSettings or None
+        """
         if isinstance(data, str):
             command = str(data).strip().lower()
             return cls(command=command) if command else None
@@ -219,6 +257,14 @@ class SceneRuntimeSettings:
 
     @classmethod
     def from_dict(cls, data: Any) -> "SceneRuntimeSettings":
+        """
+        Construct scene runtime settings from a dict, typically parsed from a game config file.
+
+        :param data: The input data to parse.
+        :type data: dict or any
+        :return: A SceneRuntimeSettings instance populated with the parsed data.
+        :rtype: SceneRuntimeSettings
+        """
         if not isinstance(data, dict):
             return cls()
         payload = deepcopy(data)
@@ -229,6 +275,17 @@ class SceneRuntimeSettings:
         )
 
     def get(self, key: str, default: Any = None) -> Any:
+        """
+        Get arbitrary data from the scene settings, for use by game code.
+
+        :param key: The key to look up in the scene settings data.
+        :type key: str
+        :param default: The default value to return if the key is not found.
+        :type default: Any
+        :return: The value associated with the key in the scene settings data,
+            or the default if not found.
+        :rtype: Any
+        """
         return deepcopy(self.data.get(key, default))
 
 
@@ -250,6 +307,14 @@ class GamePlaySettings:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> "GamePlaySettings":
+        """
+        Construct gameplay settings from a dict, typically parsed from a game config file.
+
+        :param data: The input data to parse.
+        :type data: dict or None
+        :return: A GamePlaySettings instance populated with the parsed data.
+        :rtype: GamePlaySettings
+        """
         settings = cls()
         if not isinstance(data, dict):
             return settings
@@ -260,9 +325,7 @@ class GamePlaySettings:
                 level=_normalize_difficulty(raw_difficulty)
             )
         elif isinstance(raw_difficulty, dict):
-            settings.difficulty = DifficultySettings.from_dict(
-                raw_difficulty
-            )
+            settings.difficulty = DifficultySettings.from_dict(raw_difficulty)
 
         raw_controls = data.get("controls")
         if isinstance(raw_controls, dict):

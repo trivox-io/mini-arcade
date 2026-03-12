@@ -4,7 +4,6 @@ Scene for window/screen_to_virtual_input tutorial example.
 
 from __future__ import annotations
 
-from examples._shared.text_layout import draw_text_block, fit_text_block
 from mini_arcade_core.backend.backend import Backend
 from mini_arcade_core.backend.keys import Key
 from mini_arcade_core.engine.render.packet import RenderPacket
@@ -13,6 +12,8 @@ from mini_arcade_core.runtime.context import RuntimeContext
 from mini_arcade_core.runtime.input_frame import InputFrame
 from mini_arcade_core.scenes.autoreg import register_scene
 from mini_arcade_core.scenes.sim_scene import SimScene
+
+from examples._shared.text_layout import draw_text_block, fit_text_block
 
 SCENE_ID = "screen_to_virtual_input"
 MAX_TRAIL = 120
@@ -46,6 +47,7 @@ class ScreenToVirtualInputScene(SimScene):
             self._trail.clear()
 
         screen_x, screen_y = input_frame.mouse_pos
+        # pylint: disable=assignment-from-no-return
         virtual_x, virtual_y = services.window.screen_to_virtual(
             float(screen_x), float(screen_y)
         )
@@ -58,10 +60,9 @@ class ScreenToVirtualInputScene(SimScene):
         # pylint: disable=assignment-from-no-return
         vp = services.window.get_viewport()
         # pylint: enable=assignment-from-no-return
-        inside_virtual = (
-            0.0 <= virtual_x <= float(vp.virtual_w)
-            and 0.0 <= virtual_y <= float(vp.virtual_h)
-        )
+        inside_virtual = 0.0 <= virtual_x <= float(
+            vp.virtual_w
+        ) and 0.0 <= virtual_y <= float(vp.virtual_h)
 
         panel_lines = [
             "window/screen_to_virtual_input",
@@ -153,7 +154,9 @@ class ScreenToVirtualInputScene(SimScene):
                 min_font_size=8,
             )
 
-            backend.render.draw_rect(16, 16, panel_w, panel_h, color=(0, 0, 0, 220))
+            backend.render.draw_rect(
+                16, 16, panel_w, panel_h, color=(0, 0, 0, 220)
+            )
             draw_text_block(
                 backend,
                 x=16 + panel_pad_x,

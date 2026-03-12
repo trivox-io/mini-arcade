@@ -27,7 +27,9 @@ class BackendSwapScene(SimScene):
     def tick(self, input_frame: InputFrame, dt: float) -> RenderPacket:
         del input_frame, dt
         cfg = self.context.config
-        active = ", ".join(cfg.postfx.active) if cfg.postfx.active else "(none)"
+        active = (
+            ", ".join(cfg.postfx.active) if cfg.postfx.active else "(none)"
+        )
 
         def draw(backend: Backend):
             self._last_backend_name = backend.__class__.__name__
@@ -50,7 +52,9 @@ class BackendSwapScene(SimScene):
             backend.render.draw_rect(18, 18, 660, 340, color=(0, 0, 0, 0.75))
             y = 34
             for line in lines:
-                backend.text.draw(20, y, line, color=(230, 230, 235), font_size=18)
+                backend.text.draw(
+                    20, y, line, color=(230, 230, 235), font_size=18
+                )
                 y += 22
 
         return RenderPacket(ops=[draw])

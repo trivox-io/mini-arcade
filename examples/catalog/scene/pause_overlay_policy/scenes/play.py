@@ -37,12 +37,9 @@ class PauseOverlayPolicyPlayScene(SimScene):
         self._elapsed += dt
         self._frames += 1
 
-        if (
-            self.context.command_queue is not None
-            and (
-                Key.P in input_frame.keys_pressed
-                or Key.ESCAPE in input_frame.keys_pressed
-            )
+        if self.context.command_queue is not None and (
+            Key.P in input_frame.keys_pressed
+            or Key.ESCAPE in input_frame.keys_pressed
         ):
             self.context.command_queue.push(PauseOverlayCommand())
 
@@ -82,7 +79,9 @@ class PauseOverlayPolicyPlayScene(SimScene):
         def draw(backend: Backend):
             self._last_backend_name = backend.__class__.__name__
             backend.render.draw_rect(18, 18, 760, 470, color=(0, 0, 0, 220))
-            backend.render.draw_rect(bar_x, 410, 120, 22, color=(118, 210, 255, 255))
+            backend.render.draw_rect(
+                bar_x, 410, 120, 22, color=(118, 210, 255, 255)
+            )
             y = 30
             for line in lines:
                 backend.text.draw(

@@ -63,7 +63,10 @@ class BaseEntityFromDictScene(EntityExampleScene):
         )
     )
 
+    # pylint: disable=assignment-from-no-return
     def on_enter(self) -> None:
+        """Create entities from literal payload dictionaries for inspection."""
+
         vw, vh = self.context.services.window.get_virtual_size()
 
         courier = entity_from_dict(

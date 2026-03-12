@@ -6,11 +6,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from examples._shared.defaults import make_backend_factory
-from examples._shared.spec import ExampleSpec
 from mini_arcade.modules.settings import Settings
 from mini_arcade_core import EngineConfig
 from mini_arcade_core.engine.engine_config import PostFXConfig
+
+from examples._shared.defaults import make_backend_factory
+from examples._shared.spec import ExampleSpec
 
 EXAMPLE_ID = "scene/menu_scene_base"
 DEFAULT_SCENE_ID = "menu_scene_base_menu"
@@ -20,9 +21,7 @@ DEFAULT_DISCOVER_PACKAGES = [
 ]
 
 
-def _arg_or_default(
-    kwargs: dict[str, Any], key: str, default: Any
-) -> Any:
+def _arg_or_default(kwargs: dict[str, Any], key: str, default: Any) -> Any:
     value = kwargs.get(key, default)
     return default if value is None else value
 
@@ -60,13 +59,17 @@ def build_example(**kwargs) -> ExampleSpec:
     scene_defaults = settings.scene_defaults()
     backend_defaults = settings.backend_defaults(resolve_paths=True)
 
-    backend = str(
-        _arg_or_default(
-            kwargs,
-            "backend",
-            backend_defaults.get("provider", "pygame"),
+    backend = (
+        str(
+            _arg_or_default(
+                kwargs,
+                "backend",
+                backend_defaults.get("provider", "pygame"),
+            )
         )
-    ).lower().strip()
+        .lower()
+        .strip()
+    )
 
     fps = int(_arg_or_default(kwargs, "fps", engine_defaults.get("fps", 60)))
     default_vw, default_vh = _virtual_resolution(
@@ -79,13 +82,19 @@ def build_example(**kwargs) -> ExampleSpec:
     if not isinstance(backend_window, dict):
         backend_window = {}
     window_width = int(
-        _arg_or_default(kwargs, "window_width", backend_window.get("width", 960))
+        _arg_or_default(
+            kwargs, "window_width", backend_window.get("width", 960)
+        )
     )
     window_height = int(
-        _arg_or_default(kwargs, "window_height", backend_window.get("height", 540))
+        _arg_or_default(
+            kwargs, "window_height", backend_window.get("height", 540)
+        )
     )
     resizable = bool(backend_window.get("resizable", True))
-    title_base = str(backend_window.get("title", EXAMPLE_ID)).strip() or EXAMPLE_ID
+    title_base = (
+        str(backend_window.get("title", EXAMPLE_ID)).strip() or EXAMPLE_ID
+    )
     title = f"{title_base} ({backend})"
 
     renderer = backend_defaults.get("renderer", {})
@@ -153,4 +162,3 @@ def build_example(**kwargs) -> ExampleSpec:
         ),
         engine_config_factory=_engine_config_factory,
     )
-

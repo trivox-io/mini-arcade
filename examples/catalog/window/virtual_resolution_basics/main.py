@@ -22,4 +22,3 @@ def build_example(**kwargs):
         kwargs=kwargs,
         default_background_color=(10, 12, 18),
     )
-

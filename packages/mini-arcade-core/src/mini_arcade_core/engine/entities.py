@@ -2,6 +2,10 @@
 Engine entities for mini-arcade-core.
 """
 
+# pylint: disable=too-many-instance-attributes
+
+# ruff: noqa: PLR0902
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -53,8 +57,11 @@ class EntityIdAllocator:
         return eid
 
 
+# Justification: This class is a bit long but it's mostly data parsing and construction
+# of the entity from a dict, hard to break down more without overcomplicating it.
+# pylint: disable=too-many-instance-attributes
 @dataclass
-class BaseEntity:  # pylint: disable=too-many-instance-attributes
+class BaseEntity:  # noqa: PLR0902  # pylint: disable=too-many-instance-attributes
     """
     Base entity class.
 
@@ -208,7 +215,9 @@ class BaseEntity:  # pylint: disable=too-many-instance-attributes
             if isinstance(fill_raw, Fill):
                 fill = fill_raw
             elif isinstance(fill_raw, dict):
-                fill = Fill(color=tuple(fill_raw.get("color", (255, 255, 255, 255))))
+                fill = Fill(
+                    color=tuple(fill_raw.get("color", (255, 255, 255, 255)))
+                )
             elif isinstance(fill_raw, (list, tuple)):
                 fill = Fill(color=tuple(fill_raw))
 
@@ -218,9 +227,7 @@ class BaseEntity:  # pylint: disable=too-many-instance-attributes
                 stroke = stroke_raw
             elif isinstance(stroke_raw, dict):
                 stroke = Stroke(
-                    color=tuple(
-                        stroke_raw.get("color", (255, 255, 255, 255))
-                    ),
+                    color=tuple(stroke_raw.get("color", (255, 255, 255, 255))),
                     thickness=float(stroke_raw.get("thickness", 1.0)),
                 )
             elif isinstance(stroke_raw, (list, tuple)):
@@ -377,7 +384,18 @@ class BaseEntity:  # pylint: disable=too-many-instance-attributes
             tags=cls._get_tags(data),
         )
         if "render_layer" in data:
-            setattr(entity, "render_layer", str(data.get("render_layer") or "world"))
+            setattr(
+                entity,
+                "render_layer",
+                str(data.get("render_layer") or "world"),
+            )
         if "render_visible" in data:
-            setattr(entity, "render_visible", bool(data.get("render_visible", True)))
+            setattr(
+                entity,
+                "render_visible",
+                bool(data.get("render_visible", True)),
+            )
         return entity
+
+
+# pylint: enable=too-many-instance-attributes

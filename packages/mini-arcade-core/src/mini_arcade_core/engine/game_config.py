@@ -35,6 +35,14 @@ class SceneConfig:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> "SceneConfig":
+        """
+        Construct scene config from a dict, typically parsed from a game config file.
+
+        :param data: The input data to parse.
+        :type data: dict or None
+        :return: A SceneConfig instance populated with the parsed data.
+        :rtype: SceneConfig
+        """
         if not isinstance(data, dict):
             return cls()
 

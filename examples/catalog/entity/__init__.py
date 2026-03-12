@@ -1,2 +1,1 @@
 """Entity tutorial examples."""
-

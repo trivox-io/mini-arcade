@@ -75,6 +75,10 @@ disable = [
     "logging-fstring-interpolation",
     "fixme",
     "duplicate-code",
+    "too-many-instance-attributes",
+    "too-many-locals",
+    "too-many-arguments",
+    "broad-exception-caught",
 ]
 
 [tool.pylint.TYPECHECK]

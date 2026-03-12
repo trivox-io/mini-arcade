@@ -4,7 +4,6 @@ Scene for window/fit_vs_fill tutorial example.
 
 from __future__ import annotations
 
-from examples._shared.text_layout import draw_text_block, fit_text_block
 from mini_arcade_core.backend.backend import Backend
 from mini_arcade_core.backend.keys import Key
 from mini_arcade_core.engine.render.packet import RenderPacket
@@ -13,6 +12,8 @@ from mini_arcade_core.runtime.context import RuntimeContext
 from mini_arcade_core.runtime.input_frame import InputFrame
 from mini_arcade_core.scenes.autoreg import register_scene
 from mini_arcade_core.scenes.sim_scene import SimScene
+
+from examples._shared.text_layout import draw_text_block, fit_text_block
 
 SCENE_ID = "fit_vs_fill"
 
@@ -103,14 +104,18 @@ class FitVsFillScene(SimScene):
             vw = max(1, int(vis_x1 - vis_x0))
             vh = max(1, int(vis_y1 - vis_y0))
             backend.render.draw_rect(vx, vy, vw, vh, color=(40, 110, 170, 90))
-            backend.render.draw_line(vx, vy, vx + vw, vy, color=(120, 220, 255, 255))
+            backend.render.draw_line(
+                vx, vy, vx + vw, vy, color=(120, 220, 255, 255)
+            )
             backend.render.draw_line(
                 vx + vw, vy, vx + vw, vy + vh, color=(120, 220, 255, 255)
             )
             backend.render.draw_line(
                 vx + vw, vy + vh, vx, vy + vh, color=(120, 220, 255, 255)
             )
-            backend.render.draw_line(vx, vy + vh, vx, vy, color=(120, 220, 255, 255))
+            backend.render.draw_line(
+                vx, vy + vh, vx, vy, color=(120, 220, 255, 255)
+            )
 
             # Edge labels help visualize cropping in FILL mode.
             backend.text.draw(8, 8, "TOP", color=(255, 230, 180), font_size=18)

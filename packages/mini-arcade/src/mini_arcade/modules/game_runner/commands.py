@@ -28,7 +28,10 @@ class GameRunnerCommand(BaseCommand):
         ArgumentType(
             "example",
             str,
-            "Example id/folder path (e.g. config/engine_config_basics). Mutually exclusive with --game.",
+            (
+                "Example id/folder path (e.g. config/engine_config_basics). "
+                "Mutually exclusive with --game.",
+            ),
             required=False,
             default=None,
         ),

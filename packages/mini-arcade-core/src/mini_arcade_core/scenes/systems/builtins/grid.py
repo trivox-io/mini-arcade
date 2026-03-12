@@ -209,6 +209,8 @@ class CadenceSystem(Generic[TCtx]):
     bindings: tuple[CadenceBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Advance cadence timers and fire callbacks when they elapse."""
+
         if not self.enabled_when(ctx):
             return
 
@@ -265,6 +267,8 @@ class GridCellSpawnSystem(Generic[TCtx]):
     bindings: tuple[GridCellSpawnBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Spawn entities into the first available grid cell per binding."""
+
         if not self.enabled_when(ctx):
             return
 

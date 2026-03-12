@@ -21,6 +21,8 @@ from mini_arcade_core.scenes.systems.phases import SystemPhase
 TCtx = TypeVar("TCtx")
 # pylint: enable=invalid-name
 
+# pylint: disable=too-many-instance-attributes
+
 
 def _default_enabled_when(_ctx: object) -> bool:
     return True
@@ -103,6 +105,14 @@ class ProjectileBoundarySystem(Generic[TCtx]):
         )
 
     def step(self, ctx: TCtx) -> None:
+        """
+        For each binding, cull entities that don't satisfy the predicate and are
+        outside the viewport plus margin.
+
+        :param ctx: The context object passed to the system, typically containing
+            references to the world, scene, and other relevant state.
+        :type ctx: TCtx
+        """
         self._constraints.step(ctx)
 
 
@@ -131,6 +141,15 @@ class ProjectileCleanupSystem(Generic[TCtx]):
     bindings: tuple[ProjectileCleanupBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """
+        For each binding, remove entities that don't satisfy keep_entity, and if
+        tracked_ids_attr and tracked_domain_name are provided, compact the tracked
+        ids for the remaining entities.
+
+        :param ctx: The context object passed to the system, typically containing
+            references to the world, scene, and other relevant state.
+        :type ctx: TCtx
+        """
         if not self.enabled_when(ctx):
             return
 

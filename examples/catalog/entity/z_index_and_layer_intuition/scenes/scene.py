@@ -73,7 +73,10 @@ class ZIndexAndLayerIntuitionScene(EntityExampleScene):
         )
     )
 
+    # pylint: disable=assignment-from-no-return
     def on_enter(self) -> None:
+        """Create layered entities that illustrate z-order interactions."""
+
         vw, vh = self.context.services.window.get_virtual_size()
 
         back_card = entity_from_dict(

@@ -285,6 +285,7 @@ POTION_PARTICLE_PROFILE = ProceduralParticleProfile(
 )
 
 
+# pylint: disable=too-many-arguments
 def particle_binding_with_profile(
     *,
     profile: ProceduralParticleProfile,
@@ -493,7 +494,9 @@ def _sample_alpha_ramp(stops: tuple[AlphaStop, ...], t: float) -> int:
         if clamped <= right_pos:
             span = max(0.0001, float(right_pos - left_pos))
             local_t = (clamped - float(left_pos)) / span
-            return int(round(_lerp(float(left_alpha), float(right_alpha), local_t)))
+            return int(
+                round(_lerp(float(left_alpha), float(right_alpha), local_t))
+            )
 
     return int(stops[-1][1])
 
@@ -520,6 +523,7 @@ class ProceduralParticleSimulationSystem(Generic[TCtx]):
             random.Random(int(binding.seed)) for binding in self.bindings
         )
 
+    # pylint: disable=too-many-arguments,too-many-locals
     def _spawn_particle(
         self,
         *,
@@ -538,15 +542,29 @@ class ProceduralParticleSimulationSystem(Generic[TCtx]):
         velocity_scale = 1.0 + (
             extra_intensity * binding.intensity_velocity_scale
         )
-        x = origin_x + rng.uniform(-binding.spawn_spread_x, binding.spawn_spread_x)
-        y = origin_y + rng.uniform(-binding.spawn_spread_y, binding.spawn_spread_y)
+        x = origin_x + rng.uniform(
+            -binding.spawn_spread_x, binding.spawn_spread_x
+        )
+        y = origin_y + rng.uniform(
+            -binding.spawn_spread_y, binding.spawn_spread_y
+        )
         vx = rng.uniform(binding.velocity_x[0], binding.velocity_x[1])
-        vy = rng.uniform(binding.velocity_y[0], binding.velocity_y[1]) * velocity_scale
-        lifetime = rng.uniform(binding.lifetime[0], binding.lifetime[1]) * lifetime_scale
-        start_radius = rng.uniform(
-            binding.start_radius[0], binding.start_radius[1]
-        ) * radius_scale
-        end_radius = rng.uniform(binding.end_radius[0], binding.end_radius[1]) * radius_scale
+        vy = (
+            rng.uniform(binding.velocity_y[0], binding.velocity_y[1])
+            * velocity_scale
+        )
+        lifetime = (
+            rng.uniform(binding.lifetime[0], binding.lifetime[1])
+            * lifetime_scale
+        )
+        start_radius = (
+            rng.uniform(binding.start_radius[0], binding.start_radius[1])
+            * radius_scale
+        )
+        end_radius = (
+            rng.uniform(binding.end_radius[0], binding.end_radius[1])
+            * radius_scale
+        )
         return ProceduralParticle(
             x=x,
             y=y,
@@ -559,7 +577,10 @@ class ProceduralParticleSimulationSystem(Generic[TCtx]):
             phase=rng.uniform(0.0, math.tau),
         )
 
+    # pylint: disable=too-many-locals
     def step(self, ctx: TCtx) -> None:
+        """Advance emitter state, cull dead particles, and spawn new ones."""
+
         dt = max(0.0, float(getattr(ctx, "dt", 0.0)))
         if dt <= 0.0:
             return
@@ -576,10 +597,13 @@ class ProceduralParticleSimulationSystem(Generic[TCtx]):
                 if particle.age >= particle.lifetime:
                     continue
 
-                wobble = math.sin(
-                    (state.elapsed * binding.turbulence_frequency)
-                    + particle.phase
-                ) * binding.turbulence
+                wobble = (
+                    math.sin(
+                        (state.elapsed * binding.turbulence_frequency)
+                        + particle.phase
+                    )
+                    * binding.turbulence
+                )
 
                 particle.vx += (
                     float(binding.acceleration_x) + wind + wobble
@@ -590,8 +614,11 @@ class ProceduralParticleSimulationSystem(Generic[TCtx]):
                 particle.x += particle.vx * dt
                 particle.y += particle.vy * dt
 
-                vw, vh = binding.viewport_getter(ctx)
-                if -64.0 <= particle.x <= (float(vw) + 64.0) and particle.y >= -96.0:
+                vw, _ = binding.viewport_getter(ctx)
+                if (
+                    -64.0 <= particle.x <= (float(vw) + 64.0)
+                    and particle.y >= -96.0
+                ):
                     survivors.append(particle)
 
             state.particles = survivors
@@ -601,8 +628,12 @@ class ProceduralParticleSimulationSystem(Generic[TCtx]):
                 continue
 
             intensity = max(0.0, float(binding.intensity_getter(ctx)))
-            available = max(0, int(binding.max_particles) - len(state.particles))
-            total = state.spawn_accumulator + (float(binding.spawn_rate) * intensity * dt)
+            available = max(
+                0, int(binding.max_particles) - len(state.particles)
+            )
+            total = state.spawn_accumulator + (
+                float(binding.spawn_rate) * intensity * dt
+            )
             to_spawn = min(available, int(total))
             state.spawn_accumulator = total - int(total)
 
@@ -634,8 +665,23 @@ class ProceduralParticleRenderSystem(Generic[TCtx]):
     bindings: tuple[ProceduralParticleBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """
+        Build a render packet with draw calls for all particles from all emitters,
+        sorted back-to-front by Y coordinate.
+
+        :param ctx: The current scene context, which must have a `packet` attribute
+            that is a `RenderPacket` or `None`.
+        :type ctx: TCtx
+        """
         draw_items: list[
-            tuple[float, float, float, float, tuple[Color, ...], tuple[float, ...]]
+            tuple[
+                float,
+                float,
+                float,
+                float,
+                tuple[Color, ...],
+                tuple[float, ...],
+            ]
         ] = []
 
         for binding in self.bindings:
@@ -676,7 +722,9 @@ class ProceduralParticleRenderSystem(Generic[TCtx]):
                     )
                 )
 
-        snapshot = tuple(sorted(draw_items, key=lambda item: item[0], reverse=True))
+        snapshot = tuple(
+            sorted(draw_items, key=lambda item: item[0], reverse=True)
+        )
 
         def draw(backend: object) -> None:
             for _, x, y, radius, colors, scales in snapshot:

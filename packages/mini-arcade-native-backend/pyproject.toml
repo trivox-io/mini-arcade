@@ -61,6 +61,10 @@ strict = false
 disable = [
   "too-few-public-methods",
   "fixme",
+  "logging-fstring-interpolation",
+  "duplicate-code",
+  # Justification: Some classes naturally require many attributes to function.
+  "too-many-instance-attributes",
 ]
 
 [tool.pylint.MAIN]

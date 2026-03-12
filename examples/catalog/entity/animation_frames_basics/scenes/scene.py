@@ -74,12 +74,17 @@ class AnimationFramesBasicsScene(EntityExampleScene):
             title="entity/animation_frames_basics",
             lines_factory=_hud_lines,
             overlays=(
-                RenderOverlay.from_drawable(AnimationLabels(), layer="ui", z=160),
+                RenderOverlay.from_drawable(
+                    AnimationLabels(), layer="ui", z=160
+                ),
             ),
         )
     )
 
+    # pylint: disable=assignment-from-no-return
     def on_enter(self) -> None:
+        """Create animated sample entities and register the example world."""
+
         vw, vh = self.context.services.window.get_virtual_size()
         backend_render = self.context.services.render.backend.render
         frames = [

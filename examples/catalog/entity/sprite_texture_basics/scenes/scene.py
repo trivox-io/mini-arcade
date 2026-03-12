@@ -80,7 +80,10 @@ class SpriteTextureBasicsScene(EntityExampleScene):
         )
     )
 
+    # pylint: disable=assignment-from-no-return
     def on_enter(self) -> None:
+        """Create sample entities that render procedurally generated textures."""
+
         vw, vh = self.context.services.window.get_virtual_size()
         backend_render = self.context.services.render.backend.render
 

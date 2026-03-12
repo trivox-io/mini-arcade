@@ -118,6 +118,35 @@ class TargetSpec:
     meta: dict[str, Any]
 
 
+def _find_repo_root(start_dir: Path) -> Path | None:
+    """
+    Find the monorepo root that contains local package sources.
+    """
+    start = start_dir.resolve()
+    candidates = (start, *start.parents)
+    for candidate in candidates:
+        packages_dir = candidate / "packages"
+        if packages_dir.is_dir() and (candidate / "pyproject.toml").exists():
+            return candidate
+    return None
+
+
+def _workspace_source_roots(repo_root: Path | None) -> list[Path]:
+    """
+    Collect local package ``src`` directories from the monorepo workspace.
+    """
+    if repo_root is None:
+        return []
+
+    packages_dir = repo_root / "packages"
+    roots: list[Path] = []
+    for package_dir in sorted(packages_dir.iterdir(), key=lambda p: p.name):
+        src_dir = package_dir / "src"
+        if src_dir.is_dir():
+            roots.append(src_dir.resolve())
+    return roots
+
+
 def _build_pythonpath(spec: TargetSpec) -> str:
     """
     Build PYTHONPATH for a target.
@@ -134,6 +163,8 @@ def _build_pythonpath(spec: TargetSpec) -> str:
 
     abs_roots = [(spec.root_dir / r).resolve() for r in roots]
     abs_roots = [p for p in abs_roots if p.exists() and p.is_dir()]
+    repo_root = _find_repo_root(spec.root_dir)
+    workspace_roots = _workspace_source_roots(repo_root)
 
     # Special handling for examples: ensure repo-root import works
     if spec.kind == "example":
@@ -152,9 +183,15 @@ def _build_pythonpath(spec: TargetSpec) -> str:
             repo_root.parent
         )  # ".../<repo>/examples" -> ".../<repo>"
         abs_roots = [
+            *workspace_roots,  # prefer workspace packages over installed ones
             project_root.resolve(),  # allow `import examples...`
             repo_root.resolve(),  # allow `import _shared...` if ever needed
             *abs_roots,  # allow example-local src/
+        ]
+    elif workspace_roots:
+        abs_roots = [
+            *workspace_roots,  # prefer workspace packages over installed ones
+            *abs_roots,
         ]
 
     existing = (os.environ.get("PYTHONPATH") or "").strip()
@@ -191,21 +228,20 @@ def _run_child_process(
 
     :return: (exit_code, interrupted)
     """
-    proc = subprocess.Popen(
+    with subprocess.Popen(
         cmd,
         cwd=str(cwd),
         env=env,
-    )
-
-    try:
-        while True:
-            code = proc.poll()
-            if code is not None:
-                return int(code or 0), False
-            time.sleep(0.1)
-    except KeyboardInterrupt:
-        _stop_process(proc)
-        return INTERRUPTED_EXIT_CODE, True
+    ) as proc:
+        try:
+            while True:
+                code = proc.poll()
+                if code is not None:
+                    return int(code or 0), False
+                time.sleep(0.1)
+        except KeyboardInterrupt:
+            _stop_process(proc)
+            return INTERRUPTED_EXIT_CODE, True
 
 
 # ------------------------- Locators ------------------------------------------
@@ -373,9 +409,7 @@ class ExampleLocator(BaseTargetLocator):
                     examples_root = p
                     break
 
-        shared_entry = (
-            examples_root / "_shared" / "run_example.py"
-        ).resolve()
+        shared_entry = (examples_root / "_shared" / "run_example.py").resolve()
         if not shared_entry.exists():
             raise CommandException(
                 f"Shared example runner missing: {shared_entry}"
@@ -450,7 +484,9 @@ class GameRunnerProcessor(BaseCommandProcessor):
             )
 
         self._dev_games_dir = (Path.cwd() / "games").resolve()
-        self._dev_examples_dir = (Path.cwd() / "examples" / "catalog").resolve()
+        self._dev_examples_dir = (
+            Path.cwd() / "examples" / "catalog"
+        ).resolve()
 
         self._games = GameLocator(dev_default_parent_dir=self._dev_games_dir)
         self._examples = ExampleLocator(
@@ -473,7 +509,9 @@ class GameRunnerProcessor(BaseCommandProcessor):
             parent = locator.resolve_parent_dir(self.examples_dir)
             target_dir = locator.find_dir(parent, self.example)
             spec = locator.validate(target_dir)
-            requested_example_id = str(self.example).replace("\\", "/").strip("/")
+            requested_example_id = (
+                str(self.example).replace("\\", "/").strip("/")
+            )
 
             # IMPORTANT:
             # examples use the shared runner, which needs the example_id.
@@ -522,9 +560,27 @@ class ExampleTourBus:
         self._subscribers: dict[str, list[Callable[..., None]]] = {}
 
     def on(self, event_type: str, handler: Callable[..., None]):
+        """
+        Subscribe a handler function to an event type.
+
+        :param event_type: The type/name of the event to subscribe to.
+        :type event_type: str
+        :param handler: A callable that takes keyword arguments, to be called when the event is
+            emitted.
+        :type handler: Callable[..., None]
+        """
         self._subscribers.setdefault(event_type, []).append(handler)
 
     def emit(self, event_type: str, **kwargs):
+        """
+        Emit an event with the given type and keyword arguments.
+        All handlers subscribed to this event type will be called with the kwargs.
+
+        :param event_type: The type/name of the event to emit.
+        :type event_type: str
+        :param kwargs: Arbitrary keyword arguments to pass to the event handlers.
+        :type kwargs: dict
+        """
         for handler in self._subscribers.get(event_type, []):
             handler(**kwargs)
 
@@ -579,9 +635,7 @@ class ConsoleTourReporter:
         example_id: str,
         exit_code: int,
     ):
-        print(
-            f"[{index}/{total}] Finished: {example_id} (exit={exit_code})"
-        )
+        print(f"[{index}/{total}] Finished: {example_id} (exit={exit_code})")
 
     def _on_example_failed(
         self,
@@ -637,7 +691,8 @@ ROADMAP_EXAMPLE_ORDER: tuple[str, ...] = (
 
 def _sort_example_ids(ids: list[str]) -> list[str]:
     order_index = {
-        example_id: index for index, example_id in enumerate(ROADMAP_EXAMPLE_ORDER)
+        example_id: index
+        for index, example_id in enumerate(ROADMAP_EXAMPLE_ORDER)
     }
 
     return sorted(
@@ -654,9 +709,7 @@ def _discover_example_ids(examples_parent: Path) -> list[str]:
     ids: list[str] = []
     base = examples_parent.resolve()
 
-    for main_py in sorted(
-        base.rglob("main.py"), key=lambda p: str(p).lower()
-    ):
+    for main_py in sorted(base.rglob("main.py"), key=lambda p: str(p).lower()):
         rel = str(main_py.parent.resolve().relative_to(base))
         rel_id = rel.replace("\\", "/").strip("/")
         if rel_id:
@@ -665,6 +718,23 @@ def _discover_example_ids(examples_parent: Path) -> list[str]:
     # preserve order, remove duplicates
     deduped = list(dict.fromkeys(ids))
     return _sort_example_ids(deduped)
+
+
+@dataclass(frozen=True)
+class ExampleTourContext:
+    """
+    Context object passed to tour event handlers.
+
+    :ivar parent_dir: Optional[Path]: The parent directory where examples are located.
+    :ivar example_id: Optional[str]: The id of the current example being run.
+    :ivar index: Optional[int]: The index of the current example in the tour sequence.
+    :ivar total: Optional[int]: The total number of examples in the tour sequence.
+    """
+
+    parent_dir: Optional[Path] = None
+    example_id: Optional[str] = None
+    index: Optional[int] = None
+    total: Optional[int] = None
 
 
 class ExamplesTourProcessor(BaseCommandProcessor):
@@ -686,7 +756,9 @@ class ExamplesTourProcessor(BaseCommandProcessor):
         if self.pass_through and self.pass_through[0] == "--":
             self.pass_through = self.pass_through[1:]
 
-        self._dev_examples_dir = (Path.cwd() / "examples" / "catalog").resolve()
+        self._dev_examples_dir = (
+            Path.cwd() / "examples" / "catalog"
+        ).resolve()
         self._examples = ExampleLocator(
             dev_default_parent_dir=self._dev_examples_dir
         )
@@ -735,16 +807,17 @@ class ExamplesTourProcessor(BaseCommandProcessor):
 
     def _run_one(
         self,
-        *,
-        parent_dir: Path,
-        example_id: str,
-        index: int,
-        total: int,
+        context: ExampleTourContext,
         bus: ExampleTourBus,
     ) -> tuple[int, bool]:
-        target_dir = self._examples.find_dir(parent_dir, example_id)
+        if context.parent_dir is None or context.example_id is None:
+            raise CommandException("Examples tour context is incomplete")
+
+        target_dir = self._examples.find_dir(
+            Path(context.parent_dir), context.example_id
+        )
         spec = self._examples.validate(target_dir)
-        requested_example_id = _normalize_target_id(example_id)
+        requested_example_id = _normalize_target_id(context.example_id)
 
         cmd = [
             sys.executable,
@@ -757,8 +830,8 @@ class ExamplesTourProcessor(BaseCommandProcessor):
 
         bus.emit(
             TourEvents.EXAMPLE_STARTED,
-            index=index,
-            total=total,
+            index=context.index,
+            total=context.total,
             example_id=requested_example_id,
             cmd=" ".join(cmd),
         )
@@ -772,8 +845,8 @@ class ExamplesTourProcessor(BaseCommandProcessor):
         except FileNotFoundError as exc:
             bus.emit(
                 TourEvents.EXAMPLE_FAILED,
-                index=index,
-                total=total,
+                index=context.index,
+                total=context.total,
                 example_id=requested_example_id,
                 error=str(exc),
             )
@@ -781,8 +854,8 @@ class ExamplesTourProcessor(BaseCommandProcessor):
         if interrupted:
             bus.emit(
                 TourEvents.EXAMPLE_FAILED,
-                index=index,
-                total=total,
+                index=context.index,
+                total=context.total,
                 example_id=requested_example_id,
                 error="interrupted by user",
             )
@@ -790,8 +863,8 @@ class ExamplesTourProcessor(BaseCommandProcessor):
 
         bus.emit(
             TourEvents.EXAMPLE_FINISHED,
-            index=index,
-            total=total,
+            index=context.index,
+            total=context.total,
             example_id=requested_example_id,
             exit_code=exit_code,
         )
@@ -799,8 +872,8 @@ class ExamplesTourProcessor(BaseCommandProcessor):
         if exit_code != 0:
             bus.emit(
                 TourEvents.EXAMPLE_FAILED,
-                index=index,
-                total=total,
+                index=context.index,
+                total=context.total,
                 example_id=requested_example_id,
                 error=f"exit code {exit_code}",
             )
@@ -837,11 +910,14 @@ class ExamplesTourProcessor(BaseCommandProcessor):
         )
 
         for index, example_id in enumerate(playlist, start=1):
-            exit_code, interrupted = self._run_one(
+            context = ExampleTourContext(
                 parent_dir=parent_dir,
                 example_id=example_id,
                 index=index,
                 total=total,
+            )
+            exit_code, interrupted = self._run_one(
+                context=context,
                 bus=bus,
             )
 

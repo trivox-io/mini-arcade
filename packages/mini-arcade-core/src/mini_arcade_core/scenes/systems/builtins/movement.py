@@ -85,6 +85,8 @@ class IntentAxisVelocitySystem(Generic[TCtx]):
     bindings: tuple[AxisIntentBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Translate intent axes into kinematic velocity for bound entities."""
+
         if not self.enabled_when(ctx):
             return
 
@@ -135,6 +137,8 @@ class KinematicMotionSystem(Generic[TCtx]):
     bindings: tuple[MotionBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """Integrate velocity and acceleration for bound entities."""
+
         if not self.enabled_when(ctx):
             return
 
@@ -256,6 +260,8 @@ class ViewportConstraintSystem(Generic[TCtx]):
         )
 
     def step(self, ctx: TCtx) -> None:
+        """Apply clamp, wrap, or cull viewport policies to bound entities."""
+
         if not self.enabled_when(ctx):
             return
 

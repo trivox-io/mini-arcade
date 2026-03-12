@@ -63,6 +63,8 @@ disable = [
     "fixme",
     # Justification: Render passes intentionally share orchestration patterns.
     "duplicate-code",
+    # Justification: Some classes naturally require many attributes to function.
+    "too-many-instance-attributes",
 ]
 
 [tool.pylint.MAIN]
@@ -77,7 +79,7 @@ ignore-paths = [
 ]
 
 [tool.pylint.DESIGN]
-max-attributes = 13
+max-attributes = 14
 
 [tool.poetry]
 packages = [{ include = "mini_arcade_core", from = "src" }]

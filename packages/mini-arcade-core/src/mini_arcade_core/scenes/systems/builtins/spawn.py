@@ -53,6 +53,13 @@ class SpawnSystem(Generic[TCtx]):
     bindings: tuple[SpawnBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """
+        Execute the spawn rules for each binding.
+
+        :param ctx: The context object passed to the system, typically containing
+            references to the world, scene, and other relevant state.
+        :type ctx: TCtx
+        """
         if not self.enabled_when(ctx):
             return
 
@@ -97,6 +104,14 @@ class WaveProgressionSystem(Generic[TCtx]):
     bindings: tuple[WaveProgressionBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """
+        For each binding, if can_progress and is_complete are both true,
+        call advance and spawn_next (if provided).
+
+        :param ctx: The context object passed to the system, typically containing
+            references to the world, scene, and other relevant state.
+        :type ctx: TCtx
+        """
         if not self.enabled_when(ctx):
             return
 

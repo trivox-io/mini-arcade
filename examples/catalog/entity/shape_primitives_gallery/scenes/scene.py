@@ -77,7 +77,10 @@ class ShapePrimitivesGalleryScene(EntityExampleScene):
         )
     )
 
+    # pylint: disable=assignment-from-no-return
     def on_enter(self) -> None:
+        """Create a gallery of primitive shapes with varied styling."""
+
         vw, vh = self.context.services.window.get_virtual_size()
 
         rect_entity = entity_from_dict(

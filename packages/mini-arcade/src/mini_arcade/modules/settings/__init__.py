@@ -1,15 +1,67 @@
 """
 Settings module for mini-arcade.
+
+Example settings files can be found under `examples/settings/` in the monorepo, and
+are loaded automatically when running examples using
+`mini-arcade run --example <example_id>`.
+
+```python
+    print("Loaded settings:")
+    shared = Settings(SettingsArgs(scope="example", required=False))
+    print(shared.as_dict())
+    engine_config_basics = Settings(
+        SettingsArgs(
+            scope="example",
+            name="config/engine_config_basics",
+            required=False,
+        )
+    )
+    print(engine_config_basics.as_dict())
+    backend_swap = Settings(
+        SettingsArgs(
+            scope="example",
+            name="config/backend_swap",
+            required=False,
+        )
+    )
+    print(backend_swap.as_dict())
+    s_asteroids = Settings(
+        SettingsArgs(scope="game", name="asteroids", required=False)
+    )
+    print(s_asteroids.as_dict())
+    s_space = Settings(
+        SettingsArgs(scope="game", name="space-invaders", required=False)
+    )
+    print(s_space.as_dict())
+    s_deja = Settings(
+        SettingsArgs(scope="game", name="deja-bounce", required=False)
+    )
+    print(s_deja.as_dict())
+```
 """
 
 from __future__ import annotations
 
 import os
 import re
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+
+@dataclass
+class SettingsArgs:
+    """
+    Arguments for loading settings.
+    """
+
+    config_path: str | Path | None = None
+    scope: str | None = None
+    name: str | None = None
+    required: bool = True
+    force_reload: bool = False
 
 
 class Settings:
@@ -39,36 +91,59 @@ class Settings:
     _name: str | None
     _TOKEN_RE = re.compile(r"\$\{([A-Za-z0-9_.-]+)\}")
 
+    @staticmethod
+    def _coerce_args(
+        args: SettingsArgs | None = None,
+        **kwargs: Any,
+    ) -> SettingsArgs:
+        if args is None:
+            return SettingsArgs(**kwargs)
+        if not isinstance(args, SettingsArgs):
+            raise TypeError(
+                "Settings expects a SettingsArgs instance or kwargs"
+            )
+        if kwargs:
+            raise TypeError(
+                "Settings does not accept both a SettingsArgs instance and kwargs"
+            )
+        return args
+
     def __new__(
         cls,
-        config_path: str | Path | None = None,
-        *,
-        scope: str | None = None,
-        name: str | None = None,
-        required: bool = True,
-        force_reload: bool = False,
+        args: SettingsArgs | None = None,
+        **kwargs: Any,
     ):
+        args = cls._coerce_args(args, **kwargs)
         key = (
-            str(config_path) if config_path is not None else None,
-            scope,
-            name,
+            str(args.config_path) if args.config_path is not None else None,
+            args.scope,
+            args.name,
         )
 
-        if force_reload or key not in cls._instances:
+        if args.force_reload or key not in cls._instances:
             inst = super().__new__(cls)
             inst._settings = {}
             inst._config_path = None
-            inst._scope = scope
-            inst._name = name
+            inst._scope = args.scope
+            inst._name = args.name
             inst._load_settings(
-                config_path=config_path,
-                scope=scope,
-                name=name,
-                required=required,
+                config_path=args.config_path,
+                scope=args.scope,
+                name=args.name,
+                required=args.required,
             )
             cls._instances[key] = inst
 
         return cls._instances[key]
+
+    def __init__(
+        self,
+        args: SettingsArgs | None = None,
+        **kwargs: Any,
+    ) -> None:
+        # ``__new__`` performs all loading and caching; keep ``__init__`` as a
+        # compatibility no-op so callers can use either SettingsArgs or kwargs.
+        self._coerce_args(args, **kwargs)
 
     @staticmethod
     def _is_repo_root(path: Path) -> bool:
@@ -303,10 +378,12 @@ class Settings:
         Load settings profile for one game.
         """
         return cls(
-            scope="game",
-            name=game_id,
-            required=required,
-            force_reload=force_reload,
+            SettingsArgs(
+                scope="game",
+                name=game_id,
+                required=required,
+                force_reload=force_reload,
+            )
         )
 
     @classmethod
@@ -323,10 +400,12 @@ class Settings:
         If example_id is None, loads shared example settings profile.
         """
         return cls(
-            scope="example",
-            name=example_id,
-            required=required,
-            force_reload=force_reload,
+            SettingsArgs(
+                scope="example",
+                name=example_id,
+                required=required,
+                force_reload=force_reload,
+            )
         )
 
     @property
@@ -512,16 +591,16 @@ class Settings:
         out = Settings._deep_copy_dict(base)
         for key, value in override.items():
             if isinstance(value, dict) and isinstance(out.get(key), dict):
-                out[key] = Settings._deep_merge_dicts(
-                    out[key], value
-                )
+                out[key] = Settings._deep_merge_dicts(out[key], value)
             elif isinstance(value, dict):
                 out[key] = Settings._deep_copy_dict(value)
             elif isinstance(value, list):
                 out[key] = [
-                    Settings._deep_copy_dict(item)
-                    if isinstance(item, dict)
-                    else item
+                    (
+                        Settings._deep_copy_dict(item)
+                        if isinstance(item, dict)
+                        else item
+                    )
                     for item in value
                 ]
             else:
@@ -594,7 +673,9 @@ class Settings:
         return {
             "initial_scene": str(initial_scene),
             "discover_packages": [
-                str(item) for item in discover_packages if isinstance(item, str)
+                str(item)
+                for item in discover_packages
+                if isinstance(item, str)
             ],
         }
 
@@ -676,20 +757,4 @@ class Settings:
 
 
 # Lazy-by-default global settings object (no exception if file is missing).
-settings = Settings(required=False)
-
-if __name__ == "__main__":
-    # Example usage
-    print("Loaded settings:")
-    shared = Settings.for_example()
-    print(shared.as_dict())
-    engine_config_basics = settings.for_example("config/engine_config_basics")
-    print(engine_config_basics.as_dict())
-    backend_swap = settings.for_example("config/backend_swap")
-    print(backend_swap.as_dict())
-    s_asteroids = settings.for_game("asteroids")
-    print(s_asteroids.as_dict())
-    s_space = settings.for_game("space-invaders")
-    print(s_space.as_dict())
-    s_deja = settings.for_game("deja-bounce")
-    print(s_deja.as_dict())
+settings = Settings(SettingsArgs(required=False))

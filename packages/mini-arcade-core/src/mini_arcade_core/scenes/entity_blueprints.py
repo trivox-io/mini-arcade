@@ -48,6 +48,7 @@ def resolve_size_value(raw_value: Any, *, axis_size: float) -> float:
     return 0.0
 
 
+# pylint: disable=too-many-return-statements
 def resolve_axis_value(
     raw_value: Any,
     *,

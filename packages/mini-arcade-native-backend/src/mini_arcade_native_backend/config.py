@@ -16,11 +16,11 @@ from mini_arcade_core.backend.config import (
     WindowSettings,
 )
 
-# Justification: native is a compiled extension module.
-# pylint: disable=no-name-in-module
+# Justification: native is a compiled extension module with stubbed members.
+# pylint: disable=no-name-in-module,no-member
 from . import _native as native  # type: ignore
 
-# pylint: enable=no-name-in-module
+# pylint: enable=no-name-in-module,no-member
 
 
 @dataclass(frozen=True)
@@ -33,7 +33,7 @@ class NativeBackendSettings:
     """
 
     core: CoreBackendSettings = field(default_factory=CoreBackendSettings)
-    api: native.RenderAPI = native.RenderAPI.SDL2
+    api: object = native.RenderAPI.SDL2  # pylint: disable=no-member
 
     def to_dict(self) -> dict:
         """
@@ -65,5 +65,5 @@ class NativeBackendSettings:
                 audio=audio,
                 fonts=fonts,
             ),
-            api=native.RenderAPI(data.get("api", native.RenderAPI.SDL2)),
+            api=native.RenderAPI(data.get("api", cls.api)),  # pylint: disable=no-member
         )

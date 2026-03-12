@@ -16,7 +16,7 @@ def _candidate_paths() -> list[Path]:
     candidates: list[Path] = []
 
     for pattern in suffixes:
-        candidates.extend(sorted(current_dir.glob("_native" + pattern[1:])))
+        candidates.extend(sorted(current_dir.glob(f"_native{pattern}")))
 
     for entry in map(Path, sys.path):
         package_dir = entry / "mini_arcade_native_backend"
@@ -28,7 +28,7 @@ def _candidate_paths() -> list[Path]:
         except FileNotFoundError:
             continue
         for pattern in suffixes:
-            candidates.extend(sorted(package_dir.glob("_native" + pattern[1:])))
+            candidates.extend(sorted(package_dir.glob(f"_native{pattern}")))
 
     return candidates
 
