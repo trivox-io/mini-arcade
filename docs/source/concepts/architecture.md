@@ -129,6 +129,12 @@ The system pipeline now distinguishes between:
 - atomic systems: one `step(ctx)` responsibility
 - system bundles: composition helpers that expand into several atomic systems
 
+For discrete or cell-based games, core also exposes a small grid-gameplay layer:
+
+- `CadenceSystem` for fixed-interval simulation ticks
+- `GridCoord`, `GridBounds`, and `GridLayout` for cell-space modeling
+- `GridCellSpawnSystem` plus occupancy helpers for free-cell spawning
+
 Entity access follows the same pattern:
 
 - semantic queries use tags and world helper methods

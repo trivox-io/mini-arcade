@@ -241,6 +241,15 @@ This is the same structure used in reference games:
   - `games/space-invaders/src/space_invaders/scenes/space_invaders/draw_ops.py`
   - `games/space-invaders/src/space_invaders/scenes/space_invaders/systems/`
 
+For discrete grid/board games, `mini-arcade-core` now also provides reusable
+helpers in `mini_arcade_core.scenes.systems.builtins`:
+
+- `CadenceSystem` for fixed logical movement/update ticks
+- `GridCoord`, `GridBounds`, and `GridLayout` for cell-space state and rendering
+- `GridCellSpawnSystem` plus occupancy helpers for spawning into free cells
+
+Use those when your gameplay advances by cells rather than continuous velocity.
+
 ## Step 5: Scene Commands (`scenes/commands.py`)
 
 ```python

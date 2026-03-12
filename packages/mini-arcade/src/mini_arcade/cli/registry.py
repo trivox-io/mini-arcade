@@ -25,7 +25,7 @@ class CommandRegistry(ImplementationRegistry[CommandProtocol]):
         type
     ]  # = BaseCommand  (assigned in base_command.py)
 
-    _alias_map: ClassVar[MutableMapping[str, str]]  # alias -> primary name
+    _alias_map: ClassVar[MutableMapping[str, str]] = {}  # alias -> primary name
 
     def __init_subclass__(cls, **kwargs):  # type: ignore[override]
         super().__init_subclass__(**kwargs)

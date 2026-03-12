@@ -30,18 +30,33 @@ from mini_arcade_core.scenes.systems import SystemPipeline  # noqa: E402
 from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     AnimationTickSystem,
     AxisIntentBinding,
+    CadenceBinding,
+    CadenceState,
+    CadenceSystem,
     CullOutOfViewportSystem,
     IntentAxisVelocitySystem,
     KinematicMotionSystem,
     MotionBinding,
+    ProceduralParticleBundle,
+    ProceduralParticleEmitterState,
+    ProceduralParticleSimulationSystem,
     ProjectileLifecycleBinding,
     ProjectileLifecycleBundle,
     SpawnBinding,
     SpawnSystem,
+    GridBounds,
+    GridCellSpawnBinding,
+    GridCellSpawnSystem,
+    GridCoord,
+    GridLayout,
     ViewportConstraintBinding,
     ViewportConstraintSystem,
     WaveProgressionBinding,
     WaveProgressionSystem,
+    free_grid_cells,
+    fire_particle_binding,
+    magic_particle_binding,
+    occupied_grid_cells,
 )
 
 
@@ -158,9 +173,12 @@ def test_cull_out_of_viewport_system_uses_transform_and_life() -> None:
 
 def test_builtins_package_reexports_utility_systems() -> None:
     assert AnimationTickSystem.__name__ == "AnimationTickSystem"
+    assert CadenceSystem.__name__ == "CadenceSystem"
     assert CullOutOfViewportSystem.__name__ == "CullOutOfViewportSystem"
+    assert GridCellSpawnSystem.__name__ == "GridCellSpawnSystem"
     assert IntentAxisVelocitySystem.__name__ == "IntentAxisVelocitySystem"
     assert KinematicMotionSystem.__name__ == "KinematicMotionSystem"
+    assert ProceduralParticleBundle.__name__ == "ProceduralParticleBundle"
     assert ViewportConstraintSystem.__name__ == "ViewportConstraintSystem"
 
 
@@ -382,6 +400,102 @@ def test_wave_progression_system_advances_and_spawns_next_wave() -> None:
     assert [entity.id for entity in world.entities] == [22]
 
 
+def test_cadence_system_emits_fixed_interval_ticks() -> None:
+    @dataclass
+    class _CadenceWorld(BaseWorld):
+        cadence: CadenceState = field(default_factory=CadenceState)
+        tick_log: list[int] = field(default_factory=list)
+
+    world = _CadenceWorld(entities=[])
+    ctx = _Ctx(dt=0.25, world=world)
+
+    CadenceSystem(
+        bindings=(
+            CadenceBinding(
+                    state_getter=lambda case: case.world.cadence,
+                    interval_seconds=0.1,
+                    max_steps_per_frame=3,
+                    on_tick=lambda case: case.world.tick_log.append(
+                        case.world.cadence.tick_count
+                    ),
+                ),
+            )
+        ).step(ctx)
+
+    assert world.cadence.steps_this_frame == 2
+    assert world.cadence.tick_count == 2
+    assert world.tick_log == [1, 2]
+
+
+def test_grid_helpers_compute_layout_and_free_cells() -> None:
+    bounds = GridBounds(cols=4, rows=3)
+    layout = GridLayout(
+        bounds=bounds,
+        cell_width=16.0,
+        cell_height=12.0,
+        origin_x=8.0,
+        origin_y=10.0,
+    )
+
+    values = [
+        {"cell": GridCoord(col=1, row=0), "alive": True},
+        {"cell": GridCoord(col=2, row=1), "alive": False},
+        {"cell": GridCoord(col=3, row=2), "alive": True},
+    ]
+    occupied = occupied_grid_cells(
+        values,
+        coord_getter=lambda item: item["cell"],
+        include=lambda item: bool(item["alive"]),
+    )
+    free = free_grid_cells(bounds, occupied)
+
+    assert occupied == {GridCoord(col=1, row=0), GridCoord(col=3, row=2)}
+    assert GridCoord(col=0, row=0) in free
+    assert GridCoord(col=1, row=0) not in free
+    assert layout.cell_origin(GridCoord(col=2, row=1)) == (40.0, 22.0)
+    assert layout.cell_center(GridCoord(col=2, row=1)) == (48.0, 28.0)
+    assert layout.cell_rect(GridCoord(col=2, row=1)) == (40.0, 22.0, 16.0, 12.0)
+
+
+def test_grid_cell_spawn_system_uses_free_cells_only() -> None:
+    @dataclass
+    class _GridWorld(BaseWorld):
+        target_cell: GridCoord | None = None
+
+    world = _GridWorld(entities=[])
+    occupied = {GridCoord(col=0, row=0), GridCoord(col=1, row=0)}
+
+    GridCellSpawnSystem(
+        bindings=(
+            GridCellSpawnBinding(
+                should_spawn=lambda _ctx: True,
+                bounds_getter=lambda _ctx: GridBounds(cols=3, rows=1),
+                occupied_cells_getter=lambda _ctx: occupied,
+                choose_cell=lambda _ctx, cells: cells[-1],
+                spawn=lambda _ctx, cell: BaseEntity.from_dict(
+                    {
+                        "id": 50,
+                        "name": "Food",
+                        "transform": {
+                            "center": {"x": float(cell.col), "y": float(cell.row)},
+                            "size": {"width": 1.0, "height": 1.0},
+                        },
+                        "shape": {"kind": "rect"},
+                        "tags": ["food"],
+                    }
+                ),
+                on_spawned=lambda ctx, _spawned, cell: setattr(
+                    ctx.world, "target_cell", cell
+                ),
+            ),
+        )
+    ).step(_Ctx(dt=0.0, world=world))
+
+    assert len(world.entities) == 1
+    assert world.target_cell == GridCoord(col=2, row=0)
+    assert world.entities[0].transform.center.x == 2.0
+
+
 def test_projectile_lifecycle_bundle_culls_and_cleans_dead_entities() -> None:
     @dataclass
     class _ProjectileWorld(BaseWorld):
@@ -428,3 +542,124 @@ def test_projectile_lifecycle_bundle_culls_and_cleans_dead_entities() -> None:
 
     assert world.entities == []
     assert world.projectiles == []
+
+
+def test_procedural_particle_bundle_spawns_and_renders_particles() -> None:
+    @dataclass
+    class _ParticleWorld(BaseWorld):
+        viewport: tuple[float, float] = (320.0, 240.0)
+        fire: ProceduralParticleEmitterState = field(
+            default_factory=ProceduralParticleEmitterState
+        )
+        magic: ProceduralParticleEmitterState = field(
+            default_factory=ProceduralParticleEmitterState
+        )
+        intensity: float = 1.0
+        wind: float = 8.0
+
+    @dataclass
+    class _ParticleCtx:
+        dt: float
+        world: _ParticleWorld
+        packet: object | None = None
+
+    class _RenderRecorder:
+        def __init__(self) -> None:
+            self.circles: list[tuple[int, int, int, tuple[int, ...]]] = []
+            self.render = self
+
+        def draw_circle(
+            self,
+            x: int,
+            y: int,
+            radius: int,
+            color=(255, 255, 255),
+        ) -> None:
+            self.circles.append((int(x), int(y), int(radius), tuple(color)))
+
+    world = _ParticleWorld(entities=[])
+    ctx = _ParticleCtx(dt=0.2, world=world)
+
+    bundle = ProceduralParticleBundle(
+        bindings=(
+            fire_particle_binding(
+                state_getter=lambda case: case.world.fire,
+                origin_getter=lambda case: (160.0, 190.0),
+                intensity_getter=lambda case: case.world.intensity,
+                wind_getter=lambda case: case.world.wind,
+                viewport_getter=lambda case: case.world.viewport,
+                seed=11,
+            ),
+            magic_particle_binding(
+                state_getter=lambda case: case.world.magic,
+                origin_getter=lambda case: (160.0, 172.0),
+                intensity_getter=lambda case: case.world.intensity * 0.8,
+                wind_getter=lambda case: case.world.wind * 0.3,
+                viewport_getter=lambda case: case.world.viewport,
+                seed=22,
+            ),
+        )
+    )
+
+    pipeline = SystemPipeline[_ParticleCtx]()
+    pipeline.add(bundle)
+    pipeline.step(ctx)
+
+    assert len(world.fire.particles) > 0
+    assert len(world.magic.particles) > 0
+    assert ctx.packet is not None
+
+    recorder = _RenderRecorder()
+    for op in ctx.packet.ops:
+        op(recorder)
+
+    assert recorder.circles
+
+
+def test_procedural_particle_intensity_changes_spawned_particle_shape() -> None:
+    @dataclass
+    class _ParticleWorld(BaseWorld):
+        viewport: tuple[float, float] = (320.0, 240.0)
+        low: ProceduralParticleEmitterState = field(
+            default_factory=ProceduralParticleEmitterState
+        )
+        high: ProceduralParticleEmitterState = field(
+            default_factory=ProceduralParticleEmitterState
+        )
+        low_intensity: float = 1.0
+        high_intensity: float = 2.2
+
+    @dataclass
+    class _ParticleCtx:
+        dt: float
+        world: _ParticleWorld
+
+    world = _ParticleWorld(entities=[])
+    ctx = _ParticleCtx(dt=0.2, world=world)
+
+    system = ProceduralParticleSimulationSystem(
+        bindings=(
+            fire_particle_binding(
+                state_getter=lambda case: case.world.low,
+                origin_getter=lambda _case: (160.0, 190.0),
+                intensity_getter=lambda case: case.world.low_intensity,
+                viewport_getter=lambda case: case.world.viewport,
+                seed=11,
+            ),
+            fire_particle_binding(
+                state_getter=lambda case: case.world.high,
+                origin_getter=lambda _case: (160.0, 190.0),
+                intensity_getter=lambda case: case.world.high_intensity,
+                viewport_getter=lambda case: case.world.viewport,
+                seed=11,
+            ),
+        )
+    )
+
+    system.step(ctx)
+
+    assert world.low.particles
+    assert world.high.particles
+    assert world.high.particles[0].start_radius > world.low.particles[0].start_radius
+    assert abs(world.high.particles[0].vy) > abs(world.low.particles[0].vy)
+    assert world.high.particles[0].lifetime > world.low.particles[0].lifetime

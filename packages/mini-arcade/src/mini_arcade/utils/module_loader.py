@@ -149,9 +149,24 @@ def load_command_packages(
     :return: A list of successfully loaded DiscoveredPackage instances.
     :rtype: list[DiscoveredPackage]
     """
-    return OneLevelPackageLoader(
+    loader = OneLevelPackageLoader(
         base_namespace=base_namespace,
         base_dir=base_dir,
         strict=strict,
-        import_commands_fallback=False,  # keep your rule
-    ).load_all()
+        import_commands_fallback=False,
+    )
+
+    loaded: list[DiscoveredPackage] = []
+    for pkg in loader.discover():
+        commands_module = pkg.path / "commands.py"
+        if not commands_module.exists():
+            continue
+        try:
+            importlib.import_module(f"{pkg.import_name}.commands")
+            loaded.append(pkg)
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            if strict:
+                raise ModuleImportError(
+                    f"Failed to import command module for {pkg.import_name} from {commands_module}"
+                ) from e
+    return loaded

@@ -11,6 +11,7 @@ Developer internals (recommended alongside tutorials):
 - [Configuration Internals](../concepts/configuration.md)
 - [Backends Internals](../concepts/backends.md)
 - [Scene Internals](../concepts/scenes_internals.md)
+- [Grid Gameplay Internals](../concepts/grid_gameplay.md)
 - [Menu Scenes Internals](../concepts/menu_scenes.md)
 - [Scene Transitions Internals](../concepts/scene_transitions.md)
 - [Overlay Policies Internals](../concepts/overlay_policies.md)

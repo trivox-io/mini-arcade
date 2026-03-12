@@ -190,6 +190,13 @@ Use bundles when a gameplay feature is made from several atomic processors
 (input-to-velocity, motion integration, viewport constraints), instead of
 packing those concerns into one large `step(...)` method.
 
+For discrete grid games, prefer the built-in grid toolkit instead of
+re-implementing timing and free-cell queries in each scene:
+
+- `CadenceSystem` for logical movement ticks
+- `GridBounds` / `GridLayout` for grid-space ownership and rendering
+- `GridCellSpawnSystem` for cell-based item spawning
+
 Builder pattern used by the reference games:
 
 - world construction usually lives in a local `build_<scene>_world(...)`

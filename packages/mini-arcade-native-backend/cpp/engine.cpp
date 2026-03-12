@@ -165,6 +165,7 @@ namespace mini {
         // alpha or default alpha
         a = (a < 0) ? default_alpha_ : a;
 
+        SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(
             renderer_,
             static_cast<Uint8>(clamp(r)),
@@ -582,6 +583,7 @@ namespace mini {
         // alpha or default alpha
         a = (a < 0) ? default_alpha_ : a;
 
+        SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(
             renderer_,
             static_cast<Uint8>(clamp(r)),

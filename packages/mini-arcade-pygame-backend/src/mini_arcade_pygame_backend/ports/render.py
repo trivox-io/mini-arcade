@@ -36,6 +36,25 @@ class RenderPort:
         self._next_tex_id: int = 1
         self._textures: dict[int, pygame.Surface] = {}
 
+    def _blit_alpha_shape(
+        self,
+        *,
+        bounds: pygame.Rect,
+        color: tuple[int, int, int, int],
+        draw_fn,
+    ) -> None:
+        clipped = bounds.clip(self._w.screen.get_rect())
+        if clipped.width <= 0 or clipped.height <= 0:
+            return
+
+        surface = pygame.Surface(
+            (int(clipped.width), int(clipped.height)),
+            pygame.SRCALPHA,
+        )
+        local_offset = (-int(clipped.x), -int(clipped.y))
+        draw_fn(surface, local_offset, color)
+        self._w.screen.blit(surface, clipped.topleft)
+
     def set_clear_color(self, r: int, g: int, b: int):
         """
         Set the clear color for the renderer.
@@ -98,13 +117,29 @@ class RenderPort:
         :param color: The color of the rectangle as an (R, G, B) or (R, G, B, A) tuple.
         :type color: tuple[int, int, int] | tuple[int, int, int, int]
         """
-        r, g, b, _ = rgba(color)
+        r, g, b, a = rgba(color)
         sx, sy = self._vp.map_xy(int(x), int(y))
         sw, sh = self._vp.map_wh(int(w), int(h))
-        # alpha: pygame.draw supports alpha only if surface has per-pixel alpha;
-        # simplest: ignore alpha for now, or use a temp surface if you really need it.
-        pygame.draw.rect(
-            self._w.screen, (r, g, b), pygame.Rect(sx, sy, sw, sh)
+        if a >= 255:
+            pygame.draw.rect(
+                self._w.screen, (r, g, b), pygame.Rect(sx, sy, sw, sh)
+            )
+            return
+
+        rect = pygame.Rect(int(sx), int(sy), int(sw), int(sh))
+        self._blit_alpha_shape(
+            bounds=rect,
+            color=(r, g, b, a),
+            draw_fn=lambda surface, offset, rgba_color: pygame.draw.rect(
+                surface,
+                rgba_color,
+                pygame.Rect(
+                    rect.x + offset[0],
+                    rect.y + offset[1],
+                    rect.width,
+                    rect.height,
+                ),
+            ),
         )
 
     def draw_line(
@@ -130,11 +165,35 @@ class RenderPort:
         :param color: The color of the line as an (R, G, B) or (R, G, B, A) tuple.
         :type color: tuple[int, int, int] | tuple[int, int, int, int]
         """
-        r, g, b, _ = rgba(color)
+        r, g, b, a = rgba(color)
         sx1, sy1 = self._vp.map_xy(int(x1), int(y1))
         sx2, sy2 = self._vp.map_xy(int(x2), int(y2))
-        pygame.draw.line(
-            self._w.screen, (r, g, b), (sx1, sy1), (sx2, sy2), int(thickness)
+        if a >= 255:
+            pygame.draw.line(
+                self._w.screen,
+                (r, g, b),
+                (sx1, sy1),
+                (sx2, sy2),
+                int(thickness),
+            )
+            return
+
+        pad = max(1, int(thickness))
+        min_x = min(int(sx1), int(sx2)) - pad
+        min_y = min(int(sy1), int(sy2)) - pad
+        max_x = max(int(sx1), int(sx2)) + pad
+        max_y = max(int(sy1), int(sy2)) + pad
+        rect = pygame.Rect(min_x, min_y, max(1, max_x - min_x), max(1, max_y - min_y))
+        self._blit_alpha_shape(
+            bounds=rect,
+            color=(r, g, b, a),
+            draw_fn=lambda surface, offset, rgba_color: pygame.draw.line(
+                surface,
+                rgba_color,
+                (int(sx1) + offset[0], int(sy1) + offset[1]),
+                (int(sx2) + offset[0], int(sy2) + offset[1]),
+                int(thickness),
+            ),
         )
 
     def create_texture_rgba(
@@ -290,7 +349,7 @@ class RenderPort:
         :param radius: Radius in pixels
         :param color: (R,G,B) or (R,G,B,A)
         """
-        r, g, b, _ = rgba(color)
+        r, g, b, a = rgba(color)
 
         # Map center via viewport
         sx, sy = self._vp.map_xy(int(x), int(y))
@@ -300,8 +359,27 @@ class RenderPort:
         sw, sh = self._vp.map_wh(d, d)
         sr = max(1, int(min(sw, sh) // 2))
 
-        pygame.draw.circle(
-            self._w.screen, (r, g, b), (int(sx), int(sy)), int(sr)
+        if a >= 255:
+            pygame.draw.circle(
+                self._w.screen, (r, g, b), (int(sx), int(sy)), int(sr)
+            )
+            return
+
+        rect = pygame.Rect(
+            int(sx - sr),
+            int(sy - sr),
+            int(sr * 2),
+            int(sr * 2),
+        )
+        self._blit_alpha_shape(
+            bounds=rect,
+            color=(r, g, b, a),
+            draw_fn=lambda surface, offset, rgba_color: pygame.draw.circle(
+                surface,
+                rgba_color,
+                (int(sx) + offset[0], int(sy) + offset[1]),
+                int(sr),
+            ),
         )
 
     def draw_poly(
@@ -321,13 +399,34 @@ class RenderPort:
         :param filled: Whether to fill the polygon (True) or draw only the outline (False).
         :type filled: bool
         """
-        r, g, b, _ = rgba(color)
+        r, g, b, a = rgba(color)
         if len(points) < 3:
             return
 
         mapped_points = [self._vp.map_xy(int(x), int(y)) for (x, y) in points]
 
         width = 0 if filled else 1
-        pygame.draw.polygon(
-            self._w.screen, (r, g, b), mapped_points, width=width
+        if a >= 255:
+            pygame.draw.polygon(
+                self._w.screen, (r, g, b), mapped_points, width=width
+            )
+            return
+
+        min_x = min(int(x) for x, _ in mapped_points)
+        min_y = min(int(y) for _, y in mapped_points)
+        max_x = max(int(x) for x, _ in mapped_points)
+        max_y = max(int(y) for _, y in mapped_points)
+        rect = pygame.Rect(min_x, min_y, max(1, max_x - min_x), max(1, max_y - min_y))
+        self._blit_alpha_shape(
+            bounds=rect,
+            color=(r, g, b, a),
+            draw_fn=lambda surface, offset, rgba_color: pygame.draw.polygon(
+                surface,
+                rgba_color,
+                [
+                    (int(px) + offset[0], int(py) + offset[1])
+                    for (px, py) in mapped_points
+                ],
+                width=width,
+            ),
         )

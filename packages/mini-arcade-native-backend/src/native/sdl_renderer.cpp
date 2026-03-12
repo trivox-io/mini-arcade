@@ -49,11 +49,13 @@ namespace mini {
 
     void SdlRenderer::draw_rect(int x,int y,int w,int h, ColorRGBA c) {
         SDL_Rect r{ x,y,w,h };
+        SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(renderer_, c.r, c.g, c.b, c.a);
         SDL_RenderFillRect(renderer_, &r);
     }
 
     void SdlRenderer::draw_line(int x1,int y1,int x2,int y2, ColorRGBA c, int thickness) {
+        SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(renderer_, c.r, c.g, c.b, c.a);
         if (thickness <= 1) {
             SDL_RenderDrawLine(renderer_, x1, y1, x2, y2);
@@ -75,6 +77,7 @@ namespace mini {
     }
 
     void SdlRenderer::draw_circle(int cx, int cy, int radius, ColorRGBA c) {
+        SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(renderer_, c.r, c.g, c.b, c.a);
 
         if (radius <= 0) return;
@@ -91,6 +94,7 @@ namespace mini {
     void SdlRenderer::draw_poly(const std::pair<int,int>* points, size_t count, ColorRGBA c) {
         if (count < 3) return; // not a polygon
 
+        SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(renderer_, c.r, c.g, c.b, c.a);
 
         // Simple filled polygon using SDL_RenderDrawLine for horizontal scanlines
