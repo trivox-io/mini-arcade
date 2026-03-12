@@ -29,9 +29,16 @@ from mini_arcade_core.scenes.sim_scene import BaseWorld, EntityIdDomain  # noqa:
 from mini_arcade_core.scenes.systems import SystemPipeline  # noqa: E402
 from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     AnimationTickSystem,
+    ArenaTile,
     AxisIntentBinding,
     BagRandomizer,
     BlockBoard,
+    BombField,
+    BombFuseBinding,
+    BombFuseSystem,
+    BombPlacementBinding,
+    BombPlacementSystem,
+    BombState,
     BounceCollisionBinding,
     BounceCollisionSystem,
     BoardRowClearBinding,
@@ -43,11 +50,32 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     CadenceBinding,
     CadenceState,
     CadenceSystem,
+    CardinalDirection,
+    ChainReactionBinding,
+    ChainReactionSystem,
+    CollectibleCollisionBinding,
+    CollectibleCollisionSystem,
+    CollectibleField,
+    CollectibleKind,
+    CollectibleState,
     CullOutOfViewportSystem,
+    DestructibleTileBinding,
+    DestructibleTileSystem,
+    ExplosionField,
+    ExplosionLifetimeBinding,
+    ExplosionLifetimeSystem,
     FallingBlockPiece,
     FallingBlockPieceSpec,
+    GridNavigationBinding,
+    GridNavigationSystem,
+    GridNavigatorState,
+    HazardCollisionBinding,
+    HazardCollisionSystem,
     IntentAxisVelocitySystem,
     KinematicMotionSystem,
+    ModeTimerBinding,
+    ModeTimerState,
+    ModeTimerSystem,
     MotionBinding,
     PaddleBouncePolicy,
     ProceduralParticleBundle,
@@ -57,6 +85,10 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     ProjectileLifecycleBundle,
     SpawnBinding,
     SpawnSystem,
+    TileMap,
+    TimedMode,
+    TunnelWrapBinding,
+    TunnelWrapSystem,
     GridBounds,
     GridCellSpawnBinding,
     GridCellSpawnSystem,
@@ -68,13 +100,21 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     ViewportBounceSystem,
     WaveProgressionBinding,
     WaveProgressionSystem,
+    arena_tile_map_from_strings,
+    available_directions,
+    blast_cells,
     block_cells_from_strings,
     free_grid_cells,
     fire_particle_binding,
+    is_junction,
+    is_walkable_arena_tile,
     magic_particle_binding,
     occupied_grid_cells,
     piece_fits,
     resolve_rect_bounce,
+    spawn_explosion_from_bomb,
+    step_in_direction,
+    tile_map_from_strings,
 )
 
 
@@ -745,6 +785,152 @@ def test_bounce_collision_and_brick_field_collision_damage_targets() -> None:
     assert remaining.hit_points == 1
 
 
+def test_maze_tile_map_navigation_wrap_collectibles_and_modes() -> None:
+    tile_map = tile_map_from_strings(
+        "#####",
+        "#...#",
+        "#...#",
+        "#####",
+        legend={
+            "#": "wall",
+            ".": "lane",
+        },
+        default="void",
+    )
+
+    assert step_in_direction(
+        GridCoord(col=2, row=1),
+        CardinalDirection.RIGHT,
+    ) == GridCoord(col=3, row=1)
+
+    options = available_directions(
+        tile_map,
+        GridCoord(col=2, row=1),
+        can_enter=lambda value: value == "lane",
+    )
+    assert options == (
+        CardinalDirection.DOWN,
+        CardinalDirection.LEFT,
+        CardinalDirection.RIGHT,
+    )
+    assert is_junction(
+        tile_map,
+        GridCoord(col=2, row=1),
+        can_enter=lambda value: value == "lane",
+    ) is True
+
+    @dataclass
+    class _MazeWorld(BaseWorld):
+        navigator: GridNavigatorState = field(
+            default_factory=lambda: GridNavigatorState(
+                cell=GridCoord(col=1, row=1),
+                direction=CardinalDirection.RIGHT,
+            )
+        )
+        collectibles: CollectibleField = field(default_factory=CollectibleField)
+        mode_timer: ModeTimerState = field(default_factory=ModeTimerState)
+        collected: list[tuple[GridCoord, CollectibleKind]] = field(
+            default_factory=list
+        )
+        mode_log: list[str] = field(default_factory=list)
+
+    world = _MazeWorld(
+        entities=[],
+        collectibles=CollectibleField(
+            items={
+                GridCoord(col=1, row=2): CollectibleState(
+                    kind=CollectibleKind.PELLET
+                ),
+            }
+        ),
+    )
+    ctx = _Ctx(dt=0.11, world=world)
+
+    GridNavigationSystem(
+        bindings=(
+            GridNavigationBinding(
+                state_getter=lambda case: case.world.navigator,
+                tile_map_getter=lambda _case: tile_map,
+                desired_direction_getter=lambda _case: CardinalDirection.DOWN,
+                can_enter=lambda value: value == "lane",
+                steps_getter=lambda _case: 1,
+            ),
+        )
+    ).step(ctx)
+
+    assert world.navigator.cell == GridCoord(col=1, row=2)
+    assert world.navigator.direction == CardinalDirection.DOWN
+    assert world.navigator.moved_this_frame == 1
+
+    CollectibleCollisionSystem(
+        bindings=(
+            CollectibleCollisionBinding(
+                collector_cell_getter=lambda case: case.world.navigator.cell,
+                field_getter=lambda case: case.world.collectibles,
+                on_collect=lambda case, coord, item: case.world.collected.append(
+                    (coord, item.kind)
+                ),
+            ),
+        )
+    ).step(ctx)
+
+    assert world.collected == [(GridCoord(col=1, row=2), CollectibleKind.PELLET)]
+    assert world.collectibles.occupied_cells() == ()
+
+    world.navigator.cell = GridCoord(col=-1, row=2)
+    TunnelWrapSystem(
+        bindings=(
+            TunnelWrapBinding(
+                states_getter=lambda case: (case.world.navigator,),
+                bounds_getter=lambda _case: GridBounds(cols=5, rows=4),
+            ),
+        )
+    ).step(ctx)
+
+    assert world.navigator.cell == GridCoord(col=4, row=2)
+
+    ModeTimerSystem(
+        bindings=(
+            ModeTimerBinding(
+                state_getter=lambda case: case.world.mode_timer,
+                schedule=(
+                    TimedMode(name="scatter", duration_seconds=0.1),
+                    TimedMode(name="chase", duration_seconds=0.1),
+                    TimedMode(name="frightened", duration_seconds=None),
+                ),
+                on_mode_changed=lambda case, mode: case.world.mode_log.append(
+                    mode.name
+                ),
+            ),
+        )
+    ).step(ctx)
+
+    assert world.mode_timer.current_mode == "chase"
+    assert world.mode_log == ["scatter", "chase"]
+
+
+def test_tile_map_direct_construction_and_collectible_field_lookup() -> None:
+    tile_map = TileMap[str](bounds=GridBounds(cols=2, rows=2), default="empty")
+    tile_map.set(GridCoord(col=0, row=0), "wall")
+    tile_map.set(GridCoord(col=1, row=0), "lane")
+
+    assert tile_map.get(GridCoord(col=0, row=0)) == "wall"
+    assert tile_map.get(GridCoord(col=1, row=1)) == "empty"
+
+    field = CollectibleField(
+        items={
+            GridCoord(col=1, row=1): CollectibleState(
+                kind=CollectibleKind.POWER
+            )
+        }
+    )
+
+    assert field.item_at(GridCoord(col=1, row=1)) is not None
+    removed = field.remove(GridCoord(col=1, row=1))
+    assert removed is not None
+    assert removed.kind == CollectibleKind.POWER
+
+
 def test_projectile_lifecycle_bundle_culls_and_cleans_dead_entities() -> None:
     @dataclass
     class _ProjectileWorld(BaseWorld):
@@ -791,6 +977,209 @@ def test_projectile_lifecycle_bundle_culls_and_cleans_dead_entities() -> None:
 
     assert world.entities == []
     assert world.projectiles == []
+
+
+def test_bomberman_tile_map_and_bomb_placement_rules() -> None:
+    @dataclass
+    class _BombWorld(BaseWorld):
+        tile_map: TileMap[ArenaTile]
+        bombs: BombField = field(default_factory=BombField)
+        placement_cell: GridCoord = GridCoord(col=1, row=1)
+        placements: list[GridCoord] = field(default_factory=list)
+
+    tile_map = arena_tile_map_from_strings(
+        "#####",
+        "#S..#",
+        "#.*.#",
+        "#####",
+    )
+    world = _BombWorld(entities=[], tile_map=tile_map)
+
+    assert tile_map.get(GridCoord(col=1, row=1)) == ArenaTile.SPAWN
+    assert tile_map.get(GridCoord(col=2, row=2)) == ArenaTile.BREAKABLE
+    assert is_walkable_arena_tile(tile_map.get(GridCoord(col=1, row=1))) is True
+    assert is_walkable_arena_tile(tile_map.get(GridCoord(col=2, row=2))) is False
+
+    system = BombPlacementSystem(
+        bindings=(
+            BombPlacementBinding(
+                should_place=lambda _ctx: True,
+                placement_cell_getter=lambda ctx: ctx.world.placement_cell,
+                bombs_getter=lambda ctx: ctx.world.bombs,
+                tile_map_getter=lambda ctx: ctx.world.tile_map,
+                build_bomb=lambda _ctx, cell: BombState(
+                    cell=cell,
+                    owner_id=7,
+                    blast_range=2,
+                ),
+                owner_id_getter=lambda _ctx: 7,
+                max_active_getter=lambda _ctx: 1,
+                on_placed=lambda ctx, bomb: ctx.world.placements.append(bomb.cell),
+            ),
+        )
+    )
+
+    system.step(_Ctx(dt=0.0, world=world))
+    world.placement_cell = GridCoord(col=2, row=1)
+    system.step(_Ctx(dt=0.0, world=world))
+
+    assert world.bombs.count_for_owner(7) == 1
+    assert world.placements == [GridCoord(col=1, row=1)]
+
+
+def test_bomberman_blast_cells_and_destructible_tiles() -> None:
+    tile_map = arena_tile_map_from_strings(
+        "#######",
+        "#..*..#",
+        "#.....#",
+        "#..#..#",
+        "#######",
+    )
+    origin = GridCoord(col=3, row=2)
+
+    covered = blast_cells(tile_map, origin, blast_range=3)
+
+    assert covered == (
+        GridCoord(col=3, row=2),
+        GridCoord(col=3, row=1),
+        GridCoord(col=2, row=2),
+        GridCoord(col=1, row=2),
+        GridCoord(col=4, row=2),
+        GridCoord(col=5, row=2),
+    )
+
+    @dataclass
+    class _BombWorld(BaseWorld):
+        tile_map: TileMap[ArenaTile]
+        explosions: ExplosionField = field(default_factory=ExplosionField)
+        destroyed: list[GridCoord] = field(default_factory=list)
+
+    world = _BombWorld(entities=[], tile_map=tile_map)
+    for cell in covered:
+        world.explosions.set_or_refresh(cell, ttl_seconds=0.2)
+
+    DestructibleTileSystem(
+        bindings=(
+            DestructibleTileBinding(
+                tile_map_getter=lambda ctx: ctx.world.tile_map,
+                explosions_getter=lambda ctx: ctx.world.explosions,
+                on_destroyed=lambda ctx, cell: ctx.world.destroyed.append(cell),
+            ),
+        )
+    ).step(_Ctx(dt=0.0, world=world))
+
+    assert world.tile_map.get(GridCoord(col=3, row=1)) == ArenaTile.FLOOR
+    assert world.destroyed == [GridCoord(col=3, row=1)]
+
+
+def test_bomberman_fuse_chain_reaction_hazard_and_expiry() -> None:
+    @dataclass
+    class _Target:
+        cell: GridCoord
+        alive: bool = True
+
+    @dataclass
+    class _BombWorld(BaseWorld):
+        tile_map: TileMap[ArenaTile]
+        bombs: BombField = field(default_factory=BombField)
+        explosions: ExplosionField = field(default_factory=ExplosionField)
+        targets: list[_Target] = field(default_factory=list)
+        detonated: list[GridCoord] = field(default_factory=list)
+        hits: list[GridCoord] = field(default_factory=list)
+        expired: list[tuple[GridCoord, ...]] = field(default_factory=list)
+
+    tile_map = arena_tile_map_from_strings(
+        "#####",
+        "#...#",
+        "#...#",
+        "#...#",
+        "#####",
+    )
+    world = _BombWorld(
+        entities=[],
+        tile_map=tile_map,
+        targets=[_Target(cell=GridCoord(col=2, row=2))],
+    )
+    world.bombs.add(
+        BombState(
+            cell=GridCoord(col=2, row=2),
+            fuse_seconds=0.05,
+            blast_range=1,
+            owner_id=1,
+        )
+    )
+    world.bombs.add(
+        BombState(
+            cell=GridCoord(col=3, row=2),
+            fuse_seconds=1.0,
+            blast_range=1,
+            owner_id=2,
+        )
+    )
+    ctx = _Ctx(dt=0.1, world=world)
+
+    def _on_detonated(case: _Ctx, bomb: BombState) -> None:
+        case.world.detonated.append(bomb.cell)
+        spawn_explosion_from_bomb(
+            case.world.explosions,
+            case.world.tile_map,
+            bomb,
+            ttl_seconds=0.15,
+        )
+
+    fuse_system = BombFuseSystem(
+        bindings=(
+            BombFuseBinding(
+                bombs_getter=lambda case: case.world.bombs,
+                on_detonated=_on_detonated,
+            ),
+        )
+    )
+
+    fuse_system.step(ctx)
+
+    ChainReactionSystem(
+        bindings=(
+            ChainReactionBinding(
+                bombs_getter=lambda case: case.world.bombs,
+                explosions_getter=lambda case: case.world.explosions,
+            ),
+        )
+    ).step(ctx)
+
+    assert world.bombs.bomb_at(GridCoord(col=3, row=2)) is not None
+    assert world.bombs.bomb_at(GridCoord(col=3, row=2)).fuse_seconds == 0.0
+
+    fuse_system.step(_Ctx(dt=0.01, world=world))
+
+    HazardCollisionSystem(
+        bindings=(
+            HazardCollisionBinding(
+                hazard_cells_getter=lambda case: case.world.explosions.active_cells(),
+                targets_getter=lambda case: case.world.targets,
+                target_cell_getter=lambda _case, target: target.cell,
+                on_hit=lambda case, target, cell: (
+                    setattr(target, "alive", False),
+                    case.world.hits.append(cell),
+                ),
+            ),
+        )
+    ).step(_Ctx(dt=0.0, world=world))
+
+    ExplosionLifetimeSystem(
+        bindings=(
+            ExplosionLifetimeBinding(
+                explosions_getter=lambda case: case.world.explosions,
+                on_expired=lambda case, cells: case.world.expired.append(cells),
+            ),
+        )
+    ).step(_Ctx(dt=0.2, world=world))
+
+    assert world.detonated == [GridCoord(col=2, row=2), GridCoord(col=3, row=2)]
+    assert world.targets[0].alive is False
+    assert GridCoord(col=2, row=2) in world.hits
+    assert world.explosions.active_cells() == ()
+    assert len(world.expired) == 1
 
 
 def test_procedural_particle_bundle_spawns_and_renders_particles() -> None:

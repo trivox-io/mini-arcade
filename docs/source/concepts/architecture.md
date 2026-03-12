@@ -149,6 +149,22 @@ For brick-breaker games, core also exposes a paddle/brick collision layer:
 - `PaddleBouncePolicy` for contact-point based paddle response
 - `BrickField` / `BrickFieldCollisionSystem` for brick state and hits
 
+For maze arcade games, core also exposes a maze/lane layer:
+
+- `TileMap` for dense maze data
+- `GridNavigationSystem` for buffered lane movement
+- `TunnelWrapSystem` for tunnel exits
+- `CollectibleField` / `CollectibleCollisionSystem` for pellets and pickups
+- `ModeTimerSystem` for scatter/chase/frightened style schedules
+
+For bomb-and-arena games, core also exposes a Bomberman-style rules layer:
+
+- `ArenaTile` / `arena_tile_map_from_strings(...)` for arena grids
+- `BombPlacementSystem` and `BombFuseSystem` for placement and detonation timing
+- `ExplosionField` and `ExplosionLifetimeSystem` for short-lived hazard cells
+- `ChainReactionSystem` for bomb-to-bomb triggering
+- `DestructibleTileSystem` and `HazardCollisionSystem` for arena damage/effects
+
 Entity access follows the same pattern:
 
 - semantic queries use tags and world helper methods
@@ -289,6 +305,7 @@ mini-arcade/
 - Configuration internals: `concepts/configuration.md`
 - Backend internals: `concepts/backends.md`
 - Scene internals: `concepts/scenes_internals.md`
+- Bomberman gameplay internals: `concepts/bomberman_gameplay.md`
 - Menu scenes internals: `concepts/menu_scenes.md`
 - Scene transitions internals: `concepts/scene_transitions.md`
 - Overlay policies internals: `concepts/overlay_policies.md`

@@ -83,6 +83,8 @@ Scene Internals <concepts/scenes_internals>
 Grid Gameplay Internals <concepts/grid_gameplay>
 Falling Blocks Internals <concepts/falling_blocks_gameplay>
 Brick Breaker Internals <concepts/brick_breaker_gameplay>
+Maze Gameplay Internals <concepts/maze_gameplay>
+Bomberman Gameplay Internals <concepts/bomberman_gameplay>
 Menu Scenes Internals <concepts/menu_scenes>
 Scene Transitions Internals <concepts/scene_transitions>
 Overlay Policies Internals <concepts/overlay_policies>

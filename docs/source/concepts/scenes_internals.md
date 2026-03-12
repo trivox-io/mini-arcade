@@ -213,6 +213,27 @@ repeating ball-vs-paddle and ball-vs-brick logic in each game:
 - `PaddleBouncePolicy` for paddle contact shaping
 - `BrickFieldCollisionSystem` for brick damage and removal
 
+For maze arcade scenes, prefer the dedicated maze helpers instead of embedding
+turn buffering, tunnel wrap, and pellet collection inside one large rules
+system:
+
+- `TileMap` for maze cells
+- `GridNavigationSystem` for lane movement and pending turns
+- `TunnelWrapSystem` for side tunnels
+- `CollectibleCollisionSystem` for pellet/power pickup
+- `ModeTimerSystem` for timed behavior phases
+
+For bomb-and-arena scenes, prefer the dedicated bomb helpers instead of
+embedding placement limits, fuse countdowns, and blast propagation in a single
+rules system:
+
+- `ArenaTile` and `arena_tile_map_from_strings(...)` for arena data
+- `BombPlacementSystem` for placement and active-bomb limits
+- `BombFuseSystem` for timed detonation
+- `ChainReactionSystem` for early trigger cascades
+- `DestructibleTileSystem` and `HazardCollisionSystem` for blast effects
+- `ExplosionLifetimeSystem` for cleanup of active flame cells
+
 Builder pattern used by the reference games:
 
 - world construction usually lives in a local `build_<scene>_world(...)`

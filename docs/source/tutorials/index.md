@@ -14,6 +14,8 @@ Developer internals (recommended alongside tutorials):
 - [Grid Gameplay Internals](../concepts/grid_gameplay.md)
 - [Falling Blocks Internals](../concepts/falling_blocks_gameplay.md)
 - [Brick Breaker Internals](../concepts/brick_breaker_gameplay.md)
+- [Maze Gameplay Internals](../concepts/maze_gameplay.md)
+- [Bomberman Gameplay Internals](../concepts/bomberman_gameplay.md)
 - [Menu Scenes Internals](../concepts/menu_scenes.md)
 - [Scene Transitions Internals](../concepts/scene_transitions.md)
 - [Overlay Policies Internals](../concepts/overlay_policies.md)

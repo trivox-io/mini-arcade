@@ -269,6 +269,28 @@ For brick-breaker games, core also provides:
 Use those instead of re-implementing bounce math and brick damage loops in each
 game.
 
+For maze arcade games, core also provides:
+
+- `TileMap` and `tile_map_from_strings(...)` for maze data
+- `GridNavigationSystem` for buffered lane movement
+- `TunnelWrapSystem` for tunnel exits
+- `CollectibleField` and `CollectibleCollisionSystem` for pellets and pickups
+- `ModeTimerSystem` for timed mode schedules
+
+Use those instead of re-implementing tile boards, turn buffering, and mode
+timers in each game.
+
+For bomb-and-arena games, core also provides:
+
+- `ArenaTile` and `arena_tile_map_from_strings(...)` for arena board data
+- `BombPlacementSystem` and `BombFuseSystem` for placement/fuse rules
+- `ExplosionField` and `ExplosionLifetimeSystem` for active blast cells
+- `ChainReactionSystem` for bomb trigger cascades
+- `DestructibleTileSystem` and `HazardCollisionSystem` for block damage and hits
+
+Use those instead of hand-rolling blast propagation, timed bomb cleanup, and
+destructible-tile loops in each game.
+
 ## Step 5: Scene Commands (`scenes/commands.py`)
 
 ```python
