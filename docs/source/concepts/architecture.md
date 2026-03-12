@@ -142,6 +142,13 @@ For stacking puzzle games, core also exposes a falling-block layer:
 - `BoardRowClearSystem` for filled-row collapse
 - `BagRandomizer` for deterministic bag-based piece sequencing
 
+For brick-breaker games, core also exposes a paddle/brick collision layer:
+
+- `ViewportBounceSystem` for wall reflection
+- `BounceCollisionSystem` for ball-vs-rect reflection
+- `PaddleBouncePolicy` for contact-point based paddle response
+- `BrickField` / `BrickFieldCollisionSystem` for brick state and hits
+
 Entity access follows the same pattern:
 
 - semantic queries use tags and world helper methods

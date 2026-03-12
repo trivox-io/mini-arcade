@@ -205,6 +205,14 @@ embedding board collapse and piece layout logic inside scene classes:
 - `BoardRowClearSystem` for filled-row collapse
 - `BagRandomizer` for deterministic piece bags
 
+For brick-breaker scenes, prefer the reusable bounce/brick helpers instead of
+repeating ball-vs-paddle and ball-vs-brick logic in each game:
+
+- `ViewportBounceSystem` for wall reflection
+- `BounceCollisionSystem` for ball-vs-rect reflection
+- `PaddleBouncePolicy` for paddle contact shaping
+- `BrickFieldCollisionSystem` for brick damage and removal
+
 Builder pattern used by the reference games:
 
 - world construction usually lives in a local `build_<scene>_world(...)`

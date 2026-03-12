@@ -32,8 +32,14 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     AxisIntentBinding,
     BagRandomizer,
     BlockBoard,
+    BounceCollisionBinding,
+    BounceCollisionSystem,
     BoardRowClearBinding,
     BoardRowClearSystem,
+    BrickField,
+    BrickFieldCollisionBinding,
+    BrickFieldCollisionSystem,
+    BrickState,
     CadenceBinding,
     CadenceState,
     CadenceSystem,
@@ -43,6 +49,7 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     IntentAxisVelocitySystem,
     KinematicMotionSystem,
     MotionBinding,
+    PaddleBouncePolicy,
     ProceduralParticleBundle,
     ProceduralParticleEmitterState,
     ProceduralParticleSimulationSystem,
@@ -57,6 +64,8 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     GridLayout,
     ViewportConstraintBinding,
     ViewportConstraintSystem,
+    ViewportBounceBinding,
+    ViewportBounceSystem,
     WaveProgressionBinding,
     WaveProgressionSystem,
     block_cells_from_strings,
@@ -65,6 +74,7 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     magic_particle_binding,
     occupied_grid_cells,
     piece_fits,
+    resolve_rect_bounce,
 )
 
 
@@ -587,6 +597,152 @@ def test_block_cells_from_strings_and_bag_randomizer_are_deterministic() -> None
 
     assert left_draws == right_draws
     assert set(left_draws[:4]) == {"I", "J", "L", "O"}
+
+
+def test_viewport_bounce_and_paddle_policy_shape_ball_motion() -> None:
+    ball = BaseEntity.from_dict(
+        {
+            "id": 70,
+            "name": "Ball",
+            "transform": {
+                "center": {"x": -3.0, "y": -4.0},
+                "size": {"width": 8.0, "height": 8.0},
+            },
+            "shape": {"kind": "rect"},
+            "kinematic": {
+                "velocity": {"vx": -120.0, "vy": -100.0},
+                "max_speed": 240.0,
+            },
+        }
+    )
+    paddle = BaseEntity.from_dict(
+        {
+            "id": 71,
+            "name": "Paddle",
+            "transform": {
+                "center": {"x": 100.0, "y": 180.0},
+                "size": {"width": 64.0, "height": 12.0},
+            },
+            "shape": {"kind": "rect"},
+            "kinematic": {
+                "velocity": {"vx": 30.0, "vy": 0.0},
+                "max_speed": 180.0,
+            },
+        }
+    )
+    world = _World(entities=[ball, paddle], viewport=(200.0, 220.0))
+
+    ViewportBounceSystem(
+        bindings=(
+            ViewportBounceBinding(
+                entities_getter=lambda ctx: (ctx.world.entities[0],),
+                bounce_bottom=False,
+            ),
+        )
+    ).step(_Ctx(dt=0.0, world=world))
+
+    assert ball.transform.center.x == 0.0
+    assert ball.transform.center.y == 0.0
+    assert ball.kinematic is not None
+    assert ball.kinematic.velocity.x == 120.0
+    assert ball.kinematic.velocity.y == 100.0
+
+    ball.transform.center.x = 148.0
+    ball.transform.center.y = 174.0
+    PaddleBouncePolicy().apply(ball, paddle)
+
+    assert ball.kinematic.velocity.y < 0.0
+    assert ball.kinematic.velocity.x > 0.0
+
+
+def test_bounce_collision_and_brick_field_collision_damage_targets() -> None:
+    ball = BaseEntity.from_dict(
+        {
+            "id": 80,
+            "name": "Ball",
+            "transform": {
+                "center": {"x": 18.0, "y": 18.0},
+                "size": {"width": 8.0, "height": 8.0},
+            },
+            "shape": {"kind": "rect"},
+            "kinematic": {
+                "velocity": {"vx": 100.0, "vy": 40.0},
+                "max_speed": 220.0,
+            },
+        }
+    )
+    paddle = BaseEntity.from_dict(
+        {
+            "id": 81,
+            "name": "Paddle",
+            "transform": {
+                "center": {"x": 24.0, "y": 18.0},
+                "size": {"width": 32.0, "height": 10.0},
+            },
+            "shape": {"kind": "rect"},
+        }
+    )
+    layout = GridLayout(
+        bounds=GridBounds(cols=3, rows=2),
+        cell_width=16.0,
+        cell_height=8.0,
+        origin_x=8.0,
+        origin_y=8.0,
+    )
+    brick_field = BrickField(
+        layout=layout,
+        bricks={
+            GridCoord(col=1, row=0): BrickState(hit_points=2),
+        },
+    )
+
+    @dataclass
+    class _BrickWorld(BaseWorld):
+        viewport: tuple[float, float] = (100.0, 100.0)
+        brick_field: BrickField | None = None
+        brick_hits: list[GridCoord] = field(default_factory=list)
+
+    world = _BrickWorld(entities=[ball, paddle], brick_field=brick_field)
+
+    hit = resolve_rect_bounce(
+        (18.0, 18.0, 8.0, 8.0),
+        (24.0, 18.0, 32.0, 10.0),
+    )
+    assert hit is not None
+    assert hit.axis == "x"
+
+    BounceCollisionSystem(
+        bindings=(
+            BounceCollisionBinding(
+                mover_getter=lambda ctx: ctx.world.entities[0],
+                targets_getter=lambda ctx: (ctx.world.entities[1],),
+            ),
+        )
+    ).step(_Ctx(dt=0.0, world=world))
+
+    assert ball.kinematic is not None
+    assert ball.kinematic.velocity.x == -100.0
+
+    ball.transform.center.x = 24.0
+    ball.transform.center.y = 8.0
+    ball.kinematic.velocity.x = 20.0
+    ball.kinematic.velocity.y = 80.0
+
+    BrickFieldCollisionSystem(
+        bindings=(
+            BrickFieldCollisionBinding(
+                mover_getter=lambda ctx: ctx.world.entities[0],
+                field_getter=lambda ctx: ctx.world.brick_field,
+                on_hit=lambda ctx, _ball, cell, _remaining, _hit: ctx.world.brick_hits.append(cell),
+            ),
+        )
+    ).step(_Ctx(dt=0.0, world=world))
+
+    assert world.brick_hits == [GridCoord(col=1, row=0)]
+    assert world.brick_field is not None
+    remaining = world.brick_field.brick_at(GridCoord(col=1, row=0))
+    assert remaining is not None
+    assert remaining.hit_points == 1
 
 
 def test_projectile_lifecycle_bundle_culls_and_cleans_dead_entities() -> None:

@@ -259,6 +259,16 @@ For falling-block or stacking puzzle games, core also provides:
 
 Use those instead of hand-rolling board arrays and row-clear loops in each game.
 
+For brick-breaker games, core also provides:
+
+- `ViewportBounceSystem` for wall reflection
+- `BounceCollisionSystem` for ball-vs-paddle and ball-vs-rect bounce
+- `PaddleBouncePolicy` for contact-point based outgoing angles
+- `BrickField` and `BrickFieldCollisionSystem` for brick state and hits
+
+Use those instead of re-implementing bounce math and brick damage loops in each
+game.
+
 ## Step 5: Scene Commands (`scenes/commands.py`)
 
 ```python
