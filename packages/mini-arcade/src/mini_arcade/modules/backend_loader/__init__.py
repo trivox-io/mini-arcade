@@ -10,7 +10,6 @@ from mini_arcade_core.backend import (  # pyright: ignore[reportMissingImports]
     Backend,
 )
 
-
 class BackendLoader:
     """
     Utility class to load and configure backends based on settings.
@@ -18,6 +17,28 @@ class BackendLoader:
     This class can be extended in the future to support dynamic backend loading,
     configuration from YAML files, or command-line arguments.
     """
+
+    @staticmethod
+    def _load_native_backend(settings: dict[str, Any]) -> Backend:
+        # pylint: disable=import-outside-toplevel
+        from mini_arcade_native_backend import (
+            NativeBackend,
+            NativeBackendSettings,
+        )
+
+        backend_settings = NativeBackendSettings.from_dict(settings)
+        return NativeBackend(settings=backend_settings)
+
+    @staticmethod
+    def _load_pygame_backend(settings: dict[str, Any]) -> Backend:
+        # pylint: disable=import-outside-toplevel
+        from mini_arcade_pygame_backend import (
+            PygameBackend,
+            PygameBackendSettings,
+        )
+
+        backend_settings = PygameBackendSettings.from_dict(settings)
+        return PygameBackend(settings=backend_settings)
 
     @staticmethod
     def load_backend(settings: dict[str, Any]) -> Backend:
@@ -30,25 +51,12 @@ class BackendLoader:
         :returns: An instance of the configured backend.
             :rtype: Backend
         """
-        backend_type = settings.get("provider", "native")
+        backend_type = str(settings.get("provider", "native")).strip().lower()
 
-        # pylint: disable=import-outside-toplevel
         if backend_type == "native":
-            from mini_arcade_native_backend import (
-                NativeBackend,
-                NativeBackendSettings,
-            )
-
-            backend_settings = NativeBackendSettings.from_dict(settings)
-            return NativeBackend(settings=backend_settings)
+            return BackendLoader._load_native_backend(settings)
 
         if backend_type == "pygame":
-            from mini_arcade_pygame_backend import (
-                PygameBackend,
-                PygameBackendSettings,
-            )
-
-            backend_settings = PygameBackendSettings.from_dict(settings)
-            return PygameBackend(settings=backend_settings)
+            return BackendLoader._load_pygame_backend(settings)
 
         raise ValueError(f"Unsupported backend type: {backend_type}")

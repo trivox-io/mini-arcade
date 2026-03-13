@@ -34,16 +34,23 @@ def _candidate_paths() -> list[Path]:
 
 
 def _load_extension() -> ModuleType:
-    module = sys.modules[__name__]
+    original_module = sys.modules[__name__]
     for candidate in _candidate_paths():
         spec = importlib.util.spec_from_file_location(__name__, candidate)
         if spec is None or spec.loader is None:
             continue
-        module.__file__ = str(candidate)
-        module.__loader__ = spec.loader
-        module.__spec__ = spec
-        spec.loader.exec_module(module)
+        try:
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[__name__] = module
+            spec.loader.exec_module(module)
+        except Exception:
+            sys.modules[__name__] = original_module
+            continue
+
+        globals().update(module.__dict__)
         return module
+
+    sys.modules[__name__] = original_module
     raise ImportError(
         "Could not locate the compiled mini_arcade_native_backend._native extension. "
         "Install or build the native backend so _native*.pyd is available."
