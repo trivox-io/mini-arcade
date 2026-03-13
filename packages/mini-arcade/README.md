@@ -21,6 +21,8 @@ mini-arcade --help
 mini-arcade run --game deja-bounce
 mini-arcade run --example config/engine_config_basics
 mini-arcade run --example config/backend_swap --pass-through --backend native --fps 72
+mini-arcade scaffold-system-lab --lab-id orbit_lab
+mini-arcade system-lab --module experiments.orbit_lab.system_lab_case --visual
 mini-arcade run tour
 mini-arcade run tour --group scene
 ```

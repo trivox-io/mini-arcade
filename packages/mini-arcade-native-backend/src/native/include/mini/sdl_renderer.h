@@ -1,5 +1,6 @@
 #pragma once
 #include <SDL.h>
+#include <vector>
 #include <unordered_map>
 #include "renderer.h"
 #include "window.h"
@@ -43,12 +44,16 @@ class SdlRenderer final : public IRenderer {
         SDL_Renderer* sdl() const { return renderer_; }
 
     private:
+        void flush_destroyed_textures();
+
         Window& window_;
         SDL_Renderer* renderer_ = nullptr;
         ColorRGBA clear_{0,0,0,255};
+        bool in_frame_ = false;
 
         TextureHandle next_tex_id_ = 1;
         std::unordered_map<TextureHandle, SDL_Texture*> textures_;
+        std::vector<SDL_Texture*> pending_destroy_;
 };
 
 } // namespace mini

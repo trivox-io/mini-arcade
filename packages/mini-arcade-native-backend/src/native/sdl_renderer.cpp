@@ -24,6 +24,7 @@ namespace mini {
         }
 
     SdlRenderer::~SdlRenderer() {
+        flush_destroyed_textures();
     // destroy textures first
         for (auto& kv : textures_) {
             if (kv.second) SDL_DestroyTexture(kv.second);
@@ -38,13 +39,26 @@ namespace mini {
 
     void SdlRenderer::set_clear_color(ColorRGBA c) { clear_ = c; }
 
+    void SdlRenderer::flush_destroyed_textures() {
+        for (auto* texture : pending_destroy_) {
+            if (texture) {
+                SDL_DestroyTexture(texture);
+            }
+        }
+        pending_destroy_.clear();
+    }
+
     void SdlRenderer::begin_frame() {
+        flush_destroyed_textures();
+        in_frame_ = true;
         SDL_SetRenderDrawColor(renderer_, clear_.r, clear_.g, clear_.b, clear_.a);
         SDL_RenderClear(renderer_);
     }
 
     void SdlRenderer::end_frame() {
         SDL_RenderPresent(renderer_);
+        in_frame_ = false;
+        flush_destroyed_textures();
     }
 
     void SdlRenderer::draw_rect(int x,int y,int w,int h, ColorRGBA c) {
@@ -199,7 +213,13 @@ namespace mini {
     void SdlRenderer::destroy_texture(TextureHandle tex) {
         auto it = textures_.find(tex);
         if (it == textures_.end()) return;
-        if (it->second) SDL_DestroyTexture(it->second);
+        if (it->second) {
+            if (in_frame_) {
+                pending_destroy_.push_back(it->second);
+            } else {
+                SDL_DestroyTexture(it->second);
+            }
+        }
         textures_.erase(it);
     }
 

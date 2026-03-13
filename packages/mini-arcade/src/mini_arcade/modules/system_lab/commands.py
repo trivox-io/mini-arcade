@@ -60,6 +60,13 @@ class SystemLabCommand(BaseCommand):
             required=False,
             default=False,
         ),
+        ArgumentType(
+            "backend",
+            str,
+            "Override the visual runner backend provider (for example: pygame or native).",
+            required=False,
+            default=None,
+        ),
     ]
 
     __doc__ = """
@@ -68,6 +75,7 @@ class SystemLabCommand(BaseCommand):
     Usage:
         mini-arcade system-lab --module my_game.debug.system_lab --list
         mini-arcade system-lab --module my_game.debug.system_lab --case ship_move --steps 3
+        mini-arcade system-lab --module my_game.debug.system_lab --visual --backend native
     """
 
     def validate(self, **kwargs):
@@ -86,6 +94,8 @@ class SystemLabCommand(BaseCommand):
             )
         if kwargs.get("list") and kwargs.get("visual"):
             raise CommandException("--visual cannot be combined with --list")
+        if kwargs.get("backend") and not kwargs.get("visual"):
+            raise CommandException("--backend requires --visual")
         if int(kwargs.get("steps", 1)) < 1:
             raise CommandException("--steps must be >= 1")
 

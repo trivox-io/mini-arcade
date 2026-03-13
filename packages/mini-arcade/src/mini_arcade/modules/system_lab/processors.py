@@ -47,6 +47,7 @@ class SystemLabProcessor(BaseCommandProcessor):
     steps: int = 1
     json: bool = False
     visual: bool = False
+    backend: str | None = None
 
     def __init__(self, **kwargs):
         modules = kwargs.get("module") or []
@@ -56,6 +57,7 @@ class SystemLabProcessor(BaseCommandProcessor):
         self.steps = int(kwargs.get("steps", 1))
         self.json = bool(kwargs.get("json", False))
         self.visual = bool(kwargs.get("visual", False))
+        self.backend = kwargs.get("backend")
 
     def _print_case_list(self) -> int:
         names = sorted(SystemLabRegistry.names())
@@ -94,8 +96,21 @@ class SystemLabProcessor(BaseCommandProcessor):
         if self.visual:
             result = case.run_visual()
             if result is None:
-                raise CommandException(
-                    f"System lab case does not provide a visual runner: {case_name}"
+                spec = case.build_visual_spec()
+                if spec is None:
+                    raise CommandException(
+                        "System lab case does not provide a visual runner: "
+                        f"{case_name}"
+                    )
+                # pylint: disable=import-outside-toplevel
+                from .visual_runner import run_system_lab_visual_case
+                # pylint: enable=import-outside-toplevel
+
+                return run_system_lab_visual_case(
+                    case,
+                    spec,
+                    module_names=tuple(self.module),
+                    backend_provider_override=self.backend,
                 )
             return int(result)
 

@@ -1,12 +1,23 @@
 from __future__ import annotations
 
 from pathlib import Path
+import importlib
 import sys
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = PACKAGE_ROOT / "src"
-if str(SRC_ROOT) not in sys.path:
-    sys.path.insert(0, str(SRC_ROOT))
+REPO_ROOT = PACKAGE_ROOT.parents[1]
+EXTRA_PATHS = (
+    REPO_ROOT,
+    SRC_ROOT,
+    REPO_ROOT / "packages" / "mini-arcade-core" / "src",
+    REPO_ROOT / "packages" / "mini-arcade-pygame-backend" / "src",
+    REPO_ROOT / "packages" / "mini-arcade-native-backend" / "src",
+)
+for path in reversed(EXTRA_PATHS):
+    value = str(path)
+    if value not in sys.path:
+        sys.path.insert(0, value)
 
 from mini_arcade.cli.registry import CommandRegistry
 from mini_arcade.cli.cli import CLIConfig, GlobalParserBuilder
@@ -17,6 +28,12 @@ from mini_arcade.modules.game_scaffold.processors import GameScaffoldProcessor
 from mini_arcade.modules.system_lab.commands import SystemLabCommand
 from mini_arcade.modules.system_lab.processors import SystemLabProcessor
 from mini_arcade.modules.system_lab.registry import SystemLabRegistry
+from mini_arcade.modules.system_lab_scaffold.commands import (
+    ScaffoldSystemLabCommand,
+)
+from mini_arcade.modules.system_lab_scaffold.processors import (
+    SystemLabScaffoldProcessor,
+)
 from mini_arcade.utils.module_loader import load_command_packages
 import mini_arcade.modules as commands_pkg
 
@@ -40,6 +57,7 @@ def _build_cli() -> MiniArcadeCLI:
 def test_scaffold_game_command_registers() -> None:
     assert CommandRegistry.contains(ScaffoldGameCommand.name)
     assert CommandRegistry.contains(SystemLabCommand.name)
+    assert CommandRegistry.contains(ScaffoldSystemLabCommand.name)
 
 
 def test_game_scaffold_creates_current_project_layout(tmp_path: Path) -> None:
@@ -135,6 +153,59 @@ def test_game_scaffold_dry_run_does_not_write_files(
     assert processor.run() == 0
     assert not (tmp_path / "laser-garden").exists()
     assert "laser-garden" in capsys.readouterr().out
+
+
+def test_system_lab_scaffold_creates_minimal_layout(tmp_path: Path) -> None:
+    processor = SystemLabScaffoldProcessor(
+        lab_id="orbit-lab",
+        destination=str(tmp_path),
+    )
+
+    assert processor.run() == 0
+
+    root = tmp_path / "orbit_lab"
+    assert (root / "__init__.py").exists()
+    assert (root / "manage.py").exists()
+    assert (root / "system_lab_case.py").exists()
+
+    case_text = (root / "system_lab_case.py").read_text(encoding="utf-8")
+    assert '@SystemLabRegistry.implementation("orbit_lab")' in case_text
+    assert "BaseSystemLabCase" in case_text
+    assert "Replace OrbitLabSystem.step() with your experiment." in case_text
+    assert "F5 reloads this lab after edits." in case_text
+
+
+def test_system_lab_scaffold_command_ignores_global_cli_kwargs(
+    tmp_path: Path,
+) -> None:
+    command = ScaffoldSystemLabCommand()
+
+    assert (
+        command.execute(
+            lab_id="signal_lab",
+            destination=str(tmp_path),
+            verbose=1,
+        )
+        == 0
+    )
+    assert (tmp_path / "signal_lab" / "manage.py").exists()
+
+
+def test_system_lab_scaffold_dry_run_does_not_write_files(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    processor = SystemLabScaffoldProcessor(
+        lab_id="signal-lab",
+        destination=str(tmp_path),
+        dry_run=True,
+    )
+
+    assert processor.run() == 0
+    assert not (tmp_path / "signal_lab").exists()
+    output = capsys.readouterr().out
+    assert "signal_lab" in output
+    assert "experiments.signal_lab.system_lab_case" in output
 
 
 def test_system_lab_lists_and_runs_registered_case(
@@ -249,6 +320,16 @@ def test_system_lab_cli_parses_module_without_swallowing_flags() -> None:
     assert args.json is True
 
 
+def test_system_lab_cli_parses_visual_backend_override() -> None:
+    command = SystemLabCommand()
+
+    command.validate(
+        module=["experiments.procedural_fire_lab.system_lab_case"],
+        visual=True,
+        backend="native",
+    )
+
+
 def test_system_lab_visual_runner_path(
     tmp_path: Path,
     monkeypatch,
@@ -326,6 +407,240 @@ class VisualCase(BaseSystemLabCase):
         == 0
     )
     assert "visual auto runner launched" in capsys.readouterr().out
+
+
+def test_system_lab_default_visual_runner_uses_builtin_lab(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    SystemLabRegistry.clear()
+    package_dir = tmp_path / "labcases_builtin_visual"
+    package_dir.mkdir()
+    (package_dir / "__init__.py").write_text("", encoding="utf-8")
+    (package_dir / "sample_cases.py").write_text(
+        '''from dataclasses import dataclass
+
+from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
+
+
+class DummySystem:
+    name = "dummy_visual_system"
+
+    def step(self, ctx):
+        ctx.world["value"] += 1
+
+
+@dataclass
+class DummyContext:
+    world: dict
+
+
+@SystemLabRegistry.implementation("visual_case")
+class VisualCase(BaseSystemLabCase):
+    visual_title = "Builtin Visual"
+
+    def build_system(self):
+        return DummySystem()
+
+    def build_context(self):
+        return DummyContext(world={"value": 0})
+''',
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    captured: dict[str, object] = {}
+
+    def fake_run(
+        case,
+        spec,
+        *,
+        module_names=(),
+        backend_provider_override=None,
+    ):
+        captured["case_name"] = case.__class__.__name__
+        captured["spec"] = spec
+        captured["module_names"] = module_names
+        captured["backend_provider_override"] = backend_provider_override
+        print(f"builtin visual: {spec.title}")
+        return 0
+
+    monkeypatch.setattr(
+        "mini_arcade.modules.system_lab.visual_runner.run_system_lab_visual_case",
+        fake_run,
+    )
+
+    assert (
+        SystemLabProcessor(
+            module=["labcases_builtin_visual.sample_cases"],
+            case="visual_case",
+            visual=True,
+        ).run()
+        == 0
+    )
+    assert "builtin visual: Builtin Visual" in capsys.readouterr().out
+    assert captured["case_name"] == "VisualCase"
+    assert getattr(captured["spec"], "title") == "Builtin Visual"
+    assert getattr(captured["spec"], "debug_overlay_enabled") is True
+    assert getattr(captured["spec"], "debug_overlay_start_visible") is False
+    assert getattr(captured["spec"], "hot_reload_enabled") is True
+    assert getattr(captured["spec"], "hot_reload_key") == "F5"
+    assert captured["module_names"] == ("labcases_builtin_visual.sample_cases",)
+    assert captured["backend_provider_override"] is None
+
+
+def test_system_lab_visual_backend_override_reaches_visual_runner(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    SystemLabRegistry.clear()
+    package_dir = tmp_path / "labcases_backend_override"
+    package_dir.mkdir()
+    (package_dir / "__init__.py").write_text("", encoding="utf-8")
+    (package_dir / "sample_cases.py").write_text(
+        '''from dataclasses import dataclass
+
+from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
+
+
+class DummySystem:
+    name = "dummy_visual_system"
+
+    def step(self, ctx):
+        ctx.world["value"] += 1
+
+
+@dataclass
+class DummyContext:
+    world: dict
+
+
+@SystemLabRegistry.implementation("visual_case")
+class VisualCase(BaseSystemLabCase):
+    def build_system(self):
+        return DummySystem()
+
+    def build_context(self):
+        return DummyContext(world={"value": 0})
+''',
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    captured: dict[str, object] = {}
+
+    def fake_run(
+        case,
+        spec,
+        *,
+        module_names=(),
+        backend_provider_override=None,
+    ):
+        del case
+        del spec
+        captured["module_names"] = module_names
+        captured["backend_provider_override"] = backend_provider_override
+        print("backend override captured")
+        return 0
+
+    monkeypatch.setattr(
+        "mini_arcade.modules.system_lab.visual_runner.run_system_lab_visual_case",
+        fake_run,
+    )
+
+    assert (
+        SystemLabProcessor(
+            module=["labcases_backend_override.sample_cases"],
+            case="visual_case",
+            visual=True,
+            backend="native",
+        ).run()
+        == 0
+    )
+    assert "backend override captured" in capsys.readouterr().out
+    assert captured["module_names"] == (
+        "labcases_backend_override.sample_cases",
+    )
+    assert captured["backend_provider_override"] == "native"
+
+
+def test_system_lab_visual_runner_discovers_watch_paths(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    package_dir = tmp_path / "labcases_reload"
+    package_dir.mkdir()
+    (package_dir / "__init__.py").write_text("", encoding="utf-8")
+    (package_dir / "helpers.py").write_text(
+        "VALUE = 1\n",
+        encoding="utf-8",
+    )
+    (package_dir / "sample_cases.py").write_text(
+        "from .helpers import VALUE\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    importlib.import_module("labcases_reload.sample_cases")
+
+    from mini_arcade.modules.system_lab.visual_runner import (
+        _discover_watch_paths,
+    )
+
+    watch_paths = _discover_watch_paths(("labcases_reload.sample_cases",))
+
+    assert package_dir / "sample_cases.py" in watch_paths
+    assert package_dir / "helpers.py" in watch_paths
+
+
+def test_procedural_fire_lab_case_runs_headless(capsys) -> None:
+    SystemLabRegistry.clear()
+
+    assert (
+        SystemLabProcessor(
+            module=["experiments.procedural_fire_lab.system_lab_case"],
+            case="procedural_fire_stats",
+            steps=2,
+            json=True,
+        ).run()
+        == 0
+    )
+    output = capsys.readouterr().out
+    assert '"case": "procedural_fire_stats"' in output
+    assert '"particle_count":' in output
+
+
+def test_procedural_fire_lab_visual_spec_uses_live_tick_context() -> None:
+    from experiments.procedural_fire_lab.system_lab_case import (
+        FireLabTickContext,
+        ProceduralFireStatsCase,
+    )
+
+    spec = ProceduralFireStatsCase().build_visual_spec()
+
+    assert spec is not None
+    assert spec.tick_context_type is FireLabTickContext
+
+
+def test_bouncing_balls_case_runs_headless(capsys) -> None:
+    SystemLabRegistry.clear()
+
+    assert (
+        SystemLabProcessor(
+            module=["experiments.bouncing_balls.system_lab_case"],
+            case="bouncing_balls",
+            steps=3,
+            json=True,
+        ).run()
+        == 0
+    )
+    output = capsys.readouterr().out
+    assert '"case": "bouncing_balls"' in output
+    assert '"ball_count": 2' in output
+    assert '"ball_a":' in output
+    assert '"ball_b":' in output
 
 
 def test_load_command_packages_skips_non_command_modules(

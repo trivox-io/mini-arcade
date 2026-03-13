@@ -5,6 +5,10 @@ Provides functionality to draw and measure text.
 
 from __future__ import annotations
 
+from collections import OrderedDict
+
+from PIL import Image, ImageDraw, ImageFont
+
 from mini_arcade_core.backend.utils import (  # pyright: ignore[reportMissingImports]
     rgba,
 )
@@ -41,6 +45,12 @@ class TextPort:
         self._vp = vp
         self._font_path = font_path
         self._fonts_by_size: dict[int, int] = {}
+        self._pil_fonts_by_size: dict[int, ImageFont.ImageFont] = {}
+        self._text_texture_cache: OrderedDict[
+            tuple[str, tuple[int, int, int, int], int],
+            tuple[int, int, int],
+        ] = OrderedDict()
+        self._max_cached_textures = 256
 
     def _get_font_id(self, font_size: int | None) -> int:
         if font_size is None or not self._font_path:
@@ -56,6 +66,81 @@ class TextPort:
         fid = self._b.load_font(self._font_path, int(font_size))
         self._fonts_by_size[font_size] = fid
         return fid
+
+    def _get_pil_font(self, font_size: int | None) -> ImageFont.ImageFont:
+        normalized_size = 24 if font_size is None else int(font_size)
+        if normalized_size <= 0:
+            normalized_size = 24
+
+        cached = self._pil_fonts_by_size.get(normalized_size)
+        if cached is not None:
+            return cached
+
+        if self._font_path:
+            font = ImageFont.truetype(self._font_path, normalized_size)
+        else:
+            font = ImageFont.load_default()
+        self._pil_fonts_by_size[normalized_size] = font
+        return font
+
+    def _measure_text_pixels(
+        self,
+        text: str,
+        font_size: int | None,
+    ) -> tuple[int, int, tuple[int, int, int, int]]:
+        font = self._get_pil_font(font_size)
+        bbox = font.getbbox(text or " ")
+        width = max(1, int(bbox[2] - bbox[0]))
+        height = max(1, int(bbox[3] - bbox[1]))
+        return width, height, (
+            int(bbox[0]),
+            int(bbox[1]),
+            int(bbox[2]),
+            int(bbox[3]),
+        )
+
+    def _evict_cached_textures_if_needed(self) -> None:
+        while len(self._text_texture_cache) > self._max_cached_textures:
+            _, (texture_id, _width, _height) = (
+                self._text_texture_cache.popitem(last=False)
+            )
+            self._b.destroy_texture(int(texture_id))
+
+    def _get_text_texture(
+        self,
+        text: str,
+        color: tuple[int, int, int, int],
+        font_size: int | None,
+    ) -> tuple[int, int, int]:
+        cache_key = (str(text), color, int(font_size or 24))
+        cached = self._text_texture_cache.get(cache_key)
+        if cached is not None:
+            self._text_texture_cache.move_to_end(cache_key)
+            return cached
+
+        width, height, bbox = self._measure_text_pixels(text, font_size)
+        font = self._get_pil_font(font_size)
+        image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        drawer = ImageDraw.Draw(image)
+        drawer.text(
+            (-bbox[0], -bbox[1]),
+            text,
+            font=font,
+            fill=color,
+        )
+
+        texture_id = int(
+            self._b.create_texture_rgba(
+                width,
+                height,
+                image.tobytes(),
+                width * 4,
+            )
+        )
+        cached = (texture_id, width, height)
+        self._text_texture_cache[cache_key] = cached
+        self._evict_cached_textures_if_needed()
+        return cached
 
     def measure(
         self, text: str, font_size: int | None = None
@@ -75,8 +160,7 @@ class TextPort:
             if font_size is None
             else max(8, int(round(font_size * self._vp.s)))
         )
-        font_id = self._get_font_id(scaled_size)
-        w_px, h_px = self._b.measure_text(text, font_id)
+        w_px, h_px, _bbox = self._measure_text_pixels(text, scaled_size)
 
         # Convert screen pixels back to virtual units for layout math
         s = self._vp.s or 1.0
@@ -113,5 +197,21 @@ class TextPort:
             if font_size is None
             else max(8, int(round(font_size * self._vp.s)))
         )
-        font_id = self._get_font_id(scaled_size)
-        self._b.draw_text(text, sx, sy, r, g, b, a, font_id)
+        try:
+            texture_id, width, height = self._get_text_texture(
+                str(text),
+                (r, g, b, a),
+                scaled_size,
+            )
+        except OSError:
+            font_id = self._get_font_id(scaled_size)
+            self._b.draw_text(str(text), sx, sy, r, g, b, a, font_id)
+            return
+
+        self._b.draw_texture(
+            int(texture_id),
+            int(sx),
+            int(sy),
+            int(width),
+            int(height),
+        )
