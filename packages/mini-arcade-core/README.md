@@ -1,35 +1,35 @@
 # mini-arcade-core
 
-**mini-arcade-core** is the simulation-first core of Mini Arcade.
+`mini-arcade-core` is the simulation-first core of Mini Arcade.
 
 It is backend-agnostic and focuses on:
 
-- **scenes** (simulation containers)
-- **entities + components** (lightweight data)
-- **systems** (input, simulation, render prep)
-- **draw calls** (render instructions prepared by the scene)
+- scenes as simulation containers
+- entities and lightweight component-style data
+- systems for input, simulation, and render preparation
+- draw packets that backends can replay
 
 Backends are responsible for:
 
-- window + event polling
-- drawing primitives/sprites
-- presenting frames
+- window and event polling
+- drawing primitives, textures, and text
+- audio, capture, and frame presentation
 
 ## Design goals
 
-- tiny API surface, but scalable patterns
-- deterministic simulation (replays later)
-- testable logic (most game rules run headless)
-- backend swapping (native / pygame)
+- small, explicit API surface
+- deterministic simulation patterns
+- testable game logic outside the rendering layer
+- backend swapping between `native` and `pygame`
 
 ## Frame mental model
 
-A typical frame:
+A typical frame is:
 
-1. gather input → produce intents
-2. tick simulation
-3. generate draw calls
-4. backend renders draw calls
+1. gather input and produce intents
+2. tick simulation and systems
+3. build draw packets
+4. let the selected backend render and present the frame
 
 ## Install
 
@@ -39,4 +39,8 @@ pip install mini-arcade-core
 
 ## Docs
 
-Architecture and concepts live in the monorepo docs (`docs/`).
+See the monorepo docs for architecture and concepts:
+
+- `docs/source/concepts/architecture.md`
+- `docs/source/concepts/capabilities.md`
+- `docs/source/tutorials/index.md`

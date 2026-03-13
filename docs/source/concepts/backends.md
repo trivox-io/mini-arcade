@@ -39,6 +39,8 @@ Behavior:
 - `backend.provider: native` -> `NativeBackend`
 - `backend.provider: pygame` -> `PygameBackend`
 - unknown provider -> `ValueError`
+- explicit `native` selection is strict; if native initialization is broken, the
+  caller should see the error instead of silently switching backends
 
 So yes, backend can be selected directly in YAML:
 
@@ -52,6 +54,12 @@ and then overridden by CLI in examples:
 ```bash
 mini-arcade run --example config/backend_swap --pass-through --backend pygame
 ```
+
+Important distinction:
+
+- Games should honor the configured backend exactly.
+- Some examples intentionally sanitize invalid CLI overrides for demo
+  robustness, but that is example-specific behavior, not global backend policy.
 
 ## Backend settings mapping
 
@@ -108,6 +116,15 @@ Highlights:
 - initializes compiled native backend (`_native`)
 - maps python settings to native config
 - supports default font fallback resolution if font path not configured
+- in editable development, the `_native.py` shim loads the compiled extension
+  from the active environment so repo Python sources can work with an installed
+  `_native*.pyd`
+
+Practical consequence:
+
+- if native Python code changes but the compiled extension is stale, rebuild the
+  package in the current environment with
+  `python -m pip install -e .\packages\mini-arcade-native-backend`
 
 ## Backend parity expectations
 

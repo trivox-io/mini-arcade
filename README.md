@@ -38,6 +38,31 @@ python -m mini_arcade.main run --example config/engine_config_basics
 python -m mini_arcade.main run --game deja-bounce
 ```
 
+## Local Development
+
+From the monorepo root:
+
+```powershell
+./scripts/dev_install.ps1
+python .\manage.py run --example config/engine_config_basics
+python .\manage.py run --game space-invaders
+```
+
+Notes:
+
+- `manage.py` is the preferred local entrypoint for games and examples.
+- The runner prepends local `packages/*/src` paths so workspace code wins over
+  installed wheel metadata.
+- When `backend.provider: native` is selected, Mini Arcade now honors that
+  choice strictly. It does not silently fall back to `pygame`.
+- The native backend uses Python source from the repo plus a compiled `_native`
+  extension from the active environment. If Python and C++ changes drift out of
+  sync, rebuild with:
+
+```powershell
+python -m pip install -e .\packages\mini-arcade-native-backend
+```
+
 ## Core Features
 
 - Scene registry and scene stack with overlays
@@ -140,6 +165,7 @@ mini-arcade/
 - [Quickstart](./docs/source/quickstart.md)
 - [Architecture](./docs/source/concepts/architecture.md)
 - [Capabilities](./docs/source/concepts/capabilities.md)
+- [Backends](./docs/source/concepts/backends.md)
 - [Tutorials](./docs/source/tutorials/index.md)
 - [Games](./docs/source/games/index.md)
 - [Contributing](./docs/source/contributing/index.md)

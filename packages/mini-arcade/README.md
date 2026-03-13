@@ -31,6 +31,15 @@ Equivalent module invocation:
 python -m mini_arcade.main run --game deja-bounce
 ```
 
+In the monorepo, prefer the root runner:
+
+```powershell
+python .\manage.py run --game deja-bounce
+python .\manage.py run --example config/backend_swap
+```
+
+That path wires local workspace sources ahead of installed packages.
+
 ## Docs
 
 See monorepo docs in `docs/` for quickstart, architecture, tutorials, and game creation.
