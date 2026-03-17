@@ -247,14 +247,19 @@ class RenderPort:
         """
         sx, sy = self._vp.map_xy(x, y)
         sw, sh = self._vp.map_wh(w, h)
-        self._b.draw_texture(
+        args = (
             int(tex),
             int(sx),
             int(sy),
             int(sw),
             int(sh),
-            float(angle_deg),
         )
+        try:
+            self._b.draw_texture(*args, float(angle_deg))
+        except TypeError:
+            # Older compiled native extensions expose the pre-rotation
+            # 5-argument signature. Fall back so stale builds keep rendering.
+            self._b.draw_texture(*args)
 
     def draw_texture_tiled_y(self, tex: int, x: int, y: int, w: int, h: int):
         """
