@@ -383,13 +383,16 @@ class CaptureProtocol(Protocol):
         """
 
 
-# TODO: Refactor backend interface into smaller protocols?
 # Justification: Many public methods needed for backend interface
 # pylint: disable=too-many-public-methods
 class Backend(Protocol):
     """
     Interface that any rendering/input backend must implement.
     mini-arcade-core only talks to this protocol, never to SDL/pygame directly.
+
+    Each sub-capability is exposed as a typed protocol attribute so that
+    systems or draw helpers can accept only the slice they need (e.g.
+    ``RenderProtocol`` or ``TextProtocol``) instead of the full backend.
 
     :ivar window (WindowProtocol): Window management interface.
     :ivar audio (AudioProtocol): Audio management interface.

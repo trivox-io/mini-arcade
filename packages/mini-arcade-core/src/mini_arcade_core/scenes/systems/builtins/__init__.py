@@ -24,28 +24,7 @@ from .actions import (  # noqa: E402  (re-export)
     action_map_from_bindings_config,
     action_map_from_controls_config,
 )
-from .capture_hotkeys import (  # noqa: E402  (re-export)
-    CaptureHotkey,
-    CaptureHotkeysConfig,
-    CaptureHotkeysSystem,
-    SceneCaptureConfig,
-    action_map_from_scene_capture_config,
-)
-from .brick_breaker import (  # noqa: E402  (re-export)
-    BounceCollisionBinding,
-    BounceCollisionSystem,
-    BounceHit,
-    BrickField,
-    BrickFieldCollisionBinding,
-    BrickFieldCollisionSystem,
-    BrickState,
-    PaddleBouncePolicy,
-    ViewportBounceBinding,
-    ViewportBounceSystem,
-    apply_bounce_hit,
-    reflect_from_viewport,
-    resolve_rect_bounce,
-)
+from .animation import AnimationTickSystem  # noqa: E402  (re-export)
 from .bomberman import (  # noqa: E402  (re-export)
     ArenaTile,
     BombField,
@@ -69,6 +48,28 @@ from .bomberman import (  # noqa: E402  (re-export)
     is_walkable_arena_tile,
     spawn_explosion_from_bomb,
 )
+from .brick_breaker import (  # noqa: E402  (re-export)
+    BounceCollisionBinding,
+    BounceCollisionSystem,
+    BounceHit,
+    BrickField,
+    BrickFieldCollisionBinding,
+    BrickFieldCollisionSystem,
+    BrickState,
+    PaddleBouncePolicy,
+    ViewportBounceBinding,
+    ViewportBounceSystem,
+    apply_bounce_hit,
+    reflect_from_viewport,
+    resolve_rect_bounce,
+)
+from .capture_hotkeys import (  # noqa: E402  (re-export)
+    CaptureHotkey,
+    CaptureHotkeysConfig,
+    CaptureHotkeysSystem,
+    SceneCaptureConfig,
+    action_map_from_scene_capture_config,
+)
 from .cull import CullOutOfViewportSystem  # noqa: E402  (re-export)
 from .falling_blocks import (  # noqa: E402  (re-export)
     BagRandomizer,
@@ -80,7 +81,6 @@ from .falling_blocks import (  # noqa: E402  (re-export)
     block_cells_from_strings,
     piece_fits,
 )
-from .intent_commands import IntentCommandSystem  # noqa: E402  (re-export)
 from .grid import (  # noqa: E402  (re-export)
     CadenceBinding,
     CadenceState,
@@ -94,6 +94,7 @@ from .grid import (  # noqa: E402  (re-export)
     free_grid_cells,
     occupied_grid_cells,
 )
+from .intent_commands import IntentCommandSystem  # noqa: E402  (re-export)
 from .maze import (  # noqa: E402  (re-export)
     CardinalDirection,
     CollectibleCollisionBinding,
@@ -107,8 +108,8 @@ from .maze import (  # noqa: E402  (re-export)
     ModeTimerBinding,
     ModeTimerState,
     ModeTimerSystem,
-    TimedMode,
     TileMap,
+    TimedMode,
     TunnelWrapBinding,
     TunnelWrapSystem,
     available_directions,
@@ -121,30 +122,29 @@ from .movement import (  # noqa: E402  (re-export)
     IntentAxisVelocitySystem,
     KinematicMotionSystem,
     MotionBinding,
+    MovementProfile,
+    SteerSeekBinding,
+    SteerSeekGroupBinding,
+    SteerSeekSystem,
+    TurnThrustBinding,
+    TurnThrustSystem,
     ViewportConstraintBinding,
     ViewportConstraintSystem,
-)
-from .projectiles import (  # noqa: E402  (re-export)
-    ProjectileBoundaryBinding,
-    ProjectileBoundarySystem,
-    ProjectileCleanupBinding,
-    ProjectileCleanupSystem,
-    ProjectileLifecycleBinding,
-    ProjectileLifecycleBundle,
+    movement_profile_from_dict,
 )
 from .particles import (  # noqa: E402  (re-export)
+    FIRE_ALPHA_RAMP,
     FIRE_COLOR_RAMP,
     FIRE_PARTICLE_PROFILE,
-    FIRE_ALPHA_RAMP,
     MAGIC_ALPHA_RAMP,
     MAGIC_COLOR_RAMP,
     MAGIC_PARTICLE_PROFILE,
     POTION_ALPHA_RAMP,
     POTION_COLOR_RAMP,
     POTION_PARTICLE_PROFILE,
+    SMOKE_ALPHA_RAMP,
     SMOKE_COLOR_RAMP,
     SMOKE_PARTICLE_PROFILE,
-    SMOKE_ALPHA_RAMP,
     ProceduralParticle,
     ProceduralParticleBinding,
     ProceduralParticleBundle,
@@ -158,14 +158,21 @@ from .particles import (  # noqa: E402  (re-export)
     potion_particle_binding,
     smoke_particle_binding,
 )
+from .pause import IntentPauseSystem  # noqa: E402  (re-export)
+from .projectiles import (  # noqa: E402  (re-export)
+    ProjectileBoundaryBinding,
+    ProjectileBoundarySystem,
+    ProjectileCleanupBinding,
+    ProjectileCleanupSystem,
+    ProjectileLifecycleBinding,
+    ProjectileLifecycleBundle,
+)
 from .spawn import (  # noqa: E402  (re-export)
     SpawnBinding,
     SpawnSystem,
     WaveProgressionBinding,
     WaveProgressionSystem,
 )
-from .animation import AnimationTickSystem  # noqa: E402  (re-export)
-from .pause import IntentPauseSystem  # noqa: E402  (re-export)
 
 if TYPE_CHECKING:
     from mini_arcade_core.scenes.sim_scene import BaseIntent
@@ -179,6 +186,7 @@ def _draw_call(drawable: object, ctx: object) -> object:
     """
     # pylint: disable=import-outside-toplevel
     from mini_arcade_core.scenes.sim_scene import DrawCall
+
     # pylint: enable=import-outside-toplevel
     return DrawCall(drawable=drawable, ctx=ctx)
 
@@ -189,6 +197,7 @@ def _submit_render_queue(*, layers: tuple[str, ...] | None = None) -> object:
     """
     # pylint: disable=import-outside-toplevel
     from mini_arcade_core.scenes.sim_scene import SubmitRenderQueue
+
     # pylint: enable=import-outside-toplevel
     return SubmitRenderQueue(layers=layers)
 

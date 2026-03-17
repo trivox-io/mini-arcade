@@ -48,19 +48,19 @@ Status legend:
 
 ### Group D: Input and systems
 
-- `systems/input_frame_visualizer` (`TODO`)
-- `systems/action_map_variants` (`TODO`)
-- `systems/phases_and_order` (`TODO`)
-- `systems/pause_intent_builtin` (`TODO`)
-- `systems/animation_tick_builtin` (`TODO`)
-- `systems/cull_viewport_builtin` (`TODO`)
+- `systems/input_frame_visualizer` (`DONE`)
+- `systems/action_map_variants` (`DONE`)
+- `systems/phases_and_order` (`DONE`)
+- `systems/pause_intent_builtin` (`DONE`)
+- `systems/animation_tick_builtin` (`DONE`)
+- `systems/cull_viewport_builtin` (`DONE`)
 
 ### Group E: Commands and cheats
 
-- `commands/custom_scene_commands` (`TODO`)
-- `commands/scene_stack_commands` (`TODO`)
-- `commands/cheat_sequences` (`TODO`)
-- `commands/effect_and_debug_hotkeys` (`TODO`)
+- `commands/custom_scene_commands` (`DONE`)
+- `commands/scene_stack_commands` (`DONE`)
+- `commands/cheat_sequences` (`DONE`)
+- `commands/effect_and_debug_hotkeys` (`DONE`)
 
 ### Group F: Render pipeline passes
 

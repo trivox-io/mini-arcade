@@ -1,0 +1,33 @@
+# Example-specific settings profile:
+# Settings.for_example("systems/phases_and_order")
+scene:
+  initial_scene: phases_and_order
+  scene_registry:
+    discover_packages:
+      - examples.catalog.systems.phases_and_order
+      - mini_arcade_core.scenes
+
+engine_config:
+  fps: 60
+  virtual_resolution: [800, 600]
+  enable_profiler: false
+  postfx:
+    enabled: false
+    active: []
+
+backend:
+  provider: pygame
+  window:
+    width: 960
+    height: 540
+    title: systems/phases_and_order
+    resizable: true
+  renderer:
+    background_color: [16, 18, 28]
+  audio:
+    enable: false
+
+cli_examples:
+  - "--backend pygame"
+  - "--backend native"
+  - "--virtual-width 960 --virtual-height 540"

@@ -1,0 +1,33 @@
+# Example-specific settings profile:
+# Settings.for_example("commands/custom_scene_commands")
+scene:
+  initial_scene: custom_commands_demo
+  scene_registry:
+    discover_packages:
+      - examples.catalog.commands.custom_scene_commands
+      - mini_arcade_core.scenes
+
+engine_config:
+  fps: 60
+  virtual_resolution: [800, 600]
+  enable_profiler: false
+  postfx:
+    enabled: false
+    active: []
+
+backend:
+  provider: pygame
+  window:
+    width: 960
+    height: 540
+    title: commands/custom_scene_commands
+    resizable: true
+  renderer:
+    background_color: [16, 18, 28]
+  audio:
+    enable: false
+
+cli_examples:
+  - "--backend pygame"
+  - "--backend native"
+  - "--virtual-width 960 --virtual-height 540"

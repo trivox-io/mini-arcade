@@ -211,6 +211,16 @@ entity/shape_primitives_gallery
 entity/z_index_and_layer_intuition
 entity/sprite_texture_basics
 entity/animation_frames_basics
+systems/input_frame_visualizer
+systems/action_map_variants
+systems/phases_and_order
+systems/pause_intent_builtin
+systems/animation_tick_builtin
+systems/cull_viewport_builtin
+commands/custom_scene_commands
+commands/scene_stack_commands
+commands/cheat_sequences
+commands/effect_and_debug_hotkeys
 ```
 
 ```{toctree}
