@@ -83,11 +83,13 @@ def run_game(
         )
         initial_scene = scene_cfg.initial_scene or "main"
         game.run(initial_scene=initial_scene)
-    # Justification: We need to catch all exceptions while we improve error handling.
+    # Justification: We want to log unexpected runtime failures before
+    # propagating them to the caller.
     # pylint: disable=broad-exception-caught
     except Exception as e:
         logger.exception(f"Unhandled exception in game loop: {e}")
         logger.debug(traceback.format_exc())
+        raise
     # pylint: enable=broad-exception-caught
 
 

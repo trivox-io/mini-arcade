@@ -112,3 +112,42 @@ def test_build_pythonpath_prefers_workspace_package_sources(
         in parts
     )
     assert str(repo_root.resolve()) in parts
+
+
+def test_examples_tour_returns_nonzero_when_example_fails(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    examples_dir = tmp_path / "examples" / "catalog"
+    example_dir = examples_dir / "scene" / "minimal_scene"
+    shared_runner = tmp_path / "examples" / "_shared" / "run_example.py"
+
+    example_dir.mkdir(parents=True)
+    shared_runner.parent.mkdir(parents=True)
+    (example_dir / "main.py").write_text(
+        "def main():\n    return 0\n",
+        encoding="utf-8",
+    )
+    shared_runner.write_text(
+        "if __name__ == '__main__':\n    pass\n",
+        encoding="utf-8",
+    )
+
+    def _fake_run_child_process(
+        *, cmd: list[str], cwd: Path, env: dict[str, str]
+    ):
+        del cmd, cwd, env
+        return (7, False)
+
+    monkeypatch.setattr(
+        "mini_arcade.modules.game_runner.processors._run_child_process",
+        _fake_run_child_process,
+    )
+
+    processor = ExamplesTourProcessor(examples_dir=str(examples_dir))
+
+    assert processor.run() == 7
+    captured = capsys.readouterr().out
+    assert "[1/1] Failed: scene/minimal_scene (exit code 7)" in captured
+    assert "Examples tour completed: total=1, passed=0, failed=1" in captured

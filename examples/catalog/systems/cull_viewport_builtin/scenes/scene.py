@@ -78,6 +78,8 @@ class _World:
 
 @dataclass
 class _CullCtx:
+    """CullOutOfViewportSystem expects the world under ``ctx.world``."""
+
     world: _World
 
 

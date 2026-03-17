@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
+
+import pytest
 
 
 def _repo_root() -> Path:
@@ -24,7 +27,12 @@ def _bootstrap_repo_imports() -> None:
 
 _bootstrap_repo_imports()
 
+from examples._shared import runner as example_runner  # noqa: E402
 from examples._shared.runner import load_example_spec  # noqa: E402
+from examples._shared.spec import ExampleSpec  # noqa: E402
+from mini_arcade.modules.game_runner.processors import (  # noqa: E402
+    _discover_example_ids,
+)
 from mini_arcade.modules.settings import Settings  # noqa: E402
 from mini_arcade_core.backend.events import Event, EventType  # noqa: E402
 from mini_arcade_core.backend.keys import Key  # noqa: E402
@@ -44,24 +52,10 @@ from mini_arcade_core.scenes.registry import SceneRegistry  # noqa: E402
 from mini_arcade_core.scenes.sim_scene import SimScene  # noqa: E402
 
 
-EXAMPLE_IDS = [
-    "config/backend_swap",
-    "config/engine_config_basics",
-    "scene/change_scene",
-    "scene/debug_overlay_builtin",
-    "scene/menu_scene_base",
-    "scene/minimal_scene",
-    "scene/pause_overlay_policy",
-    "window/fit_vs_fill",
-    "window/resize_reflow",
-    "window/screen_to_virtual_input",
-    "window/virtual_resolution_basics",
-    "entity/base_entity_from_dict",
-    "entity/shape_primitives_gallery",
-    "entity/z_index_and_layer_intuition",
-    "entity/sprite_texture_basics",
-    "entity/animation_frames_basics",
-]
+EXAMPLE_IDS = tuple(
+    _discover_example_ids(_repo_root() / "examples" / "catalog")
+)
+LEGACY_KEY_PATTERN = re.compile(r"\bKey\.(?:RETURN|K_[0-9]+)\b")
 
 GAME_CASES = [
     ("deja-bounce", ("menu", "pong")),
@@ -341,6 +335,10 @@ class _EscapeMenuScene(SimScene):
 
 
 def test_catalog_examples_smoke() -> None:
+    assert "systems/action_map_variants" in EXAMPLE_IDS
+    assert "systems/cull_viewport_builtin" in EXAMPLE_IDS
+    assert "systems/pause_intent_builtin" in EXAMPLE_IDS
+
     for example_id in EXAMPLE_IDS:
         spec = load_example_spec(example_id)
         settings = Settings.for_example(
@@ -359,11 +357,68 @@ def test_catalog_examples_smoke() -> None:
         )
 
 
+def test_example_runner_propagates_run_game_failures(
+    monkeypatch,
+) -> None:
+    class _StubSettings:
+        def gameplay_defaults(self) -> dict[str, object]:
+            return {}
+
+    spec = ExampleSpec(
+        discover_packages=["tests.fake_scenes"],
+        initial_scene="main",
+        fps=60,
+        backend_factory=lambda: object(),
+    )
+
+    def _fake_load_example_spec(example_id: str, **kwargs) -> ExampleSpec:
+        del kwargs
+        assert example_id == "tests/failing_example"
+        return spec
+
+    def _fake_for_example(
+        example_id: str,
+        required: bool = False,
+    ) -> _StubSettings:
+        assert example_id == "tests/failing_example"
+        assert required is False
+        return _StubSettings()
+
+    def _broken_run_game(**kwargs) -> None:
+        del kwargs
+        raise RuntimeError("runner boom")
+
+    monkeypatch.setattr(
+        example_runner, "load_example_spec", _fake_load_example_spec
+    )
+    monkeypatch.setattr(
+        example_runner.Settings, "for_example", _fake_for_example
+    )
+    monkeypatch.setattr(example_runner, "run_game", _broken_run_game)
+
+    with pytest.raises(RuntimeError, match="runner boom"):
+        example_runner.run_example("tests/failing_example")
+
+
+def test_examples_use_canonical_key_names() -> None:
+    offenders: list[str] = []
+    examples_dir = _repo_root() / "examples" / "catalog"
+
+    for path in sorted(examples_dir.rglob("*.py")):
+        text = path.read_text(encoding="utf-8")
+        if LEGACY_KEY_PATTERN.search(text):
+            offenders.append(str(path.relative_to(_repo_root())))
+
+    assert offenders == []
+
+
 def test_games_smoke() -> None:
     for game_id, scene_ids in GAME_CASES:
         settings = Settings.for_game(game_id, required=True, force_reload=True)
         scene_config = SceneConfig.from_dict(settings.scene_defaults())
-        engine_config = EngineConfig.from_dict(settings.engine_config_defaults())
+        engine_config = EngineConfig.from_dict(
+            settings.engine_config_defaults()
+        )
         gameplay_config = settings.gameplay_defaults()
 
         for scene_id in scene_ids:

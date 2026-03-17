@@ -60,8 +60,10 @@ class CullOutOfViewportSystem:
     Rebuild a list in place, keeping only alive items that overlap viewport.
 
     ``viewport_getter`` must return ``(vw, vh)`` and list hooks define which
-    collection is filtered. Bounds/alive extraction can be customized, but the
-    defaults work with current ``BaseEntity`` instances.
+    collection is filtered. ``step()`` expects a context object exposing
+    ``ctx.world`` and passes that world object to the configured getters.
+    Bounds/alive extraction can be customized, but the defaults work with
+    current ``BaseEntity`` instances.
     """
 
     name: str = "common_cull_viewport"
@@ -82,7 +84,7 @@ class CullOutOfViewportSystem:
 
     def step(self, ctx: object) -> None:
         """
-        Cull non-overlapping or dead items from the configured list.
+        Cull non-overlapping or dead items from the configured list on ``ctx.world``.
         """
         vw, vh = self.viewport_getter(ctx.world)
         kept: list[Cullable] = []
@@ -97,7 +99,12 @@ class CullOutOfViewportSystem:
                 continue
 
             left, top, right, bottom = bounds
-            if right < 0.0 or left > float(vw) or bottom < 0.0 or top > float(vh):
+            if (
+                right < 0.0
+                or left > float(vw)
+                or bottom < 0.0
+                or top > float(vh)
+            ):
                 continue
             kept.append(item)
 
