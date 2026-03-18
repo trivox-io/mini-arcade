@@ -4,7 +4,7 @@ Collision collider specifications.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 from mini_arcade_core.spaces.geometry.size import Size2D
@@ -62,8 +62,10 @@ class LineColliderSpec(ColliderSpec):
     """
 
     kind: Literal["line"] = "line"
-    a: Vec2 = Vec2(0.0, 0.0)  # local-space
-    b: Vec2 = Vec2(1.0, 0.0)
+    a: Vec2 = field(
+        default_factory=lambda: Vec2(0.0, 0.0)
+    )  # local-space
+    b: Vec2 = field(default_factory=lambda: Vec2(1.0, 0.0))
 
 
 @dataclass(frozen=True)
