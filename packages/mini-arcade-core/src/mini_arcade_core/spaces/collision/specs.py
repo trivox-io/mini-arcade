@@ -62,9 +62,7 @@ class LineColliderSpec(ColliderSpec):
     """
 
     kind: Literal["line"] = "line"
-    a: Vec2 = field(
-        default_factory=lambda: Vec2(0.0, 0.0)
-    )  # local-space
+    a: Vec2 = field(default_factory=lambda: Vec2(0.0, 0.0))  # local-space
     b: Vec2 = field(default_factory=lambda: Vec2(1.0, 0.0))
 
 
