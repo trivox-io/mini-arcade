@@ -4,7 +4,7 @@ Render service definition.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from PIL import Image
 
@@ -23,7 +23,7 @@ class RenderService:
 
     backend: Backend
     last_frame_ms: float = 0.0
-    last_stats: RenderStats = RenderStats()
+    last_stats: RenderStats = field(default_factory=RenderStats)
 
     def load_texture(self, path: str) -> int:
         """

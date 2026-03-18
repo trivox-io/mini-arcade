@@ -83,6 +83,21 @@ def _game_settings_path(game_id: str) -> Path:
     )
 
 
+def _missing_game_cases() -> list[str]:
+    missing: list[str] = []
+    root = _repo_root()
+    for game_id, _scene_ids in GAME_CASES:
+        game_src = root / "games" / game_id / "src"
+        try:
+            _game_settings_path(game_id)
+        except FileNotFoundError:
+            missing.append(f"{game_id}:missing-settings")
+            continue
+        if not game_src.is_dir():
+            missing.append(f"{game_id}:missing-src")
+    return missing
+
+
 @dataclass
 class _FakeWindow:
     width: int = 960
@@ -431,6 +446,13 @@ def test_examples_use_canonical_key_names() -> None:
 
 
 def test_games_smoke() -> None:
+    missing = _missing_game_cases()
+    if missing:
+        pytest.skip(
+            "games/ content not available in this checkout: "
+            + ", ".join(missing)
+        )
+
     for game_id, scene_ids in GAME_CASES:
         settings = Settings(
             config_path=_game_settings_path(game_id),
