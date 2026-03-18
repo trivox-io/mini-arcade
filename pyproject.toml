@@ -53,6 +53,7 @@ force-exclude = '''(
 profile = "black"
 line_length = 79
 known_first_party = [
+    "examples",
     "mini_arcade",
     "mini_arcade_core",
     "mini_arcade_native_backend",

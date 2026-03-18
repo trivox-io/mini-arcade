@@ -40,7 +40,13 @@ force-exclude = '''(
 [tool.isort]
 profile = "black"
 line_length = 79
-known_first_party = ["mini_arcade_core"]
+known_first_party = [
+    "examples",
+    "mini_arcade",
+    "mini_arcade_core",
+    "mini_arcade_native_backend",
+    "mini_arcade_pygame_backend",
+]
 skip = [".venv", "venv", "env", "build", "dist", "docs"]
 
 [tool.pytest.ini_options]
