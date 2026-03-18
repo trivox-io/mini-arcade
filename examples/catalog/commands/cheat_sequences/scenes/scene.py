@@ -101,7 +101,7 @@ class CheatSequencesDemoScene(SimScene):
                 )
             )
 
-        buffer_str = " ".join(self._cheats._buffer)  # noqa: SLF001
+        buffer_str = " ".join(self._cheats.buffer)  # noqa: SLF001
         log_snap = list(_log)
 
         def draw(backend: Backend):

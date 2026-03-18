@@ -31,6 +31,8 @@ class InputFrameVisualizerScene(SimScene):
         super().__init__(ctx)
         self._frame_count = 0
 
+    # Justification: This is just an example scene, so it's fine to have a long method.
+    # pylint: disable=too-many-statements
     def tick(self, input_frame: InputFrame, dt: float) -> RenderPacket:
         self._frame_count += 1
         frame = input_frame

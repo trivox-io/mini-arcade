@@ -53,6 +53,16 @@ class CheatManager:
         # ensure deque maxlen matches buffer_size
         self._buffer = deque(maxlen=self.buffer_size)
 
+    @property
+    def buffer(self) -> Sequence[str]:
+        """
+        Get a snapshot of the current input buffer.
+
+        :return: Current input buffer as a sequence of key strings.
+        :rtype: Sequence[str]
+        """
+        return tuple(self._buffer)
+
     # TODO: ISolve too-many-arguments warning later
     # Justification: The method needs multiple optional parameters for flexibility.
     # pylint: disable=too-many-arguments

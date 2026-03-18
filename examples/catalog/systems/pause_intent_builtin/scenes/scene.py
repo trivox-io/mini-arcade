@@ -104,9 +104,6 @@ class PauseIntentDemoScene(SimScene):
 class PauseIntentOverlayScene(SimScene):
     """Simple overlay that pops itself when Escape or Enter is pressed."""
 
-    def __init__(self, ctx: RuntimeContext):
-        super().__init__(ctx)
-
     def tick(self, input_frame: InputFrame, dt: float) -> RenderPacket:
         if (
             Key.ESCAPE in input_frame.keys_pressed

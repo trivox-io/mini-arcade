@@ -48,6 +48,12 @@ class _TrackerSystem:
     order: int
 
     def step(self, ctx: _DemoContext) -> None:
+        """
+        Append this system's label to the shared log, prefixed by its phase and order.
+
+        :param ctx: Shared context containing the log list.
+        :type ctx: _DemoContext
+        """
         phase_name = SystemPhase(self.phase).name
         ctx.log.append(
             f"{phase_name}({self.phase}) order={self.order:>3d}  [{self.name}]"

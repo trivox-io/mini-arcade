@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
-from typing import List
 
 from mini_arcade_core.backend import Backend
 from mini_arcade_core.engine.entities import BaseEntity
@@ -20,9 +19,6 @@ from mini_arcade_core.runtime.input_frame import InputFrame
 from mini_arcade_core.scenes.autoreg import register_scene
 from mini_arcade_core.scenes.sim_scene import SimScene
 from mini_arcade_core.scenes.systems.builtins import CullOutOfViewportSystem
-from mini_arcade_core.spaces.geometry.transform import Transform2D
-from mini_arcade_core.spaces.math.vec2 import Vec2
-from mini_arcade_core.spaces.physics.kinematics2d import Kinematic2D
 
 SCENE_ID = "cull_viewport_demo"
 
