@@ -4,6 +4,9 @@ Scene for window/resize_reflow tutorial example.
 
 from __future__ import annotations
 
+
+# isort owns import ordering; pylint misclassifies local packages as third-party.
+# pylint: disable=wrong-import-order
 import math
 
 from examples._shared.text_layout import draw_text_block, fit_text_block

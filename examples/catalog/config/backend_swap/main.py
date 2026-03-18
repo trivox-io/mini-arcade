@@ -4,6 +4,9 @@ Example: config/backend_swap
 
 from __future__ import annotations
 
+
+# isort owns import ordering; pylint misclassifies local packages as third-party.
+# pylint: disable=wrong-import-order
 import importlib
 from typing import Any
 

@@ -4,6 +4,9 @@ Scene for window/fit_vs_fill tutorial example.
 
 from __future__ import annotations
 
+
+# isort owns import ordering; pylint misclassifies local packages as third-party.
+# pylint: disable=wrong-import-order
 from examples._shared.text_layout import draw_text_block, fit_text_block
 from mini_arcade_core.backend.backend import Backend
 from mini_arcade_core.backend.keys import Key

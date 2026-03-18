@@ -78,9 +78,6 @@ class StackMainScene(SimScene):
 class StackOverlayScene(SimScene):
     """Overlay: press Escape to pop back."""
 
-    def __init__(self, ctx: RuntimeContext):
-        super().__init__(ctx)
-
     def tick(self, input_frame: InputFrame, dt: float) -> RenderPacket:
         cq = self.context.command_queue
         if Key.ESCAPE in input_frame.keys_pressed:
@@ -99,9 +96,6 @@ class StackOverlayScene(SimScene):
 @register_scene("stack_alt")
 class StackAltScene(SimScene):
     """Alternate scene: press Escape to change back to main."""
-
-    def __init__(self, ctx: RuntimeContext):
-        super().__init__(ctx)
 
     def tick(self, input_frame: InputFrame, dt: float) -> RenderPacket:
         cq = self.context.command_queue

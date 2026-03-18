@@ -79,6 +79,7 @@ disable = [
     "too-many-locals",
     "too-many-arguments",
     "broad-exception-caught",
+    "wrong-import-order",
 ]
 
 [tool.pylint.TYPECHECK]

@@ -4,6 +4,9 @@ Example: scene/minimal_scene
 
 from __future__ import annotations
 
+
+# isort owns import ordering; pylint misclassifies local packages as third-party.
+# pylint: disable=wrong-import-order
 from typing import Any
 
 from examples._shared.defaults import make_backend_factory
