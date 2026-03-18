@@ -31,9 +31,13 @@ jobs:
           - project_name: "mini-arcade-core"
             working_directory: "packages/mini-arcade-core"
             lint_path: "src/mini_arcade_core"
-            apt_deps: ""
+            apt_deps: "libsdl2-dev libsdl2-ttf-dev libsdl2-mixer-dev"
             run_pytest: true
-            local_dependency_paths: "[]"
+            local_dependency_paths: >-
+              ["$GITHUB_WORKSPACE/packages/mini-arcade-core",
+               "$GITHUB_WORKSPACE/packages/mini-arcade-pygame-backend",
+               "$GITHUB_WORKSPACE/packages/mini-arcade-native-backend",
+               "$GITHUB_WORKSPACE/packages/mini-arcade"]
 
           - project_name: "mini-arcade-pygame-backend"
             working_directory: "packages/mini-arcade-pygame-backend"
@@ -49,7 +53,9 @@ jobs:
             apt_deps: "libsdl2-dev libsdl2-ttf-dev libsdl2-mixer-dev"
             run_pytest: true
             local_dependency_paths: >-
-              ["$GITHUB_WORKSPACE/packages/mini-arcade-core"]
+              ["$GITHUB_WORKSPACE/packages/mini-arcade-core",
+               "$GITHUB_WORKSPACE/packages/mini-arcade-pygame-backend",
+               "$GITHUB_WORKSPACE/packages/mini-arcade"]
 
     uses: ./.github/workflows/reusable-python-ci.yml
     with:
