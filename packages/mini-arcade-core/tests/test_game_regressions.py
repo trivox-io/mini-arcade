@@ -3,9 +3,20 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 
 def _repo_root() -> Path:
     return Path(__file__).resolve().parents[3]
+
+
+# games/ are git submodules unavailable in CI.
+_games_available = (_repo_root() / "games" / "asteroids" / "src").is_dir()
+if not _games_available:
+    pytest.skip(
+        "games/ submodules not available in CI",
+        allow_module_level=True,
+    )
 
 
 def _bootstrap_repo_imports() -> None:
