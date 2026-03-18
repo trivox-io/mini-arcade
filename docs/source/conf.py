@@ -177,6 +177,8 @@ html_title = "Mini Arcade"
 
 REPO_URL = "https://github.com/trivox-io/mini-arcade"
 DOCS_URL = f"{REPO_URL}/tree/main/docs"
+GAMES_URL = f"{REPO_URL}/tree/main/games"
+TRIVOX_URL = "https://trivox.io/"
 
 _logo_abs = os.path.join(
     os.path.dirname(__file__), "_static", "mini-arcade-logo.png"
@@ -234,6 +236,18 @@ html_theme_options = {
             "url": DOCS_URL,
             "html": "",
             "class": "fa-solid fa-book",
+        },
+        {
+            "name": "Games",
+            "url": GAMES_URL,
+            "html": "",
+            "class": "fa-solid fa-gamepad",
+        },
+        {
+            "name": "Trivox",
+            "url": TRIVOX_URL,
+            "html": "",
+            "class": "fa-solid fa-arrow-up-right-from-square",
         },
     ],
 }

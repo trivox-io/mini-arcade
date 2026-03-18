@@ -4,6 +4,40 @@ Mini Arcade is a Python-first mini game engine and monorepo built to ship
 small arcade games while keeping engine architecture simple, explicit, and
 testable.
 
+A Trivox project for building and shipping small arcade games with a clean,
+testable Python-first architecture.
+
+::::{grid} 2 2 4 4
+:gutter: 2
+
+:::{grid-item-card} Docs
+:link: quickstart
+:link-type: doc
+
+Start with the quickstart, architecture, tutorials, and API reference.
+:::
+
+:::{grid-item-card} Repo
+:link: https://github.com/trivox-io/mini-arcade
+
+Browse the monorepo, packages, games, and tooling on GitHub.
+:::
+
+:::{grid-item-card} Play the Games
+:link: games/index
+:link-type: doc
+
+See the reference games used to validate engine architecture in practice.
+:::
+
+:::{grid-item-card} Back to Trivox
+:link: https://trivox.io/
+
+Return to the wider Trivox ecosystem of tools, pipelines, and experiments.
+:::
+
+::::
+
 ```{button-link} quickstart.html
 :color: primary
 :shadow:
@@ -17,6 +51,18 @@ Get Started
 
 Read Architecture
 ```
+
+## Why Mini Arcade exists
+
+Mini Arcade exists to validate engine architecture through real games, not
+just isolated demos. It is a Python-first engine playground inside the broader
+Trivox ecosystem, built to turn small arcade games into a practical way to
+test reusable systems, scene patterns, rendering flows, and tooling.
+
+The emphasis is on reusable systems rather than throwaway prototypes. Games in
+the repo are meant to help harden the engine, expose weak spots in the
+architecture, and keep the path from experiment to shippable small game clean
+and testable.
 
 ## What you get
 
@@ -40,6 +86,13 @@ Screenshots, replay recording/playback, and video frame capture hooks.
 :::
 
 ::::
+
+## Project Status
+
+- Active project
+- Monorepo evolving
+- Games used as validation
+- More tools and examples coming
 
 ## Explore
 
@@ -68,6 +121,8 @@ Reference games used to validate architecture and catch regressions.
 :::
 
 ::::
+
+Built by Santiago under [Trivox](https://trivox.io/).
 
 ```{toctree}
 :caption: Start Here
