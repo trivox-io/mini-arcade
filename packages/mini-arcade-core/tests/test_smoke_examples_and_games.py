@@ -67,6 +67,22 @@ GAME_CASES = [
 ]
 
 
+def _game_settings_path(game_id: str) -> Path:
+    root = _repo_root()
+    candidates = (
+        root / "games" / game_id / "settings" / "settings.yml",
+        root / "games" / game_id / "settings" / "settings.yaml",
+    )
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(
+        "No settings file found for game "
+        f"{game_id!r}. Searched: "
+        + ", ".join(str(path) for path in candidates)
+    )
+
+
 @dataclass
 class _FakeWindow:
     width: int = 960
@@ -416,7 +432,11 @@ def test_examples_use_canonical_key_names() -> None:
 
 def test_games_smoke() -> None:
     for game_id, scene_ids in GAME_CASES:
-        settings = Settings.for_game(game_id, required=True, force_reload=True)
+        settings = Settings(
+            config_path=_game_settings_path(game_id),
+            required=True,
+            force_reload=True,
+        )
         scene_config = SceneConfig.from_dict(settings.scene_defaults())
         engine_config = EngineConfig.from_dict(
             settings.engine_config_defaults()
