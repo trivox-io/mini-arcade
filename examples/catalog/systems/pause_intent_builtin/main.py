@@ -6,7 +6,6 @@ Shows IntentPauseSystem converting an intent flag into a PushScene command.
 
 from __future__ import annotations
 
-
 # isort owns import ordering; pylint misclassifies local packages as third-party.
 # pylint: disable=wrong-import-order
 from typing import Any

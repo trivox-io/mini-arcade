@@ -4,7 +4,6 @@ Shared runtime helpers for Group C entity tutorials.
 
 from __future__ import annotations
 
-
 # isort owns import ordering; pylint misclassifies local packages as third-party.
 # pylint: disable=wrong-import-order
 from dataclasses import dataclass, field

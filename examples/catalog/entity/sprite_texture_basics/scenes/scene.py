@@ -4,7 +4,6 @@ Scene for entity/sprite_texture_basics.
 
 from __future__ import annotations
 
-
 # isort owns import ordering; pylint misclassifies local packages as third-party.
 # pylint: disable=wrong-import-order
 from examples.catalog.entity._shared import (

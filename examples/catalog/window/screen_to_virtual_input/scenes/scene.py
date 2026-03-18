@@ -4,7 +4,6 @@ Scene for window/screen_to_virtual_input tutorial example.
 
 from __future__ import annotations
 
-
 # isort owns import ordering; pylint misclassifies local packages as third-party.
 # pylint: disable=wrong-import-order
 from examples._shared.text_layout import draw_text_block, fit_text_block
