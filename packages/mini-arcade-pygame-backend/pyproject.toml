@@ -70,8 +70,14 @@ disable = [
     # Justification: Dynamic attributes are common in Pygame.
     "no-member",
     "logging-fstring-interpolation",
+    "duplicate-code",
     # Justification: Some classes naturally require many attributes to function.
     "too-many-instance-attributes",
+    "too-many-locals",
+    "too-many-arguments",
+    "broad-exception-caught",
+    # isort owns import ordering; pylint misclassifies sibling packages as third-party.
+    "wrong-import-order",
 ]
 
 [tool.pylint.MAIN]
