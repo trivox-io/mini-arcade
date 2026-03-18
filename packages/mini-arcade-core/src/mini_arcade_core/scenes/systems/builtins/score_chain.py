@@ -9,7 +9,9 @@ from typing import Callable, Generic, TypeVar
 
 from mini_arcade_core.scenes.systems.phases import SystemPhase
 
+# pylint: disable=invalid-name
 TCtx = TypeVar("TCtx")
+# pylint: enable=invalid-name
 
 
 def _default_enabled_when(_ctx: object) -> bool:
@@ -27,6 +29,12 @@ class ScoreChainState:
 
     @property
     def active(self) -> bool:
+        """
+        Whether the score chain is currently active and can be extended.
+
+        :return: True if the chain is active, False otherwise.
+        :rtype: bool
+        """
         return self.step_index > 0 and self.remaining_seconds > 0.0
 
 

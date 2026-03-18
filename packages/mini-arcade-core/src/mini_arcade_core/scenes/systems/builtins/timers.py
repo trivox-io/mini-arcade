@@ -9,7 +9,9 @@ from typing import Any, Callable, Generic, TypeVar
 
 from mini_arcade_core.scenes.systems.phases import SystemPhase
 
+# pylint: disable=invalid-name
 TCtx = TypeVar("TCtx")
+# pylint: enable=invalid-name
 
 
 def _default_enabled_when(_ctx: object) -> bool:

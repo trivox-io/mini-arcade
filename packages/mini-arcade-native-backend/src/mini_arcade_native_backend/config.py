@@ -67,7 +67,7 @@ class NativeBackendSettings:
                 audio=audio,
                 fonts=fonts,
             ),
-            api=native.RenderAPI(
-                data.get("api", cls.api)
-            ),  # pylint: disable=no-member
+            # Justification: native is a compiled extension module with stubbed members.
+            # pylint: disable=no-member
+            api=native.RenderAPI(data.get("api", cls.api)),
         )
