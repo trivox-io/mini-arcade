@@ -1,5 +1,6 @@
 """
-This module contains core rendering components for the mini-arcade engine, including the render pipeline, render passes, and camera utilities.
+This module contains core rendering components for the mini-arcade engine,
+including the render pipeline, render passes, and camera utilities.
 """
 
 from .camera import (
