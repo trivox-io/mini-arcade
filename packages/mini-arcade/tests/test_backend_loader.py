@@ -28,4 +28,6 @@ def test_backend_loader_raises_when_explicit_native_backend_fails(
     except ImportError as exc:
         assert "native backend unavailable" in str(exc)
     else:
-        raise AssertionError("Expected ImportError for explicit native backend")
+        raise AssertionError(
+            "Expected ImportError for explicit native backend"
+        )

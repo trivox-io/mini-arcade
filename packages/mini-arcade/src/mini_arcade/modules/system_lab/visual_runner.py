@@ -4,12 +4,12 @@ Built-in visual runner for system lab cases.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
 import importlib.util
 import os
-from pathlib import Path
 import sys
 import time
+from dataclasses import dataclass, replace
+from pathlib import Path
 from typing import Any
 
 from mini_arcade.modules.backend_loader import BackendLoader
@@ -19,9 +19,15 @@ from mini_arcade_core.engine.render.packet import RenderPacket
 from mini_arcade_core.runtime.input_frame import InputFrame
 from mini_arcade_core.scenes.autoreg import register_scene
 from mini_arcade_core.scenes.bootstrap import scene_viewport
-from mini_arcade_core.scenes.sim_scene import DrawCall, SimScene, SubmitRenderQueue
+from mini_arcade_core.scenes.sim_scene import (
+    DrawCall,
+    SimScene,
+    SubmitRenderQueue,
+)
 from mini_arcade_core.scenes.systems.base_system import BaseSystem
-from mini_arcade_core.scenes.systems.builtins import ConfiguredActionIntentSystem
+from mini_arcade_core.scenes.systems.builtins import (
+    ConfiguredActionIntentSystem,
+)
 from mini_arcade_core.scenes.systems.phases import SystemPhase
 
 from .registry import BaseSystemLabCase, SystemLabVisualSpec
@@ -31,7 +37,9 @@ _ACTIVE_SPEC: SystemLabVisualSpec | None = None
 _ACTIVE_MODULE_NAMES: tuple[str, ...] = ()
 
 
-def _deep_merge(base: dict[str, Any], overrides: dict[str, Any]) -> dict[str, Any]:
+def _deep_merge(
+    base: dict[str, Any], overrides: dict[str, Any]
+) -> dict[str, Any]:
     merged = dict(base)
     for key, value in overrides.items():
         current = merged.get(key)
@@ -302,9 +310,7 @@ class SystemLabVisualScene(SimScene[object, object]):
         self.systems.extend(case.build_visual_systems())
         self.systems.add(_SystemLabPacketFinalizeSystem())
 
-    def _get_tick_context(
-        self, input_frame: InputFrame, dt: float
-    ) -> object:
+    def _get_tick_context(self, input_frame: InputFrame, dt: float) -> object:
         spec = _require_active_spec()
         tick_context_type = spec.tick_context_type
         return tick_context_type(

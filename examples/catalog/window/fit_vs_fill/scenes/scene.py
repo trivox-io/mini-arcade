@@ -4,6 +4,7 @@ Scene for window/fit_vs_fill tutorial example.
 
 from __future__ import annotations
 
+from examples._shared.text_layout import draw_text_block, fit_text_block
 from mini_arcade_core.backend.backend import Backend
 from mini_arcade_core.backend.keys import Key
 from mini_arcade_core.engine.render.packet import RenderPacket
@@ -12,8 +13,6 @@ from mini_arcade_core.runtime.context import RuntimeContext
 from mini_arcade_core.runtime.input_frame import InputFrame
 from mini_arcade_core.scenes.autoreg import register_scene
 from mini_arcade_core.scenes.sim_scene import SimScene
-
-from examples._shared.text_layout import draw_text_block, fit_text_block
 
 SCENE_ID = "fit_vs_fill"
 

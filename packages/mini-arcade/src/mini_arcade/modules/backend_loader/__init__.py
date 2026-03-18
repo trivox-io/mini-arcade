@@ -10,6 +10,7 @@ from mini_arcade_core.backend import (  # pyright: ignore[reportMissingImports]
     Backend,
 )
 
+
 class BackendLoader:
     """
     Utility class to load and configure backends based on settings.

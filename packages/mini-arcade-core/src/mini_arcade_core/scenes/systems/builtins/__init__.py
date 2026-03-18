@@ -113,6 +113,9 @@ from .maze import (  # noqa: E402  (re-export)
     TunnelWrapBinding,
     TunnelWrapSystem,
     available_directions,
+    choose_direction_away,
+    choose_direction_toward,
+    choose_random_direction,
     is_junction,
     step_in_direction,
     tile_map_from_strings,
@@ -171,11 +174,25 @@ from .projectiles import (  # noqa: E402  (re-export)
     ProjectileLifecycleBinding,
     ProjectileLifecycleBundle,
 )
+from .score_chain import (  # noqa: E402  (re-export)
+    ScoreChainBinding,
+    ScoreChainState,
+    ScoreChainSystem,
+    claim_score_chain_points,
+    reset_score_chain,
+)
 from .spawn import (  # noqa: E402  (re-export)
     SpawnBinding,
     SpawnSystem,
     WaveProgressionBinding,
     WaveProgressionSystem,
+)
+from .timers import (  # noqa: E402  (re-export)
+    TimedState,
+    TimedStateBinding,
+    TimedStateSystem,
+    activate_timed_state,
+    clear_timed_state,
 )
 
 if TYPE_CHECKING:
@@ -709,6 +726,9 @@ __all__ = [
     "ProceduralParticleRenderSystem",
     "ProceduralParticleSimulationSystem",
     "RenderOverlay",
+    "ScoreChainBinding",
+    "ScoreChainState",
+    "ScoreChainSystem",
     "SceneCaptureConfig",
     "PaddleBouncePolicy",
     "POTION_ALPHA_RAMP",
@@ -733,6 +753,9 @@ __all__ = [
     "blast_cells",
     "block_cells_from_strings",
     "choose_first_grid_cell",
+    "choose_direction_away",
+    "choose_direction_toward",
+    "choose_random_direction",
     "fire_particle_binding",
     "free_grid_cells",
     "magic_particle_binding",
@@ -744,10 +767,14 @@ __all__ = [
     "potion_particle_binding",
     "reflect_from_viewport",
     "resolve_rect_bounce",
+    "reset_score_chain",
     "smoke_particle_binding",
     "spawn_explosion_from_bomb",
     "step_in_direction",
     "tile_map_from_strings",
+    "TimedState",
+    "TimedStateBinding",
+    "TimedStateSystem",
     "ProceduralParticleProfile",
     "TileMap",
     "TimedMode",
@@ -755,4 +782,7 @@ __all__ = [
     "TunnelWrapSystem",
     "ViewportBounceBinding",
     "ViewportBounceSystem",
+    "activate_timed_state",
+    "claim_score_chain_points",
+    "clear_timed_state",
 ]

@@ -92,11 +92,15 @@ class TextPort:
         bbox = font.getbbox(text or " ")
         width = max(1, int(bbox[2] - bbox[0]))
         height = max(1, int(bbox[3] - bbox[1]))
-        return width, height, (
-            int(bbox[0]),
-            int(bbox[1]),
-            int(bbox[2]),
-            int(bbox[3]),
+        return (
+            width,
+            height,
+            (
+                int(bbox[0]),
+                int(bbox[1]),
+                int(bbox[2]),
+                int(bbox[3]),
+            ),
         )
 
     def _evict_cached_textures_if_needed(self) -> None:

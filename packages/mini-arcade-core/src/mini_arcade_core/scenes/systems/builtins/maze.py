@@ -4,6 +4,7 @@ Reusable maze and lane-based grid gameplay helpers.
 
 from __future__ import annotations
 
+import random
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Generic, Iterable, Mapping, TypeVar
@@ -164,6 +165,110 @@ def available_directions(
         if can_enter(tile_map.get(target)):
             out.append(direction)
     return tuple(out)
+
+
+def _filtered_directions(
+    directions: tuple[CardinalDirection, ...],
+    *,
+    current_direction: CardinalDirection | None,
+    allow_reverse: bool,
+) -> tuple[CardinalDirection, ...]:
+    if allow_reverse or current_direction is None:
+        return directions
+
+    non_reverse = tuple(
+        direction
+        for direction in directions
+        if direction is not current_direction.opposite
+    )
+    return non_reverse or directions
+
+
+def choose_direction_toward(
+    tile_map: TileMap[TCell],
+    coord: GridCoord,
+    target: GridCoord,
+    *,
+    can_enter: Callable[[TCell | None], bool],
+    current_direction: CardinalDirection | None = None,
+    allow_reverse: bool = False,
+) -> CardinalDirection | None:
+    """
+    Choose the exit that minimizes Manhattan distance to a target cell.
+    """
+
+    exits = _filtered_directions(
+        available_directions(tile_map, coord, can_enter=can_enter),
+        current_direction=current_direction,
+        allow_reverse=allow_reverse,
+    )
+    if not exits:
+        return None
+
+    return min(
+        exits,
+        key=lambda direction: (
+            abs(step_in_direction(coord, direction).col - target.col)
+            + abs(step_in_direction(coord, direction).row - target.row),
+            direction.value,
+        ),
+    )
+
+
+def choose_direction_away(
+    tile_map: TileMap[TCell],
+    coord: GridCoord,
+    target: GridCoord,
+    *,
+    can_enter: Callable[[TCell | None], bool],
+    current_direction: CardinalDirection | None = None,
+    allow_reverse: bool = False,
+) -> CardinalDirection | None:
+    """
+    Choose the exit that maximizes Manhattan distance from a target cell.
+    """
+
+    exits = _filtered_directions(
+        available_directions(tile_map, coord, can_enter=can_enter),
+        current_direction=current_direction,
+        allow_reverse=allow_reverse,
+    )
+    if not exits:
+        return None
+
+    return max(
+        exits,
+        key=lambda direction: (
+            abs(step_in_direction(coord, direction).col - target.col)
+            + abs(step_in_direction(coord, direction).row - target.row),
+            direction.value,
+        ),
+    )
+
+
+def choose_random_direction(
+    tile_map: TileMap[TCell],
+    coord: GridCoord,
+    *,
+    can_enter: Callable[[TCell | None], bool],
+    rng: random.Random | None = None,
+    current_direction: CardinalDirection | None = None,
+    allow_reverse: bool = False,
+) -> CardinalDirection | None:
+    """
+    Choose one valid exit randomly.
+    """
+
+    exits = _filtered_directions(
+        available_directions(tile_map, coord, can_enter=can_enter),
+        current_direction=current_direction,
+        allow_reverse=allow_reverse,
+    )
+    if not exits:
+        return None
+
+    chooser = rng or random.Random(1)
+    return chooser.choice(exits)
 
 
 def is_junction(
@@ -514,6 +619,9 @@ __all__ = [
     "TunnelWrapBinding",
     "TunnelWrapSystem",
     "available_directions",
+    "choose_direction_away",
+    "choose_direction_toward",
+    "choose_random_direction",
     "is_junction",
     "step_in_direction",
     "tile_map_from_strings",

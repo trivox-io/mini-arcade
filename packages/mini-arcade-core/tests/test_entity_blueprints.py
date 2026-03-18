@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from pathlib import Path
 import sys
+from pathlib import Path
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = PACKAGE_ROOT / "src"
@@ -53,6 +53,6 @@ def test_gameplay_settings_preserve_scene_specific_data():
     assert scene_cfg is not None
     assert scene_cfg.escape is not None
     assert scene_cfg.escape.scene_id == "menu"
-    assert scene_cfg.get("entities", {})["right_paddle"]["transform"]["position"][
-        "x"
-    ] == {"anchor": "right", "offset": 20.0}
+    assert scene_cfg.get("entities", {})["right_paddle"]["transform"][
+        "position"
+    ]["x"] == {"anchor": "right", "offset": 20.0}

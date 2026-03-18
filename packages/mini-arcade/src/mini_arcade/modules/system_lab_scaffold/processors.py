@@ -60,7 +60,8 @@ def _template_files(spec: SystemLabScaffoldSpec) -> dict[Path, str]:
     class_name = spec.class_name
 
     return {
-        project_dir / "__init__.py": '"""\nGenerated system lab experiment.\n"""\n',
+        project_dir
+        / "__init__.py": '"""\nGenerated system lab experiment.\n"""\n',
         project_dir
         / "manage.py": f"""\"\"\"Launch the {title} experiment directly.\"\"\"
 

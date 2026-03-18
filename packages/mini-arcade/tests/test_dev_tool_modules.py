@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
 import importlib
 import sys
+from pathlib import Path
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = PACKAGE_ROOT / "src"
@@ -19,9 +19,10 @@ for path in reversed(EXTRA_PATHS):
     if value not in sys.path:
         sys.path.insert(0, value)
 
-from mini_arcade.cli.registry import CommandRegistry
-from mini_arcade.cli.cli import CLIConfig, GlobalParserBuilder
+import mini_arcade.modules as commands_pkg
 from mini_arcade.app import MiniArcadeCLI
+from mini_arcade.cli.cli import CLIConfig, GlobalParserBuilder
+from mini_arcade.cli.registry import CommandRegistry
 from mini_arcade.constants import APP, CLI
 from mini_arcade.modules.game_scaffold.commands import ScaffoldGameCommand
 from mini_arcade.modules.game_scaffold.processors import GameScaffoldProcessor
@@ -35,7 +36,6 @@ from mini_arcade.modules.system_lab_scaffold.processors import (
     SystemLabScaffoldProcessor,
 )
 from mini_arcade.utils.module_loader import load_command_packages
-import mini_arcade.modules as commands_pkg
 
 
 def _build_cli() -> MiniArcadeCLI:
@@ -72,40 +72,25 @@ def test_game_scaffold_creates_current_project_layout(tmp_path: Path) -> None:
     assert (root / "manage.py").exists()
     assert (root / "settings" / "settings.yml").exists()
     assert (
-        root
-        / "src"
-        / "laser_garden"
-        / "scenes"
-        / "play"
-        / "bootstrap.py"
+        root / "src" / "laser_garden" / "scenes" / "play" / "bootstrap.py"
     ).exists()
     assert (
-        root
-        / "src"
-        / "laser_garden"
-        / "scenes"
-        / "play"
-        / "pipeline.py"
+        root / "src" / "laser_garden" / "scenes" / "play" / "pipeline.py"
     ).exists()
     scene_text = (
-        root
-        / "src"
-        / "laser_garden"
-        / "scenes"
-        / "play"
-        / "scene.py"
+        root / "src" / "laser_garden" / "scenes" / "play" / "scene.py"
     ).read_text(encoding="utf-8")
     assert 'controls_scene_key="play"' in scene_text
     assert "build_play_systems()" in scene_text
     assert (
-        root / "src" / "laser_garden" / "scenes" / "menu.py"
-    ).read_text(encoding="utf-8").startswith(
-        "from __future__ import annotations"
+        (root / "src" / "laser_garden" / "scenes" / "menu.py")
+        .read_text(encoding="utf-8")
+        .startswith("from __future__ import annotations")
     )
     assert (
-        root / "src" / "laser_garden" / "scenes" / "pause.py"
-    ).read_text(encoding="utf-8").startswith(
-        "from __future__ import annotations"
+        (root / "src" / "laser_garden" / "scenes" / "pause.py")
+        .read_text(encoding="utf-8")
+        .startswith("from __future__ import annotations")
     )
 
 
@@ -218,7 +203,7 @@ def test_system_lab_lists_and_runs_registered_case(
     package_dir.mkdir()
     (package_dir / "__init__.py").write_text("", encoding="utf-8")
     (package_dir / "sample_cases.py").write_text(
-        '''from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
+        """from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
 
 
 class CounterSystem:
@@ -238,12 +223,15 @@ class CounterCase(BaseSystemLabCase):
 
     def summarize(self, *, system, ctx, steps):
         return {"value": ctx["value"]}
-''',
+""",
         encoding="utf-8",
     )
     monkeypatch.syspath_prepend(str(tmp_path))
 
-    assert SystemLabProcessor(module=["labcases.sample_cases"], list=True).run() == 0
+    assert (
+        SystemLabProcessor(module=["labcases.sample_cases"], list=True).run()
+        == 0
+    )
     assert "counter_case" in capsys.readouterr().out
 
     assert (
@@ -270,7 +258,7 @@ def test_system_lab_command_ignores_global_cli_kwargs(
     package_dir.mkdir()
     (package_dir / "__init__.py").write_text("", encoding="utf-8")
     (package_dir / "sample_cases.py").write_text(
-        '''from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
+        """from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
 
 
 class CounterSystem:
@@ -285,7 +273,7 @@ class CounterCase(BaseSystemLabCase):
 
     def build_context(self):
         return {"value": 0}
-''',
+""",
         encoding="utf-8",
     )
     monkeypatch.syspath_prepend(str(tmp_path))
@@ -340,7 +328,7 @@ def test_system_lab_visual_runner_path(
     package_dir.mkdir()
     (package_dir / "__init__.py").write_text("", encoding="utf-8")
     (package_dir / "sample_cases.py").write_text(
-        '''from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
+        """from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
 
 
 @SystemLabRegistry.implementation("visual_case")
@@ -354,7 +342,7 @@ class VisualCase(BaseSystemLabCase):
     def run_visual(self):
         print("visual runner launched")
         return 0
-''',
+""",
         encoding="utf-8",
     )
     monkeypatch.syspath_prepend(str(tmp_path))
@@ -380,7 +368,7 @@ def test_system_lab_visual_runner_auto_selects_single_case(
     package_dir.mkdir()
     (package_dir / "__init__.py").write_text("", encoding="utf-8")
     (package_dir / "sample_cases.py").write_text(
-        '''from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
+        """from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
 
 
 @SystemLabRegistry.implementation("visual_case")
@@ -394,7 +382,7 @@ class VisualCase(BaseSystemLabCase):
     def run_visual(self):
         print("visual auto runner launched")
         return 0
-''',
+""",
         encoding="utf-8",
     )
     monkeypatch.syspath_prepend(str(tmp_path))
@@ -419,7 +407,7 @@ def test_system_lab_default_visual_runner_uses_builtin_lab(
     package_dir.mkdir()
     (package_dir / "__init__.py").write_text("", encoding="utf-8")
     (package_dir / "sample_cases.py").write_text(
-        '''from dataclasses import dataclass
+        """from dataclasses import dataclass
 
 from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
 
@@ -445,7 +433,7 @@ class VisualCase(BaseSystemLabCase):
 
     def build_context(self):
         return DummyContext(world={"value": 0})
-''',
+""",
         encoding="utf-8",
     )
     monkeypatch.syspath_prepend(str(tmp_path))
@@ -486,7 +474,9 @@ class VisualCase(BaseSystemLabCase):
     assert getattr(captured["spec"], "debug_overlay_start_visible") is False
     assert getattr(captured["spec"], "hot_reload_enabled") is True
     assert getattr(captured["spec"], "hot_reload_key") == "F5"
-    assert captured["module_names"] == ("labcases_builtin_visual.sample_cases",)
+    assert captured["module_names"] == (
+        "labcases_builtin_visual.sample_cases",
+    )
     assert captured["backend_provider_override"] is None
 
 
@@ -500,7 +490,7 @@ def test_system_lab_visual_backend_override_reaches_visual_runner(
     package_dir.mkdir()
     (package_dir / "__init__.py").write_text("", encoding="utf-8")
     (package_dir / "sample_cases.py").write_text(
-        '''from dataclasses import dataclass
+        """from dataclasses import dataclass
 
 from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
 
@@ -524,7 +514,7 @@ class VisualCase(BaseSystemLabCase):
 
     def build_context(self):
         return DummyContext(world={"value": 0})
-''',
+""",
         encoding="utf-8",
     )
     monkeypatch.syspath_prepend(str(tmp_path))
@@ -664,7 +654,7 @@ def test_load_command_packages_skips_non_command_modules(
     light_pkg.mkdir()
     (light_pkg / "__init__.py").write_text("", encoding="utf-8")
     (light_pkg / "commands.py").write_text(
-        '''from mini_arcade.cli.base_command import BaseCommand
+        """from mini_arcade.cli.base_command import BaseCommand
 from mini_arcade.cli.registry import CommandRegistry
 
 
@@ -674,7 +664,7 @@ class TempLightCommand(BaseCommand):
 
     def _execute(self, **kwargs):
         return 0
-''',
+""",
         encoding="utf-8",
     )
 
@@ -684,5 +674,7 @@ class TempLightCommand(BaseCommand):
         base_dir=modules_dir,
     )
 
-    assert [pkg.import_name for pkg in loaded] == ["demo_pkg.modules.light_cmd"]
+    assert [pkg.import_name for pkg in loaded] == [
+        "demo_pkg.modules.light_cmd"
+    ]
     assert CommandRegistry.contains("temp-light-cmd")

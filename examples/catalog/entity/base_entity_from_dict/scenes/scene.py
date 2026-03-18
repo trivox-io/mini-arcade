@@ -4,9 +4,6 @@ Scene for entity/base_entity_from_dict.
 
 from __future__ import annotations
 
-from mini_arcade_core.scenes.autoreg import register_scene
-from mini_arcade_core.scenes.game_scene import GameSceneSystemsConfig
-
 from examples.catalog.entity._shared import (
     EntityExampleScene,
     EntityExampleWorld,
@@ -16,6 +13,8 @@ from examples.catalog.entity._shared import (
     build_render_system,
     entity_from_dict,
 )
+from mini_arcade_core.scenes.autoreg import register_scene
+from mini_arcade_core.scenes.game_scene import GameSceneSystemsConfig
 
 SCENE_ID = "base_entity_from_dict"
 COURIER_ID = 1

@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable, Iterable, cast
 
+from examples._shared.text_layout import draw_text_block, fit_text_block
 from mini_arcade_core.engine.entities import BaseEntity
 from mini_arcade_core.runtime.context import RuntimeContext
 from mini_arcade_core.scenes.game_scene import GameScene
@@ -26,8 +27,6 @@ from mini_arcade_core.scenes.systems.builtins import (
     ViewportConstraintSystem,
 )
 from mini_arcade_core.scenes.systems.phases import SystemPhase
-
-from examples._shared.text_layout import draw_text_block, fit_text_block
 
 
 @dataclass

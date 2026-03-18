@@ -6,7 +6,9 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 
-from mini_arcade_core.backend.config import AudioSettings
+from mini_arcade_core.backend.config import (
+    AudioSettings,
+)
 from mini_arcade_core.backend.config import (
     BackendSettings as CoreBackendSettings,  # pyright: ignore[reportMissingImports]
 )
@@ -65,5 +67,7 @@ class NativeBackendSettings:
                 audio=audio,
                 fonts=fonts,
             ),
-            api=native.RenderAPI(data.get("api", cls.api)),  # pylint: disable=no-member
+            api=native.RenderAPI(
+                data.get("api", cls.api)
+            ),  # pylint: disable=no-member
         )

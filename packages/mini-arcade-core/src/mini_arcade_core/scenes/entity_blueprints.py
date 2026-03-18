@@ -110,7 +110,9 @@ def resolve_transform_layout(
     size = resolved.get("size", {}) or {}
     viewport_w, viewport_h = viewport
     entity_w = resolve_size_value(size.get("width", 0.0), axis_size=viewport_w)
-    entity_h = resolve_size_value(size.get("height", 0.0), axis_size=viewport_h)
+    entity_h = resolve_size_value(
+        size.get("height", 0.0), axis_size=viewport_h
+    )
     resolved["size"] = {
         "width": entity_w,
         "height": entity_h,

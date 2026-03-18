@@ -225,9 +225,10 @@ class ToggleDebugOverlayCommand(Command):
         if overlay_settings is None or not overlay_settings.enabled:
             return
 
-        scene_id = str(
-            getattr(overlay_settings, "scene_id", "debug_overlay")
-        ).strip() or "debug_overlay"
+        scene_id = (
+            str(getattr(overlay_settings, "scene_id", "debug_overlay")).strip()
+            or "debug_overlay"
+        )
         scenes = context.managers.scenes
         if scenes.has_scene(scene_id):
             scenes.remove_scene(scene_id)

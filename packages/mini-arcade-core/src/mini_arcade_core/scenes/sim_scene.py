@@ -341,7 +341,9 @@ class _TrackedEntityList(list[BaseEntity]):
     """
 
     def __init__(
-        self, owner: BaseWorld, values: list[BaseEntity] | tuple[BaseEntity, ...]
+        self,
+        owner: BaseWorld,
+        values: list[BaseEntity] | tuple[BaseEntity, ...],
     ):
         self._owner = owner
         super().__init__(values)

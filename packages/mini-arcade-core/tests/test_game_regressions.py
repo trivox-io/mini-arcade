@@ -25,7 +25,9 @@ _bootstrap_repo_imports()
 from dataclasses import dataclass
 
 from asteroids.entities import build_ship  # noqa: E402
-from asteroids.entities.entity_id import EntityId as AsteroidsEntityId  # noqa: E402
+from asteroids.entities.entity_id import (  # noqa: E402
+    EntityId as AsteroidsEntityId,
+)
 from asteroids.scenes.asteroids.models import (  # noqa: E402
     AsteroidsIntent,
     AsteroidsTickContext,
@@ -34,14 +36,8 @@ from asteroids.scenes.asteroids.models import (  # noqa: E402
 from asteroids.scenes.asteroids.systems import (  # noqa: E402
     BulletSpawnSystem as AsteroidsBulletSpawnSystem,
 )
-from deja_bounce.entities import DottedLine, EntityId as PongEntityId  # noqa: E402
-from mini_arcade_core.engine.commands import CommandQueue  # noqa: E402
-from mini_arcade_core.engine.entities import BaseEntity  # noqa: E402
-from mini_arcade_core.engine.gameplay_settings import GamePlaySettings  # noqa: E402
-from mini_arcade_core.runtime.context import RuntimeContext  # noqa: E402
-from mini_arcade_core.runtime.input_frame import InputFrame  # noqa: E402
-from mini_arcade_core.scenes.sim_scene import BaseWorld, EntityIdDomain  # noqa: E402
-from mini_arcade_core.spaces.geometry.bounds import Size2D  # noqa: E402
+from deja_bounce.entities import DottedLine
+from deja_bounce.entities import EntityId as PongEntityId  # noqa: E402
 from space_invaders.entities import (  # noqa: E402
     Alien,
     EntityId,
@@ -64,6 +60,19 @@ from space_invaders.scenes.space_invaders.systems import (  # noqa: E402
     BulletSpawnSystem,
     RoundStateSystem,
 )
+
+from mini_arcade_core.engine.commands import CommandQueue  # noqa: E402
+from mini_arcade_core.engine.entities import BaseEntity  # noqa: E402
+from mini_arcade_core.engine.gameplay_settings import (  # noqa: E402
+    GamePlaySettings,
+)
+from mini_arcade_core.runtime.context import RuntimeContext  # noqa: E402
+from mini_arcade_core.runtime.input_frame import InputFrame  # noqa: E402
+from mini_arcade_core.scenes.sim_scene import (  # noqa: E402
+    BaseWorld,
+    EntityIdDomain,
+)
+from mini_arcade_core.spaces.geometry.bounds import Size2D  # noqa: E402
 
 
 def _runtime_context() -> RuntimeContext:
@@ -451,10 +460,14 @@ def test_base_entity_and_world_support_tag_queries() -> None:
     assert ship.tags == ("ship", "player")
     assert world.get_entities_by_tag("ship") == [ship]
     assert world.find_entity(tag="bullet") is bullet
-    assert world.find_entities(predicate=lambda entity: "player" in entity.tags) == [ship]
+    assert world.find_entities(
+        predicate=lambda entity: "player" in entity.tags
+    ) == [ship]
 
 
-def test_base_world_supports_id_allocation_removal_and_tracked_compaction() -> None:
+def test_base_world_supports_id_allocation_removal_and_tracked_compaction() -> (
+    None
+):
     @dataclass
     class _World(BaseWorld):
         entity_id_domains = {
@@ -499,7 +512,9 @@ def test_base_world_supports_id_allocation_removal_and_tracked_compaction() -> N
         }
     )
 
-    world = _World(entities=[entity_a, entity_b, entity_c], tracked=[100, 101, 101])
+    world = _World(
+        entities=[entity_a, entity_b, entity_c], tracked=[100, 101, 101]
+    )
 
     assert world.allocate_entity_id(100, 105) == 102
     assert world.allocate_entity_id(100, 105, reserved_ids={102, 103}) == 105

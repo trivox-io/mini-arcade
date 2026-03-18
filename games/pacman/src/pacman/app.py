@@ -1,0 +1,27 @@
+from __future__ import annotations
+
+from mini_arcade.modules.backend_loader import BackendLoader
+from mini_arcade.modules.settings import Settings
+from mini_arcade_core import run_game
+
+
+def run() -> None:
+    settings = Settings.for_game("pacman", required=True)
+
+    backend_cfg = settings.backend_defaults(resolve_paths=True)
+    backend = BackendLoader.load_backend(backend_cfg)
+
+    engine_cfg = settings.engine_config_defaults()
+    scene_cfg = settings.scene_defaults()
+    gameplay_cfg = settings.gameplay_defaults()
+
+    run_game(
+        engine_config=engine_cfg,
+        scene_config=scene_cfg,
+        backend=backend,
+        gameplay_config=gameplay_cfg,
+    )
+
+
+if __name__ == "__main__":
+    run()

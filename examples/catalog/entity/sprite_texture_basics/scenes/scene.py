@@ -4,11 +4,6 @@ Scene for entity/sprite_texture_basics.
 
 from __future__ import annotations
 
-from mini_arcade_core.scenes.autoreg import register_scene
-from mini_arcade_core.scenes.game_scene import GameSceneSystemsConfig
-from mini_arcade_core.scenes.sim_scene import Drawable
-from mini_arcade_core.scenes.systems.builtins import RenderOverlay
-
 from examples.catalog.entity._shared import (
     EntityExampleScene,
     EntityExampleWorld,
@@ -22,6 +17,10 @@ from examples.catalog.entity._textures import (
     diamond_texture,
     stripe_texture,
 )
+from mini_arcade_core.scenes.autoreg import register_scene
+from mini_arcade_core.scenes.game_scene import GameSceneSystemsConfig
+from mini_arcade_core.scenes.sim_scene import Drawable
+from mini_arcade_core.scenes.systems.builtins import RenderOverlay
 
 SCENE_ID = "sprite_texture_basics"
 

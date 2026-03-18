@@ -6,12 +6,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from examples._shared.defaults import make_backend_factory
+from examples._shared.spec import ExampleSpec
 from mini_arcade.modules.settings import Settings
 from mini_arcade_core import EngineConfig
 from mini_arcade_core.engine.engine_config import PostFXConfig
-
-from examples._shared.defaults import make_backend_factory
-from examples._shared.spec import ExampleSpec
 
 EXAMPLE_ID = "scene/menu_scene_base"
 DEFAULT_SCENE_ID = "menu_scene_base_menu"

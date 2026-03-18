@@ -51,7 +51,6 @@ from mini_arcade_core.scenes.autoreg import register_scene  # noqa: E402
 from mini_arcade_core.scenes.registry import SceneRegistry  # noqa: E402
 from mini_arcade_core.scenes.sim_scene import SimScene  # noqa: E402
 
-
 EXAMPLE_IDS = tuple(
     _discover_example_ids(_repo_root() / "examples" / "catalog")
 )
@@ -62,6 +61,7 @@ GAME_CASES = [
     ("space-invaders", ("space_invaders_menu", "space_invaders")),
     ("asteroids", ("asteroids_menu", "asteroids")),
     ("breakout", ("menu", "play")),
+    ("pacman", ("menu", "play")),
     ("snake", ("menu", "play")),
     ("office-horrors", ("office_horrors_menu", "office_horrors")),
 ]

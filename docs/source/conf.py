@@ -51,6 +51,7 @@ def _docs_version() -> str:
 
     return "0.0.0"
 
+
 # -- Project information -----------------------------------------------------
 
 project = "Mini Arcade"
@@ -177,11 +178,19 @@ html_title = "Mini Arcade"
 REPO_URL = "https://github.com/trivox-io/mini-arcade"
 DOCS_URL = f"{REPO_URL}/tree/main/docs"
 
-_logo_abs = os.path.join(os.path.dirname(__file__), "_static", "mini-arcade-logo.png")
-_favicon_abs = os.path.join(os.path.dirname(__file__), "_static", "favicon-32x32.png")
+_logo_abs = os.path.join(
+    os.path.dirname(__file__), "_static", "mini-arcade-logo.png"
+)
+_favicon_abs = os.path.join(
+    os.path.dirname(__file__), "_static", "favicon-32x32.png"
+)
 
-html_logo = "_static/mini-arcade-logo.png" if os.path.exists(_logo_abs) else None
-html_favicon = "_static/favicon-32x32.png" if os.path.exists(_favicon_abs) else None
+html_logo = (
+    "_static/mini-arcade-logo.png" if os.path.exists(_logo_abs) else None
+)
+html_favicon = (
+    "_static/favicon-32x32.png" if os.path.exists(_favicon_abs) else None
+)
 
 html_css_files = [
     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/fontawesome.min.css",

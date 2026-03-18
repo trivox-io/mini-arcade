@@ -89,7 +89,9 @@ class DebugOverlayScene(SimScene):
             ]
 
         if section == "effects":
-            effects_stack = getattr(self.context.settings, "effects_stack", None)
+            effects_stack = getattr(
+                self.context.settings, "effects_stack", None
+            )
             if effects_stack is None:
                 return []
             active = ",".join(effects_stack.active) or "(none)"

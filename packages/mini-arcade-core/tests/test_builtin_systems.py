@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass, field
-from typing import Iterable
 from pathlib import Path
+from typing import Iterable
 
 
 def _repo_root() -> Path:
@@ -25,10 +25,10 @@ def _bootstrap_repo_imports() -> None:
 _bootstrap_repo_imports()
 
 from mini_arcade_core.engine.entities import BaseEntity  # noqa: E402
-from mini_arcade_core.scenes.sim_scene import (
+from mini_arcade_core.scenes.sim_scene import (  # noqa: E402
     BaseWorld,
     EntityIdDomain,
-)  # noqa: E402
+)
 from mini_arcade_core.scenes.systems import SystemPipeline  # noqa: E402
 from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     AnimationTickSystem,
@@ -36,6 +36,8 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     AxisIntentBinding,
     BagRandomizer,
     BlockBoard,
+    BoardRowClearBinding,
+    BoardRowClearSystem,
     BombField,
     BombFuseBinding,
     BombFuseSystem,
@@ -44,8 +46,6 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     BombState,
     BounceCollisionBinding,
     BounceCollisionSystem,
-    BoardRowClearBinding,
-    BoardRowClearSystem,
     BrickField,
     BrickFieldCollisionBinding,
     BrickFieldCollisionSystem,
@@ -69,6 +69,11 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     ExplosionLifetimeSystem,
     FallingBlockPiece,
     FallingBlockPieceSpec,
+    GridBounds,
+    GridCellSpawnBinding,
+    GridCellSpawnSystem,
+    GridCoord,
+    GridLayout,
     GridNavigationBinding,
     GridNavigationSystem,
     GridNavigatorState,
@@ -88,34 +93,42 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     ProceduralParticleSimulationSystem,
     ProjectileLifecycleBinding,
     ProjectileLifecycleBundle,
+    ScoreChainBinding,
+    ScoreChainState,
+    ScoreChainSystem,
     SpawnBinding,
     SpawnSystem,
     TileMap,
     TimedMode,
+    TimedState,
+    TimedStateBinding,
+    TimedStateSystem,
     TunnelWrapBinding,
     TunnelWrapSystem,
-    GridBounds,
-    GridCellSpawnBinding,
-    GridCellSpawnSystem,
-    GridCoord,
-    GridLayout,
-    ViewportConstraintBinding,
-    ViewportConstraintSystem,
     ViewportBounceBinding,
     ViewportBounceSystem,
+    ViewportConstraintBinding,
+    ViewportConstraintSystem,
     WaveProgressionBinding,
     WaveProgressionSystem,
+    activate_timed_state,
     arena_tile_map_from_strings,
     available_directions,
     blast_cells,
     block_cells_from_strings,
-    free_grid_cells,
+    choose_direction_away,
+    choose_direction_toward,
+    choose_random_direction,
+    claim_score_chain_points,
+    clear_timed_state,
     fire_particle_binding,
+    free_grid_cells,
     is_junction,
     is_walkable_arena_tile,
     magic_particle_binding,
     occupied_grid_cells,
     piece_fits,
+    reset_score_chain,
     resolve_rect_bounce,
     spawn_explosion_from_bomb,
     step_in_direction,
@@ -1019,6 +1032,134 @@ def test_tile_map_direct_construction_and_collectible_field_lookup() -> None:
     removed = field.remove(GridCoord(col=1, row=1))
     assert removed is not None
     assert removed.kind == CollectibleKind.POWER
+
+
+def test_maze_direction_choosers_prefer_toward_away_and_random() -> None:
+    tile_map = tile_map_from_strings(
+        "#####",
+        "#...#",
+        "#...#",
+        "#...#",
+        "#####",
+        legend={
+            "#": "wall",
+            ".": "lane",
+        },
+        default="void",
+    )
+    origin = GridCoord(col=2, row=2)
+
+    toward = choose_direction_toward(
+        tile_map,
+        origin,
+        GridCoord(col=3, row=2),
+        can_enter=lambda value: value == "lane",
+        current_direction=CardinalDirection.RIGHT,
+    )
+    away = choose_direction_away(
+        tile_map,
+        origin,
+        GridCoord(col=3, row=2),
+        can_enter=lambda value: value == "lane",
+        current_direction=CardinalDirection.RIGHT,
+    )
+    random_choice = choose_random_direction(
+        tile_map,
+        origin,
+        can_enter=lambda value: value == "lane",
+        current_direction=CardinalDirection.RIGHT,
+    )
+
+    assert toward == CardinalDirection.RIGHT
+    assert away in {
+        CardinalDirection.UP,
+        CardinalDirection.DOWN,
+        CardinalDirection.LEFT,
+    }
+    assert random_choice in {
+        CardinalDirection.UP,
+        CardinalDirection.DOWN,
+        CardinalDirection.RIGHT,
+    }
+
+
+def test_timed_state_system_expires_active_state() -> None:
+    @dataclass
+    class _TimedWorld(BaseWorld):
+        timer: TimedState = field(default_factory=TimedState)
+        expired_tags: list[str] = field(default_factory=list)
+
+    world = _TimedWorld(entities=[])
+    activate_timed_state(
+        world.timer,
+        duration_seconds=0.15,
+        tag="frightened",
+        payload={"color": "blue"},
+    )
+
+    TimedStateSystem(
+        bindings=(
+            TimedStateBinding(
+                state_getter=lambda ctx: ctx.world.timer,
+                on_expired=lambda ctx, state: ctx.world.expired_tags.append(
+                    state.tag
+                ),
+            ),
+        )
+    ).step(_Ctx(dt=0.2, world=world))
+
+    assert world.expired_tags == ["frightened"]
+    assert world.timer.active is False
+    assert world.timer.remaining_seconds == 0.0
+    assert world.timer.payload is None
+
+    activate_timed_state(world.timer, duration_seconds=0.4, tag="bonus")
+    clear_timed_state(world.timer)
+    assert world.timer.tag == ""
+
+
+def test_score_chain_system_claims_and_expires_progression() -> None:
+    @dataclass
+    class _ChainWorld(BaseWorld):
+        chain: ScoreChainState = field(default_factory=ScoreChainState)
+        expired: int = 0
+
+    world = _ChainWorld(entities=[])
+    points = [
+        claim_score_chain_points(
+            world.chain,
+            steps=(200, 400, 800, 1600),
+            window_seconds=0.3,
+        ),
+        claim_score_chain_points(
+            world.chain,
+            steps=(200, 400, 800, 1600),
+            window_seconds=0.3,
+        ),
+    ]
+
+    assert points == [200, 400]
+    assert world.chain.step_index == 2
+
+    ScoreChainSystem(
+        bindings=(
+            ScoreChainBinding(
+                state_getter=lambda ctx: ctx.world.chain,
+                on_expired=lambda ctx, _state: setattr(
+                    ctx.world,
+                    "expired",
+                    ctx.world.expired + 1,
+                ),
+            ),
+        )
+    ).step(_Ctx(dt=0.5, world=world))
+
+    assert world.expired == 1
+    assert world.chain.step_index == 0
+    assert world.chain.active is False
+
+    reset_score_chain(world.chain)
+    assert world.chain.remaining_seconds == 0.0
 
 
 def test_projectile_lifecycle_bundle_culls_and_cleans_dead_entities() -> None:

@@ -8,7 +8,9 @@ from dataclasses import dataclass, field, replace
 from typing import Any, Callable, ClassVar, Generic, Iterable, Mapping, TypeVar
 
 from mini_arcade_core.backend.keys import Key
+from mini_arcade_core.engine.render.packet import RenderPacket
 from mini_arcade_core.runtime.context import RuntimeContext
+from mini_arcade_core.runtime.input_frame import InputFrame
 from mini_arcade_core.scenes.sim_scene import SimScene
 from mini_arcade_core.scenes.systems.base_system import BaseSystem
 from mini_arcade_core.scenes.systems.builtins import (
@@ -21,8 +23,6 @@ from mini_arcade_core.scenes.systems.builtins.capture_hotkeys import (
     CaptureHotkey,
     SceneCaptureConfig,
 )
-from mini_arcade_core.runtime.input_frame import InputFrame
-from mini_arcade_core.engine.render.packet import RenderPacket
 
 # pylint: disable=invalid-name
 TContext = TypeVar("TContext")
@@ -42,9 +42,9 @@ class GameSceneSystemsConfig(Generic[TContext]):
     input_channel: str | None = "player_1"
     input_write_to_ctx_intent: bool = True
     input_fallback_bindings: Mapping[str, Any] | None = None
-    input_system_factory: Callable[
-        [RuntimeContext], BaseSystem[TContext] | None
-    ] | None = None
+    input_system_factory: (
+        Callable[[RuntimeContext], BaseSystem[TContext] | None] | None
+    ) = None
     pause_command_factory: Callable[[TContext], object] | None = None
     pause_intent_attr: str = "pause"
     pause_system_name: str = "pause_intent"
@@ -55,9 +55,9 @@ class GameSceneSystemsConfig(Generic[TContext]):
     extra_system_factories: tuple[
         Callable[[RuntimeContext], BaseSystem[TContext] | None], ...
     ] = ()
-    render_system_factory: Callable[
-        [RuntimeContext], BaseSystem[TContext] | None
-    ] | None = None
+    render_system_factory: (
+        Callable[[RuntimeContext], BaseSystem[TContext] | None] | None
+    ) = None
 
 
 class GameScene(SimScene[TContext, TWorld], Generic[TContext, TWorld]):

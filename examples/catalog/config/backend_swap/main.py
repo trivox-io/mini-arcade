@@ -7,11 +7,11 @@ from __future__ import annotations
 import importlib
 from typing import Any
 
+from examples._shared.defaults import make_backend_factory
+from examples._shared.spec import ExampleSpec
 from mini_arcade.modules.settings import Settings
 from mini_arcade_core import EngineConfig
 from mini_arcade_core.engine.engine_config import PostFXConfig
-from examples._shared.defaults import make_backend_factory
-from examples._shared.spec import ExampleSpec
 
 EXAMPLE_ID = "config/backend_swap"
 DEFAULT_SCENE_ID = "backend_swap"

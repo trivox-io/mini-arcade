@@ -184,7 +184,9 @@ class RenderPort:
         min_y = min(int(sy1), int(sy2)) - pad
         max_x = max(int(sx1), int(sx2)) + pad
         max_y = max(int(sy1), int(sy2)) + pad
-        rect = pygame.Rect(min_x, min_y, max(1, max_x - min_x), max(1, max_y - min_y))
+        rect = pygame.Rect(
+            min_x, min_y, max(1, max_x - min_x), max(1, max_y - min_y)
+        )
         self._blit_alpha_shape(
             bounds=rect,
             color=(r, g, b, a),
@@ -419,7 +421,9 @@ class RenderPort:
         min_y = min(int(y) for _, y in mapped_points)
         max_x = max(int(x) for x, _ in mapped_points)
         max_y = max(int(y) for _, y in mapped_points)
-        rect = pygame.Rect(min_x, min_y, max(1, max_x - min_x), max(1, max_y - min_y))
+        rect = pygame.Rect(
+            min_x, min_y, max(1, max_x - min_x), max(1, max_y - min_y)
+        )
         self._blit_alpha_shape(
             bounds=rect,
             color=(r, g, b, a),

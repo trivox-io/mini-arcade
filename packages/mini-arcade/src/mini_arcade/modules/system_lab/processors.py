@@ -104,6 +104,7 @@ class SystemLabProcessor(BaseCommandProcessor):
                     )
                 # pylint: disable=import-outside-toplevel
                 from .visual_runner import run_system_lab_visual_case
+
                 # pylint: enable=import-outside-toplevel
 
                 return run_system_lab_visual_case(

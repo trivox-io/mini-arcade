@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-import sys
 
-from PIL import Image
 import pytest
+from PIL import Image
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = PACKAGE_ROOT / "src"
@@ -30,8 +30,12 @@ from experiments.bouncing_balls.system_lab_case import (  # noqa: E402
 from mini_arcade.modules.backend_loader import BackendLoader  # noqa: E402
 from mini_arcade_core.engine.commands import CommandQueue  # noqa: E402
 from mini_arcade_core.engine.render.context import RenderContext  # noqa: E402
-from mini_arcade_core.engine.render.frame_packet import FramePacket  # noqa: E402
-from mini_arcade_core.engine.render.pipeline import RenderPipeline  # noqa: E402
+from mini_arcade_core.engine.render.frame_packet import (  # noqa: E402
+    FramePacket,
+)
+from mini_arcade_core.engine.render.pipeline import (  # noqa: E402
+    RenderPipeline,
+)
 from mini_arcade_core.engine.render.viewport import (  # noqa: E402
     ViewportMode,
     ViewportState,

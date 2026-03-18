@@ -169,9 +169,7 @@ class BaseSystemLabCase(ABC):
             debug_overlay_sections=tuple(self.visual_debug_overlay_sections),
             hot_reload_enabled=bool(self.visual_hot_reload_enabled),
             hot_reload_key=str(self.visual_hot_reload_key),
-            hot_reload_poll_seconds=float(
-                self.visual_hot_reload_poll_seconds
-            ),
+            hot_reload_poll_seconds=float(self.visual_hot_reload_poll_seconds),
         )
 
     def build_visual_world(
@@ -194,7 +192,9 @@ class BaseSystemLabCase(ABC):
             )
         world = getattr(ctx, "world")
         if hasattr(world, "viewport"):
-            setattr(world, "viewport", (float(viewport[0]), float(viewport[1])))
+            setattr(
+                world, "viewport", (float(viewport[0]), float(viewport[1]))
+            )
         return world
 
     def build_visual_systems(self) -> tuple[object, ...]:
@@ -215,6 +215,7 @@ class BaseSystemLabCase(ABC):
         Optional debug overlay lines exposed by the built-in visual runner.
         """
         return []
+
     # pylint: enable=unused-argument
 
 

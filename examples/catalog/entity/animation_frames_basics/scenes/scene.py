@@ -4,11 +4,6 @@ Scene for entity/animation_frames_basics.
 
 from __future__ import annotations
 
-from mini_arcade_core.scenes.autoreg import register_scene
-from mini_arcade_core.scenes.game_scene import GameSceneSystemsConfig
-from mini_arcade_core.scenes.sim_scene import Drawable
-from mini_arcade_core.scenes.systems.builtins import RenderOverlay
-
 from examples.catalog.entity._shared import (
     EntityExampleScene,
     EntityExampleWorld,
@@ -18,6 +13,10 @@ from examples.catalog.entity._shared import (
     entity_from_dict,
 )
 from examples.catalog.entity._textures import orb_frame_texture
+from mini_arcade_core.scenes.autoreg import register_scene
+from mini_arcade_core.scenes.game_scene import GameSceneSystemsConfig
+from mini_arcade_core.scenes.sim_scene import Drawable
+from mini_arcade_core.scenes.systems.builtins import RenderOverlay
 
 SCENE_ID = "animation_frames_basics"
 ANIM_FAST_ID = 2

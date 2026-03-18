@@ -82,9 +82,7 @@ class Engine:
         self._running: bool = False
 
         if dependencies.backend is None:
-            raise ValueError(
-                "A valid Backend instance must be provided."
-            )
+            raise ValueError("A valid Backend instance must be provided.")
 
         self.backend = dependencies.backend
         gameplay_settings = dependencies.gameplay_settings
@@ -97,17 +95,13 @@ class Engine:
         self.managers = EngineManagers(
             cheats=CheatManager(),
             command_queue=CommandQueue(),
-            scenes=SceneAdapter(
-                dependencies.scene_registry, self
-            ),
+            scenes=SceneAdapter(dependencies.scene_registry, self),
         )
         self.services = RuntimeServices(
             window=WindowAdapter(self.backend),
             audio=SDLAudioAdapter(self.backend),
             files=LocalFilesAdapter(),
-            capture=CaptureService(
-                self.backend
-            ),
+            capture=CaptureService(self.backend),
             input=InputAdapter(),
             render=RenderService(self.backend),
             scenes=SceneQueryAdapter(self.managers.scenes),
