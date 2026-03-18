@@ -32,6 +32,7 @@ from mini_arcade_core.engine.commands import (
     RemoveSceneCommand,
 )
 from mini_arcade_core.engine.entities import BaseEntity
+from mini_arcade_core.engine.render.camera import packet_with_camera
 from mini_arcade_core.engine.render.packet import DrawOp, RenderPacket
 from mini_arcade_core.runtime.context import RuntimeContext
 from mini_arcade_core.runtime.input_frame import InputFrame
@@ -74,6 +75,7 @@ class BaseWorld:
     - simulation variables (timers, direction, RNG state if needed)
     - cached runtime resources (texture ids, sound ids, animations)
     - debug/UI overlay state
+    - optional camera state (for example `camera: Camera2D`)
 
     Define one world dataclass per scene by inheriting from this class.
     The engine will create it during scene init and provide it to systems each tick.
@@ -1172,4 +1174,7 @@ class SimScene(Generic[TContext, TWorld]):
                 f"{self.__class__.__name__} produced no RenderPacket. "
                 "Did you forget to add a render system that sets ctx.packet?"
             )
-        return ctx.packet
+        return packet_with_camera(
+            ctx.packet,
+            getattr(ctx.world, "camera", None),
+        )

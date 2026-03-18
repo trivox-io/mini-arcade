@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from mini_arcade_core.backend import Backend
+from mini_arcade_core.engine.render.camera import viewport_transform_for_packet
 from mini_arcade_core.engine.render.context import RenderContext
 from mini_arcade_core.engine.render.frame_packet import FramePacket
 from mini_arcade_core.engine.render.packet import DrawOp, RenderPacket
@@ -31,7 +32,7 @@ class LightingPass:
             ops = self._layer_ops(fp.packet, "lighting")
             if ops is None or not ops:
                 continue
-            self._draw_ops(backend, ctx, ops)
+            self._draw_ops(backend, ctx, fp.packet, ops)
 
     @staticmethod
     def _layer_ops(
@@ -47,11 +48,16 @@ class LightingPass:
 
     @staticmethod
     def _draw_ops(
-        backend: Backend, ctx: RenderContext, ops: tuple[DrawOp, ...]
+        backend: Backend,
+        ctx: RenderContext,
+        packet: RenderPacket,
+        ops: tuple[DrawOp, ...],
     ) -> None:
         ctx.stats.packets += 1
         ctx.stats.renderables += len(ops)
         ctx.stats.draw_groups += 1
+
+        world_transform = viewport_transform_for_packet(ctx.viewport, packet)
 
         backend.set_viewport_transform(
             ctx.viewport.offset_x,
@@ -65,6 +71,11 @@ class LightingPass:
             ctx.viewport.virtual_h,
         )
         try:
+            backend.set_viewport_transform(
+                world_transform.ox,
+                world_transform.oy,
+                world_transform.s,
+            )
             for op in ops:
                 op(backend)
         finally:

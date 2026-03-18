@@ -18,6 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from mini_arcade_core.backend import Backend
+from mini_arcade_core.engine.render.camera import viewport_transform_for_packet
 from mini_arcade_core.engine.render.context import RenderContext
 from mini_arcade_core.engine.render.frame_packet import FramePacket
 from mini_arcade_core.engine.render.packet import RenderPacket
@@ -92,22 +93,28 @@ class RenderPipeline:
         if not packet:
             return
 
+        world_transform = viewport_transform_for_packet(viewport_state, packet)
         backend.set_viewport_transform(
             viewport_state.offset_x,
             viewport_state.offset_y,
             viewport_state.scale,
         )
 
-        backend.set_clip_rect(
+        backend.render.set_clip_rect(
             0,
             0,
-            viewport_state.viewport_w,
-            viewport_state.viewport_h,
+            viewport_state.virtual_w,
+            viewport_state.virtual_h,
         )
 
         try:
+            backend.set_viewport_transform(
+                world_transform.ox,
+                world_transform.oy,
+                world_transform.s,
+            )
             for op in packet.ops:
                 op(backend)
         finally:
-            backend.clear_clip_rect()
+            backend.render.clear_clip_rect()
             backend.clear_viewport_transform()

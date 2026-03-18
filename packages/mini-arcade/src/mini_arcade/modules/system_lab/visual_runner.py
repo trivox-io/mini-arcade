@@ -15,6 +15,7 @@ from typing import Any
 from mini_arcade.modules.backend_loader import BackendLoader
 from mini_arcade_core import run_game
 from mini_arcade_core.backend.keys import Key
+from mini_arcade_core.engine.render.camera import packet_with_camera
 from mini_arcade_core.engine.render.packet import RenderPacket
 from mini_arcade_core.runtime.input_frame import InputFrame
 from mini_arcade_core.scenes.autoreg import register_scene
@@ -343,7 +344,10 @@ class SystemLabVisualScene(SimScene[object, object]):
             raise RuntimeError(
                 "System lab visual scene produced no RenderPacket"
             )
-        return packet
+        return packet_with_camera(
+            packet,
+            getattr(ctx.world, "camera", None),
+        )
 
     def debug_overlay_lines(self) -> list[str]:
         """Expose built-in lab diagnostics in the debug overlay."""

@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from mini_arcade_core.backend import Backend
+from mini_arcade_core.engine.render.camera import viewport_transform_for_packet
 from mini_arcade_core.engine.render.context import RenderContext
 from mini_arcade_core.engine.render.effects.registry import EffectRegistry
 from mini_arcade_core.engine.render.frame_packet import FramePacket
@@ -44,6 +45,11 @@ class PostFXPass:
             ctx.stats.renderables += len(ops)
             ctx.stats.draw_groups += 1
 
+            world_transform = viewport_transform_for_packet(
+                ctx.viewport,
+                fp.packet,
+            )
+
             backend.set_viewport_transform(
                 ctx.viewport.offset_x,
                 ctx.viewport.offset_y,
@@ -56,6 +62,11 @@ class PostFXPass:
                 ctx.viewport.virtual_h,
             )
             try:
+                backend.set_viewport_transform(
+                    world_transform.ox,
+                    world_transform.oy,
+                    world_transform.s,
+                )
                 for op in ops:
                     op(backend)
             finally:

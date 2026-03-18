@@ -633,6 +633,24 @@ def test_bouncing_balls_case_runs_headless(capsys) -> None:
     assert '"ball_b":' in output
 
 
+def test_camera_lab_case_runs_headless(capsys) -> None:
+    SystemLabRegistry.clear()
+
+    assert (
+        SystemLabProcessor(
+            module=["experiments.camera_lab.system_lab_case"],
+            case="camera_lab",
+            steps=3,
+            json=True,
+        ).run()
+        == 0
+    )
+    output = capsys.readouterr().out
+    assert '"case": "camera_lab"' in output
+    assert '"camera_center":' in output
+    assert '"camera_zoom":' in output
+
+
 def test_load_command_packages_skips_non_command_modules(
     tmp_path: Path,
     monkeypatch,
