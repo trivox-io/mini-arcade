@@ -115,9 +115,7 @@ class BombField:
         """Count bombs owned by a specific actor."""
 
         return sum(
-            1
-            for bomb in self.bombs.values()
-            if bomb.owner_id == owner_id
+            1 for bomb in self.bombs.values() if bomb.owner_id == owner_id
         )
 
 
@@ -292,7 +290,9 @@ class BombPlacementSystem(Generic[TCtx]):
                 continue
             if bombs.bomb_at(cell) is not None:
                 continue
-            if bombs.count_for_owner(owner_id) >= int(binding.max_active_getter(ctx)):
+            if bombs.count_for_owner(owner_id) >= int(
+                binding.max_active_getter(ctx)
+            ):
                 continue
 
             bomb = binding.build_bomb(ctx, cell)

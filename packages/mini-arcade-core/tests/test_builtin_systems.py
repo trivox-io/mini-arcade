@@ -25,7 +25,10 @@ def _bootstrap_repo_imports() -> None:
 _bootstrap_repo_imports()
 
 from mini_arcade_core.engine.entities import BaseEntity  # noqa: E402
-from mini_arcade_core.scenes.sim_scene import BaseWorld, EntityIdDomain  # noqa: E402
+from mini_arcade_core.scenes.sim_scene import (
+    BaseWorld,
+    EntityIdDomain,
+)  # noqa: E402
 from mini_arcade_core.scenes.systems import SystemPipeline  # noqa: E402
 from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     AnimationTickSystem,
@@ -78,6 +81,8 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     ModeTimerSystem,
     MotionBinding,
     PaddleBouncePolicy,
+    PickupCollisionBinding,
+    PickupCollisionSystem,
     ProceduralParticleBundle,
     ProceduralParticleEmitterState,
     ProceduralParticleSimulationSystem,
@@ -351,7 +356,9 @@ def test_viewport_constraint_system_clamps_wraps_and_culls() -> None:
             "life": {"alive": True},
         }
     )
-    world = _World(entities=[clamped, wrapped, culled], viewport=(100.0, 100.0))
+    world = _World(
+        entities=[clamped, wrapped, culled], viewport=(100.0, 100.0)
+    )
 
     ViewportConstraintSystem(
         bindings=(
@@ -368,7 +375,9 @@ def test_viewport_constraint_system_clamps_wraps_and_culls() -> None:
             ViewportConstraintBinding(
                 entities_getter=lambda ctx: (culled,),
                 policy="cull",
-                on_cull=lambda _ctx, entity: setattr(entity.life, "alive", False),
+                on_cull=lambda _ctx, entity: setattr(
+                    entity.life, "alive", False
+                ),
             ),
         ),
     ).step(_Ctx(dt=0.0, world=world))
@@ -439,7 +448,9 @@ def test_wave_progression_system_advances_and_spawns_next_wave() -> None:
         bindings=(
             WaveProgressionBinding(
                 is_complete=lambda _ctx: True,
-                advance=lambda ctx: setattr(ctx.world, "level", ctx.world.level + 1),
+                advance=lambda ctx: setattr(
+                    ctx.world, "level", ctx.world.level + 1
+                ),
                 spawn_next=lambda ctx: (
                     BaseEntity.from_dict(
                         {
@@ -473,15 +484,15 @@ def test_cadence_system_emits_fixed_interval_ticks() -> None:
     CadenceSystem(
         bindings=(
             CadenceBinding(
-                    state_getter=lambda case: case.world.cadence,
-                    interval_seconds=0.1,
-                    max_steps_per_frame=3,
-                    on_tick=lambda case: case.world.tick_log.append(
-                        case.world.cadence.tick_count
-                    ),
+                state_getter=lambda case: case.world.cadence,
+                interval_seconds=0.1,
+                max_steps_per_frame=3,
+                on_tick=lambda case: case.world.tick_log.append(
+                    case.world.cadence.tick_count
                 ),
-            )
-        ).step(ctx)
+            ),
+        )
+    ).step(ctx)
 
     assert world.cadence.steps_this_frame == 2
     assert world.cadence.tick_count == 2
@@ -515,7 +526,12 @@ def test_grid_helpers_compute_layout_and_free_cells() -> None:
     assert GridCoord(col=1, row=0) not in free
     assert layout.cell_origin(GridCoord(col=2, row=1)) == (40.0, 22.0)
     assert layout.cell_center(GridCoord(col=2, row=1)) == (48.0, 28.0)
-    assert layout.cell_rect(GridCoord(col=2, row=1)) == (40.0, 22.0, 16.0, 12.0)
+    assert layout.cell_rect(GridCoord(col=2, row=1)) == (
+        40.0,
+        22.0,
+        16.0,
+        12.0,
+    )
 
 
 def test_grid_cell_spawn_system_uses_free_cells_only() -> None:
@@ -538,7 +554,10 @@ def test_grid_cell_spawn_system_uses_free_cells_only() -> None:
                         "id": 50,
                         "name": "Food",
                         "transform": {
-                            "center": {"x": float(cell.col), "y": float(cell.row)},
+                            "center": {
+                                "x": float(cell.col),
+                                "y": float(cell.row),
+                            },
                             "size": {"width": 1.0, "height": 1.0},
                         },
                         "shape": {"kind": "rect"},
@@ -587,11 +606,14 @@ def test_block_board_piece_fit_and_row_clear_system() -> None:
         GridCoord(col=2, row=1),
     )
     assert piece_fits(board, piece, piece_spec) is True
-    assert piece_fits(
-        board,
-        piece.translated(drow=3),
-        piece_spec,
-    ) is False
+    assert (
+        piece_fits(
+            board,
+            piece.translated(drow=3),
+            piece_spec,
+        )
+        is False
+    )
 
     board.set(GridCoord(col=3, row=3), "B")
 
@@ -618,7 +640,9 @@ def test_block_board_piece_fit_and_row_clear_system() -> None:
     assert world.board.row_values(0) == (None, None, None, None)
 
 
-def test_block_cells_from_strings_and_bag_randomizer_are_deterministic() -> None:
+def test_block_cells_from_strings_and_bag_randomizer_are_deterministic() -> (
+    None
+):
     cells = block_cells_from_strings(
         ".##.",
         "..#.",
@@ -773,7 +797,9 @@ def test_bounce_collision_and_brick_field_collision_damage_targets() -> None:
             BrickFieldCollisionBinding(
                 mover_getter=lambda ctx: ctx.world.entities[0],
                 field_getter=lambda ctx: ctx.world.brick_field,
-                on_hit=lambda ctx, _ball, cell, _remaining, _hit: ctx.world.brick_hits.append(cell),
+                on_hit=lambda ctx, _ball, cell, _remaining, _hit: ctx.world.brick_hits.append(
+                    cell
+                ),
             ),
         )
     ).step(_Ctx(dt=0.0, world=world))
@@ -783,6 +809,63 @@ def test_bounce_collision_and_brick_field_collision_damage_targets() -> None:
     remaining = world.brick_field.brick_at(GridCoord(col=1, row=0))
     assert remaining is not None
     assert remaining.hit_points == 1
+
+
+def test_pickup_collision_system_collects_overlapping_entities() -> None:
+    paddle = BaseEntity.from_dict(
+        {
+            "id": 90,
+            "name": "Paddle",
+            "transform": {
+                "center": {"x": 80.0, "y": 160.0},
+                "size": {"width": 64.0, "height": 12.0},
+            },
+            "shape": {"kind": "rect"},
+        }
+    )
+    pickup = BaseEntity.from_dict(
+        {
+            "id": 91,
+            "name": "Pickup",
+            "transform": {
+                "center": {"x": 96.0, "y": 156.0},
+                "size": {"width": 18.0, "height": 18.0},
+            },
+            "shape": {"kind": "rect"},
+        }
+    )
+    missed = BaseEntity.from_dict(
+        {
+            "id": 92,
+            "name": "Missed Pickup",
+            "transform": {
+                "center": {"x": 12.0, "y": 20.0},
+                "size": {"width": 18.0, "height": 18.0},
+            },
+            "shape": {"kind": "rect"},
+        }
+    )
+
+    @dataclass
+    class _PickupWorld(BaseWorld):
+        collected: list[int] = field(default_factory=list)
+
+    world = _PickupWorld(entities=[paddle, pickup, missed])
+
+    PickupCollisionSystem(
+        bindings=(
+            PickupCollisionBinding(
+                collectors_getter=lambda ctx: (ctx.world.entities[0],),
+                pickups_getter=lambda ctx: ctx.world.entities[1:],
+                on_collect=lambda ctx, _collector, item: ctx.world.collected.append(
+                    int(item.id)
+                ),
+            ),
+        )
+    ).step(_Ctx(dt=0.0, world=world))
+
+    assert world.collected == [91]
+    assert [int(entity.id) for entity in world.entities] == [90, 92]
 
 
 def test_maze_tile_map_navigation_wrap_collectibles_and_modes() -> None:
@@ -813,11 +896,14 @@ def test_maze_tile_map_navigation_wrap_collectibles_and_modes() -> None:
         CardinalDirection.LEFT,
         CardinalDirection.RIGHT,
     )
-    assert is_junction(
-        tile_map,
-        GridCoord(col=2, row=1),
-        can_enter=lambda value: value == "lane",
-    ) is True
+    assert (
+        is_junction(
+            tile_map,
+            GridCoord(col=2, row=1),
+            can_enter=lambda value: value == "lane",
+        )
+        is True
+    )
 
     @dataclass
     class _MazeWorld(BaseWorld):
@@ -827,7 +913,9 @@ def test_maze_tile_map_navigation_wrap_collectibles_and_modes() -> None:
                 direction=CardinalDirection.RIGHT,
             )
         )
-        collectibles: CollectibleField = field(default_factory=CollectibleField)
+        collectibles: CollectibleField = field(
+            default_factory=CollectibleField
+        )
         mode_timer: ModeTimerState = field(default_factory=ModeTimerState)
         collected: list[tuple[GridCoord, CollectibleKind]] = field(
             default_factory=list
@@ -874,7 +962,9 @@ def test_maze_tile_map_navigation_wrap_collectibles_and_modes() -> None:
         )
     ).step(ctx)
 
-    assert world.collected == [(GridCoord(col=1, row=2), CollectibleKind.PELLET)]
+    assert world.collected == [
+        (GridCoord(col=1, row=2), CollectibleKind.PELLET)
+    ]
     assert world.collectibles.occupied_cells() == ()
 
     world.navigator.cell = GridCoord(col=-1, row=2)
@@ -997,8 +1087,12 @@ def test_bomberman_tile_map_and_bomb_placement_rules() -> None:
 
     assert tile_map.get(GridCoord(col=1, row=1)) == ArenaTile.SPAWN
     assert tile_map.get(GridCoord(col=2, row=2)) == ArenaTile.BREAKABLE
-    assert is_walkable_arena_tile(tile_map.get(GridCoord(col=1, row=1))) is True
-    assert is_walkable_arena_tile(tile_map.get(GridCoord(col=2, row=2))) is False
+    assert (
+        is_walkable_arena_tile(tile_map.get(GridCoord(col=1, row=1))) is True
+    )
+    assert (
+        is_walkable_arena_tile(tile_map.get(GridCoord(col=2, row=2))) is False
+    )
 
     system = BombPlacementSystem(
         bindings=(
@@ -1014,7 +1108,9 @@ def test_bomberman_tile_map_and_bomb_placement_rules() -> None:
                 ),
                 owner_id_getter=lambda _ctx: 7,
                 max_active_getter=lambda _ctx: 1,
-                on_placed=lambda ctx, bomb: ctx.world.placements.append(bomb.cell),
+                on_placed=lambda ctx, bomb: ctx.world.placements.append(
+                    bomb.cell
+                ),
             ),
         )
     )
@@ -1063,7 +1159,9 @@ def test_bomberman_blast_cells_and_destructible_tiles() -> None:
             DestructibleTileBinding(
                 tile_map_getter=lambda ctx: ctx.world.tile_map,
                 explosions_getter=lambda ctx: ctx.world.explosions,
-                on_destroyed=lambda ctx, cell: ctx.world.destroyed.append(cell),
+                on_destroyed=lambda ctx, cell: ctx.world.destroyed.append(
+                    cell
+                ),
             ),
         )
     ).step(_Ctx(dt=0.0, world=world))
@@ -1170,12 +1268,17 @@ def test_bomberman_fuse_chain_reaction_hazard_and_expiry() -> None:
         bindings=(
             ExplosionLifetimeBinding(
                 explosions_getter=lambda case: case.world.explosions,
-                on_expired=lambda case, cells: case.world.expired.append(cells),
+                on_expired=lambda case, cells: case.world.expired.append(
+                    cells
+                ),
             ),
         )
     ).step(_Ctx(dt=0.2, world=world))
 
-    assert world.detonated == [GridCoord(col=2, row=2), GridCoord(col=3, row=2)]
+    assert world.detonated == [
+        GridCoord(col=2, row=2),
+        GridCoord(col=3, row=2),
+    ]
     assert world.targets[0].alive is False
     assert GridCoord(col=2, row=2) in world.hits
     assert world.explosions.active_cells() == ()
@@ -1254,7 +1357,9 @@ def test_procedural_particle_bundle_spawns_and_renders_particles() -> None:
     assert recorder.circles
 
 
-def test_procedural_particle_intensity_changes_spawned_particle_shape() -> None:
+def test_procedural_particle_intensity_changes_spawned_particle_shape() -> (
+    None
+):
     @dataclass
     class _ParticleWorld(BaseWorld):
         viewport: tuple[float, float] = (320.0, 240.0)
@@ -1298,6 +1403,9 @@ def test_procedural_particle_intensity_changes_spawned_particle_shape() -> None:
 
     assert world.low.particles
     assert world.high.particles
-    assert world.high.particles[0].start_radius > world.low.particles[0].start_radius
+    assert (
+        world.high.particles[0].start_radius
+        > world.low.particles[0].start_radius
+    )
     assert abs(world.high.particles[0].vy) > abs(world.low.particles[0].vy)
     assert world.high.particles[0].lifetime > world.low.particles[0].lifetime

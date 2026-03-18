@@ -63,5 +63,7 @@ class AnimationTickSystem:
 
             if hasattr(anim, "update"):
                 anim.update(ctx.dt)
-                if hasattr(entity, "texture") and hasattr(anim, "current_frame"):
+                if hasattr(entity, "texture") and hasattr(
+                    anim, "current_frame"
+                ):
                     entity.texture = anim.current_frame

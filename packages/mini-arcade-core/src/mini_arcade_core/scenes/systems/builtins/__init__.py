@@ -159,6 +159,10 @@ from .particles import (  # noqa: E402  (re-export)
     smoke_particle_binding,
 )
 from .pause import IntentPauseSystem  # noqa: E402  (re-export)
+from .powerups import (  # noqa: E402  (re-export)
+    PickupCollisionBinding,
+    PickupCollisionSystem,
+)
 from .projectiles import (  # noqa: E402  (re-export)
     ProjectileBoundaryBinding,
     ProjectileBoundarySystem,
@@ -696,6 +700,8 @@ __all__ = [
     "ProjectileCleanupSystem",
     "ProjectileLifecycleBinding",
     "ProjectileLifecycleBundle",
+    "PickupCollisionBinding",
+    "PickupCollisionSystem",
     "ProceduralParticle",
     "ProceduralParticleBinding",
     "ProceduralParticleBundle",

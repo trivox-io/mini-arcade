@@ -36,7 +36,9 @@ def _entity_rect(entity: BaseEntity) -> tuple[float, float, float, float]:
     )
 
 
-def _rect_center(rect: tuple[float, float, float, float]) -> tuple[float, float]:
+def _rect_center(
+    rect: tuple[float, float, float, float],
+) -> tuple[float, float]:
     x, y, w, h = rect
     return (x + (w * 0.5), y + (h * 0.5))
 
@@ -273,14 +275,18 @@ class BrickField:
             coord for coord, brick in self.bricks.items() if brick.alive
         )
 
-    def brick_rect(self, coord: GridCoord) -> tuple[float, float, float, float]:
+    def brick_rect(
+        self, coord: GridCoord
+    ) -> tuple[float, float, float, float]:
         """
         Return the world-space rect for one brick cell.
         """
 
         return self.layout.cell_rect(coord)
 
-    def apply_damage(self, coord: GridCoord, amount: int = 1) -> BrickState | None:
+    def apply_damage(
+        self, coord: GridCoord, amount: int = 1
+    ) -> BrickState | None:
         """
         Damage one brick cell and delete it when hp reaches zero.
         """
@@ -302,15 +308,17 @@ class ViewportBounceBinding(Generic[TCtx]):
     """
 
     entities_getter: Callable[[TCtx], Iterable[BaseEntity]]
-    viewport_getter: Callable[[TCtx], tuple[float, float]] = (
-        lambda ctx: tuple(getattr(ctx.world, "viewport", (0.0, 0.0)))
+    viewport_getter: Callable[[TCtx], tuple[float, float]] = lambda ctx: tuple(
+        getattr(ctx.world, "viewport", (0.0, 0.0))
     )
     predicate: Callable[[TCtx, BaseEntity], bool] = _default_predicate
     bounce_left: bool = True
     bounce_right: bool = True
     bounce_top: bool = True
     bounce_bottom: bool = False
-    on_bounce: Callable[[TCtx, BaseEntity, tuple[str, ...]], None] | None = None
+    on_bounce: Callable[[TCtx, BaseEntity, tuple[str, ...]], None] | None = (
+        None
+    )
 
 
 @dataclass
@@ -358,7 +366,9 @@ class BounceCollisionBinding(Generic[TCtx]):
     targets_getter: Callable[[TCtx], Iterable[BaseEntity]]
     predicate: Callable[[TCtx, BaseEntity], bool] = _default_predicate
     stop_after_first_hit: bool = True
-    on_bounce: Callable[[TCtx, BaseEntity, BaseEntity, BounceHit], None] | None = None
+    on_bounce: (
+        Callable[[TCtx, BaseEntity, BaseEntity, BounceHit], None] | None
+    ) = None
 
 
 @dataclass
@@ -410,9 +420,12 @@ class BrickFieldCollisionBinding(Generic[TCtx]):
     mover_getter: Callable[[TCtx], BaseEntity | None]
     field_getter: Callable[[TCtx], BrickField | None]
     damage: int = 1
-    on_hit: Callable[
-        [TCtx, BaseEntity, GridCoord, BrickState | None, BounceHit], None
-    ] | None = None
+    on_hit: (
+        Callable[
+            [TCtx, BaseEntity, GridCoord, BrickState | None, BounceHit], None
+        ]
+        | None
+    ) = None
 
 
 @dataclass
@@ -437,11 +450,7 @@ class BrickFieldCollisionSystem(Generic[TCtx]):
         for binding in self.bindings:
             mover = binding.mover_getter(ctx)
             brick_field = binding.field_getter(ctx)
-            if (
-                mover is None
-                or mover.kinematic is None
-                or brick_field is None
-            ):
+            if mover is None or mover.kinematic is None or brick_field is None:
                 continue
 
             mover_rect = _entity_rect(mover)

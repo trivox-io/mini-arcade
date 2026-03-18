@@ -147,7 +147,10 @@ def action_map_from_scene_capture_config(
             keys=(scene_cfg.screenshot.key,)
         )
 
-    if scene_cfg.video_toggle.enabled and scene_cfg.video_toggle.key is not None:
+    if (
+        scene_cfg.video_toggle.enabled
+        and scene_cfg.video_toggle.key is not None
+    ):
         bindings[cfg.action_toggle_video] = DigitalActionBinding(
             keys=(scene_cfg.video_toggle.key,)
         )
@@ -196,6 +199,7 @@ class CaptureHotkeysSystem(BaseSystem[CaptureContext]):
             StopReplayRecordCommand,
             ToggleVideoRecordCommand,
         )
+
         # pylint: enable=import-outside-toplevel
 
         snap = self.action_map.read(ctx.input_frame)

@@ -231,7 +231,10 @@ class GridNavigationSystem(Generic[TCtx, TCell]):
             tile_map = binding.tile_map_getter(ctx)
             requested = binding.desired_direction_getter(ctx)
             if requested is not None:
-                if binding.allow_reverse or requested != state.direction.opposite:
+                if (
+                    binding.allow_reverse
+                    or requested != state.direction.opposite
+                ):
                     state.pending_direction = requested
 
             state.moved_this_frame = 0
@@ -365,7 +368,9 @@ class CollectibleCollisionBinding(Generic[TCtx]):
 
     collector_cell_getter: Callable[[TCtx], GridCoord]
     field_getter: Callable[[TCtx], CollectibleField | None]
-    on_collect: Callable[[TCtx, GridCoord, CollectibleState], None] | None = None
+    on_collect: Callable[[TCtx, GridCoord, CollectibleState], None] | None = (
+        None
+    )
 
 
 @dataclass
@@ -477,7 +482,9 @@ class ModeTimerSystem(Generic[TCtx]):
                 if next_index >= len(binding.schedule):
                     if not binding.loop:
                         state.mode_index = len(binding.schedule) - 1
-                        state.current_mode = binding.schedule[state.mode_index].name
+                        state.current_mode = binding.schedule[
+                            state.mode_index
+                        ].name
                         state.elapsed_in_mode = 0.0
                         break
                     next_index = 0

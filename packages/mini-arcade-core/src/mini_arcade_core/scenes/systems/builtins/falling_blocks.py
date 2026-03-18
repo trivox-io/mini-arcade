@@ -65,10 +65,9 @@ class BlockBoard(Generic[TCell]):
         Return whether a cell lies inside the visible board.
         """
 
-        return (
-            0 <= int(coord.col) < int(self.cols)
-            and 0 <= int(coord.row) < int(self.rows)
-        )
+        return 0 <= int(coord.col) < int(self.cols) and 0 <= int(
+            coord.row
+        ) < int(self.rows)
 
     def get(self, coord: GridCoord) -> TCell | None:
         """

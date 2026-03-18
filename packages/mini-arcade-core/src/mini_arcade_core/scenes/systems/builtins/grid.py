@@ -42,7 +42,9 @@ class GridCoord:
         Return a new cell translated by integer deltas.
         """
 
-        return GridCoord(col=int(self.col) + int(dcol), row=int(self.row) + int(drow))
+        return GridCoord(
+            col=int(self.col) + int(dcol), row=int(self.row) + int(drow)
+        )
 
 
 @dataclass(frozen=True)
@@ -59,10 +61,9 @@ class GridBounds:
         Return whether a cell lies inside this grid.
         """
 
-        return (
-            0 <= int(coord.col) < int(self.cols)
-            and 0 <= int(coord.row) < int(self.rows)
-        )
+        return 0 <= int(coord.col) < int(self.cols) and 0 <= int(
+            coord.row
+        ) < int(self.rows)
 
     def iter_cells(self) -> tuple[GridCoord, ...]:
         """
@@ -250,7 +251,9 @@ class GridCellSpawnBinding(Generic[TCtx]):
     choose_cell: Callable[[TCtx, tuple[GridCoord, ...]], GridCoord | None] = (
         choose_first_grid_cell
     )
-    on_spawned: Callable[[TCtx, tuple[BaseEntity, ...], GridCoord], None] | None = None
+    on_spawned: (
+        Callable[[TCtx, tuple[BaseEntity, ...], GridCoord], None] | None
+    ) = None
     insert_into_world: bool = True
 
 

@@ -61,6 +61,8 @@ GAME_CASES = [
     ("deja-bounce", ("menu", "pong")),
     ("space-invaders", ("space_invaders_menu", "space_invaders")),
     ("asteroids", ("asteroids_menu", "asteroids")),
+    ("breakout", ("menu", "play")),
+    ("snake", ("menu", "play")),
     ("office-horrors", ("office_horrors_menu", "office_horrors")),
 ]
 
