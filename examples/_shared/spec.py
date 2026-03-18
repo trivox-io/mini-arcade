@@ -7,9 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Optional, Sequence
 
-from mini_arcade_core import (  # type: ignore[import-not-found]
-    EngineConfig,
-)
+from mini_arcade_core import EngineConfig  # type: ignore[import-not-found]
 
 
 @dataclass(frozen=True)

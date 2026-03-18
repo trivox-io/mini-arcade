@@ -8,10 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Generic, Iterable, TypeVar
 
 from mini_arcade_core.engine.entities import BaseEntity
-from mini_arcade_core.scenes.systems.builtins.grid import (
-    GridCoord,
-    GridLayout,
-)
+from mini_arcade_core.scenes.systems.builtins.grid import GridCoord, GridLayout
 from mini_arcade_core.scenes.systems.phases import SystemPhase
 
 # pylint: disable=invalid-name

@@ -6,9 +6,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 
-from mini_arcade_core.backend.config import (
-    AudioSettings,
-)
+from mini_arcade_core.backend.config import AudioSettings
 from mini_arcade_core.backend.config import (
     BackendSettings as CoreBackendSettings,  # pyright: ignore[reportMissingImports]
 )

@@ -8,10 +8,7 @@ from mini_arcade.cli.argument_type import ArgumentType
 from mini_arcade.cli.base_command import BaseCommand
 from mini_arcade.cli.registry import CommandRegistry
 
-from .processors import (
-    ExamplesTourProcessor,
-    GameRunnerProcessor,
-)
+from .processors import ExamplesTourProcessor, GameRunnerProcessor
 
 
 @CommandRegistry.implementation("run")

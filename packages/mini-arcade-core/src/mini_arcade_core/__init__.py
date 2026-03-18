@@ -12,10 +12,7 @@ from importlib.metadata import PackageNotFoundError, version
 from typing import Any, Callable, Type, Union
 
 from mini_arcade_core.backend import Backend
-from mini_arcade_core.engine.engine_config import (
-    EngineConfig,
-    SceneConfig,
-)
+from mini_arcade_core.engine.engine_config import EngineConfig, SceneConfig
 from mini_arcade_core.engine.game import Engine, EngineDependencies
 from mini_arcade_core.scenes.registry import SceneRegistry
 from mini_arcade_core.scenes.sim_scene import SimScene
