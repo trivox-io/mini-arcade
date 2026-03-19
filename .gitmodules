@@ -16,3 +16,6 @@
 [submodule "games/snake"]
 	path = games/snake
 	url = https://github.com/trivox-io/snake.git
+[submodule "games/pacman"]
+	path = games/pacman
+	url = https://github.com/trivox-io/pacman.git
