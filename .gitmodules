@@ -7,3 +7,6 @@
 [submodule "games/asteroids"]
 	path = games/asteroids
 	url = https://github.com/trivox-io/asteroids.git
+[submodule "games/pong"]
+	path = games/pong
+	url = https://github.com/trivox-io/pong.git
