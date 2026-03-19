@@ -293,6 +293,30 @@ def piece_fits(
     )
 
 
+def project_piece_down(
+    board: BlockBoard[TCell],
+    piece: FallingBlockPiece,
+    spec: FallingBlockPieceSpec,
+    *,
+    allow_rows_above_board: bool = False,
+) -> FallingBlockPiece:
+    """
+    Return the lowest downward translation that still fits on the board.
+    """
+
+    current = piece
+    while True:
+        candidate = current.translated(drow=1)
+        if not piece_fits(
+            board,
+            candidate,
+            spec,
+            allow_rows_above_board=allow_rows_above_board,
+        ):
+            return current
+        current = candidate
+
+
 @dataclass
 class BagRandomizer(Generic[TItem]):
     """
@@ -384,4 +408,5 @@ __all__ = [
     "FallingBlockPieceSpec",
     "block_cells_from_strings",
     "piece_fits",
+    "project_piece_down",
 ]

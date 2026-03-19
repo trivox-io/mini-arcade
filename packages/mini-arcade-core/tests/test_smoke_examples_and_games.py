@@ -64,6 +64,7 @@ GAME_CASES = [
     ("breakout", ("menu", "play")),
     ("pacman", ("menu", "play")),
     ("snake", ("menu", "play")),
+    ("tetris", ("menu", "play")),
     ("office-horrors", ("office_horrors_menu", "office_horrors")),
 ]
 

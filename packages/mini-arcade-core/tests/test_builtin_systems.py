@@ -128,6 +128,7 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     magic_particle_binding,
     occupied_grid_cells,
     piece_fits,
+    project_piece_down,
     reset_score_chain,
     resolve_rect_bounce,
     spawn_explosion_from_bomb,
@@ -674,6 +675,62 @@ def test_block_cells_from_strings_and_bag_randomizer_are_deterministic() -> (
 
     assert left_draws == right_draws
     assert set(left_draws[:4]) == {"I", "J", "L", "O"}
+
+
+def test_project_piece_down_and_dynamic_cadence_interval() -> None:
+    board = BlockBoard[str](cols=4, rows=5)
+    board.set(GridCoord(col=1, row=4), "X")
+    board.set(GridCoord(col=2, row=4), "X")
+
+    piece_spec = FallingBlockPieceSpec(
+        name="O",
+        rotations=(
+            block_cells_from_strings(
+                "##",
+                "##",
+            ),
+        ),
+    )
+    landed = project_piece_down(
+        board,
+        FallingBlockPiece(
+            spec_name="O",
+            origin=GridCoord(col=1, row=0),
+        ),
+        piece_spec,
+    )
+    assert landed.origin == GridCoord(col=1, row=2)
+
+    @dataclass
+    class _CadenceWorld(BaseWorld):
+        interval: float = 0.2
+        fired: int = 0
+
+    world = _CadenceWorld(entities=[])
+    system = CadenceSystem(
+        bindings=(
+            CadenceBinding(
+                state_getter=lambda ctx: getattr(
+                    ctx.world, "cadence", CadenceState()
+                ),
+                interval_seconds=lambda ctx: ctx.world.interval,
+                on_tick=lambda ctx: setattr(
+                    ctx.world, "fired", int(ctx.world.fired) + 1
+                ),
+            ),
+        )
+    )
+    world.cadence = CadenceState()
+
+    system.step(_Ctx(dt=0.1, world=world))
+    assert world.fired == 0
+
+    system.step(_Ctx(dt=0.1, world=world))
+    assert world.fired == 1
+
+    world.interval = 0.05
+    system.step(_Ctx(dt=0.1, world=world))
+    assert world.fired == 3
 
 
 def test_viewport_bounce_and_paddle_policy_shape_ball_motion() -> None:

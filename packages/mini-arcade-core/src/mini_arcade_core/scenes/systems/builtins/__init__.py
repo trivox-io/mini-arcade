@@ -80,6 +80,7 @@ from .falling_blocks import (  # noqa: E402  (re-export)
     FallingBlockPieceSpec,
     block_cells_from_strings,
     piece_fits,
+    project_piece_down,
 )
 from .grid import (  # noqa: E402  (re-export)
     CadenceBinding,
@@ -661,6 +662,7 @@ __all__ = [
     "BrickState",
     "FallingBlockPiece",
     "FallingBlockPieceSpec",
+    "project_piece_down",
     "CaptureHotkey",
     "CaptureHotkeysConfig",
     "CaptureHotkeysSystem",

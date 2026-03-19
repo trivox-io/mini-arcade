@@ -13,6 +13,7 @@ from mini_arcade_core.scenes.systems.phases import SystemPhase
 # pylint: disable=invalid-name
 TCtx = TypeVar("TCtx")
 SpawnResult = Optional[Union[BaseEntity, Iterable[BaseEntity]]]
+CadenceInterval = Union[float, Callable[[TCtx], float]]
 # pylint: enable=invalid-name
 
 
@@ -191,7 +192,7 @@ class CadenceBinding(Generic[TCtx]):
     """
 
     state_getter: Callable[[TCtx], CadenceState]
-    interval_seconds: float
+    interval_seconds: CadenceInterval
     on_tick: Callable[[TCtx], None]
     enabled_when: Callable[[TCtx], bool] = _default_enabled_when
     max_steps_per_frame: int = 4
@@ -225,7 +226,10 @@ class CadenceSystem(Generic[TCtx]):
             if not binding.enabled_when(ctx):
                 continue
 
-            interval = max(0.0001, float(binding.interval_seconds))
+            interval_value = binding.interval_seconds
+            if callable(interval_value):
+                interval_value = interval_value(ctx)
+            interval = max(0.0001, float(interval_value))
             state.accumulator += frame_dt
 
             while (
