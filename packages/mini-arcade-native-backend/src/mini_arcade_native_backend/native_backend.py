@@ -113,25 +113,26 @@ class NativeBackend:
         cfg.render.clear_color.a = 255
 
     def _initialize_fonts(self, cfg: native.BackendConfig) -> str | None:
-        selected_path: str | None = None
+        default_path: str | None = None
         selected_size: int = 24
 
         if self._settings.core.fonts:
             selected_size = int(self._settings.core.fonts[0].size)
             for font in self._settings.core.fonts:
-                if font.path:
-                    selected_path = str(font.path)
+                if font.name == "default":
                     selected_size = int(font.size)
+                    if font.path:
+                        default_path = str(font.path)
                     break
 
-        if not selected_path:
-            selected_path = _resolve_default_font_path()
+        if not default_path:
+            default_path = _resolve_default_font_path()
 
-        if selected_path:
-            cfg.text.default_font_path = selected_path
+        if default_path:
+            cfg.text.default_font_path = default_path
             cfg.text.default_font_size = max(8, int(selected_size))
 
-        return selected_path
+        return default_path
 
     def _initialize_audio(self, cfg: native.BackendConfig):
         cfg.audio.enabled = bool(self._settings.core.audio.enable)
@@ -159,10 +160,16 @@ class NativeBackend:
         self.window = WindowPort(self._backend.window)
         self.audio = AudioPort(self._backend.audio)
         self.render = RenderPort(self._backend, self._vp)
+        configured_fonts = {
+            font.name: (str(font.path) if font.path else None)
+            for font in self._settings.core.fonts
+        }
+        configured_fonts["default"] = resolved_font_path
         self.text = TextPort(
             self._backend,
             self._vp,
             resolved_font_path,
+            fonts=configured_fonts,
         )
         self.input = InputPort(self._backend, mapper)
         self.capture = CapturePort(self._backend)

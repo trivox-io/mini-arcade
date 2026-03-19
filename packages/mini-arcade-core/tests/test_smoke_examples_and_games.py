@@ -60,6 +60,7 @@ GAME_CASES = [
     ("deja-bounce", ("menu", "pong")),
     ("space-invaders", ("space_invaders_menu", "space_invaders")),
     ("asteroids", ("asteroids_menu", "asteroids")),
+    ("pong", ("menu", "play")),
     ("breakout", ("menu", "play")),
     ("pacman", ("menu", "play")),
     ("snake", ("menu", "play")),
@@ -222,8 +223,12 @@ class _FakeRender:
 @dataclass
 class _FakeText:
     def measure(
-        self, text: str, font_size: int | None = None
+        self,
+        text: str,
+        font_size: int | None = None,
+        font_name: str | None = None,
     ) -> tuple[int, int]:
+        _ = font_name
         size = int(font_size or 16)
         return (max(len(text), 1) * max(size // 2, 1), size)
 
@@ -234,7 +239,9 @@ class _FakeText:
         text: str,
         color=(255, 255, 255),
         font_size: int | None = None,
+        font_name: str | None = None,
     ):
+        _ = (x, y, text, color, font_size, font_name)
         return None
 
 

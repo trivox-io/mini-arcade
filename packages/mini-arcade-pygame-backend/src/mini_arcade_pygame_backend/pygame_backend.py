@@ -74,11 +74,19 @@ class PygameBackend:
             self.window, self._vp, background_color=rs.background_color
         )
 
-        font_path = fonts[0].path if fonts and fonts[0].path else None
+        font_paths = {
+            font.name: (str(font.path) if font.path else None)
+            for font in fonts
+        }
+        if "default" in font_paths:
+            font_path = font_paths["default"]
+        else:
+            font_path = str(fonts[0].path) if fonts and fonts[0].path else None
         self.text = TextPort(
             self.window,
             self._vp,
             font_path=str(font_path) if font_path else None,
+            fonts=font_paths,
         )
 
         self.audio = AudioPort()

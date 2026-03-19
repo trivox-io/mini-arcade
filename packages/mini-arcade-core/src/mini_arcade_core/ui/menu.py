@@ -85,6 +85,9 @@ class MenuStyle:
     :ivar title_font_size (int): Font size for the title text.
     :ivar hint_font_size (int): Font size for the hint text.
     :ivar item_font_size (int): Font size for the menu items.
+    :ivar title_font_name (str | None): Optional named font for the title.
+    :ivar hint_font_name (str | None): Optional named font for the hint.
+    :ivar item_font_name (str | None): Optional named font for the menu items.
     """
 
     normal: Color = (220, 220, 220)
@@ -128,6 +131,9 @@ class MenuStyle:
     title_font_size = 44
     hint_font_size = 14
     item_font_size = 24
+    title_font_name: str | None = None
+    hint_font_name: str | None = None
+    item_font_name: str | None = None
 
 
 class Menu:
@@ -316,6 +322,7 @@ class Menu:
                 self.title,
                 color=self.style.title_color,
                 font_size=self.style.title_font_size,
+                font_name=self.style.title_font_name,
             )
             cursor_y += (
                 title_h
@@ -337,6 +344,7 @@ class Menu:
                 self.style.hint,
                 color=self.style.hint_color,
                 font_size=self.style.hint_font_size,
+                font_name=self.style.hint_font_name,
             )
 
     def _draw_text_items(self, surface: Backend, x_center: int, cursor_y: int):
@@ -353,6 +361,7 @@ class Menu:
                 item.label,
                 color=color,
                 font_size=self.style.item_font_size,
+                font_name=self.style.item_font_name,
             )
 
     # TODO: Solve too-many-locals warning later
@@ -366,7 +375,9 @@ class Menu:
             max_label_w = 0
             for it in self.items:
                 w, _ = surface.text.measure(
-                    it.label, font_size=self.style.item_font_size
+                    it.label,
+                    font_size=self.style.item_font_size,
+                    font_name=self.style.item_font_name,
                 )
                 max_label_w = max(max_label_w, w)
             bw = max_label_w + self.style.button_padding_x * 2
@@ -403,7 +414,9 @@ class Menu:
             # Label color
             text_color = self.style.selected if selected else self.style.normal
             tw, th = surface.text.measure(
-                item.label, font_size=self.style.item_font_size
+                item.label,
+                font_size=self.style.item_font_size,
+                font_name=self.style.item_font_name,
             )
             tx = x + (bw - tw) // 2
             ty = y + (bh - th) // 2
@@ -413,6 +426,7 @@ class Menu:
                 item.label,
                 color=text_color,
                 font_size=self.style.item_font_size,
+                font_name=self.style.item_font_name,
             )
 
     # pylint: enable=too-many-locals
@@ -425,7 +439,9 @@ class Menu:
         # Title
         if self.title:
             tw, th = surface.text.measure(
-                self.title, font_size=self.style.title_font_size
+                self.title,
+                font_size=self.style.title_font_size,
+                font_name=self.style.title_font_name,
             )
             max_w = max(max_w, tw)
             title_h = th
@@ -446,7 +462,9 @@ class Menu:
                 max_label_w = 0
                 for it in self.items:
                     w, _ = surface.text.measure(
-                        it.label, font_size=self.style.item_font_size
+                        it.label,
+                        font_size=self.style.item_font_size,
+                        font_name=self.style.item_font_name,
                     )
                     max_label_w = max(max_label_w, w)
                 items_w = max_label_w + self.style.button_padding_x * 2
@@ -459,7 +477,9 @@ class Menu:
         else:
             for it in self.items:
                 w, _ = surface.text.measure(
-                    it.label, font_size=self.style.item_font_size
+                    it.label,
+                    font_size=self.style.item_font_size,
+                    font_name=self.style.item_font_name,
                 )
                 max_w = max(max_w, w)
             items_h = len(self.items) * self.style.line_height
@@ -491,10 +511,20 @@ class Menu:
         *,
         color: Color,
         font_size: int | None = None,
+        font_name: str | None = None,
     ):
-        w, _ = surface.text.measure(text, font_size=font_size)
+        w, _ = surface.text.measure(
+            text,
+            font_size=font_size,
+            font_name=font_name,
+        )
         surface.text.draw(
-            x_center - (w // 2), y, text, color=color, font_size=font_size
+            x_center - (w // 2),
+            y,
+            text,
+            color=color,
+            font_size=font_size,
+            font_name=font_name,
         )
 
     # pylint: enable=too-many-arguments

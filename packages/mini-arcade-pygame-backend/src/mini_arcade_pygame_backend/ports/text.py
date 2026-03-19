@@ -31,29 +31,47 @@ class TextPort:
         window: WindowPort,
         vp: ViewportTransform,
         font_path: str | None = None,
+        fonts: dict[str, str | None] | None = None,
     ):
         self._w = window
         self._vp = vp
         self._font_path = font_path
-        self._fonts: dict[int, pygame.font.Font] = {}
+        self._font_paths: dict[str, str | None] = {"default": font_path}
+        if fonts:
+            self._font_paths.update(fonts)
+        self._fonts: dict[tuple[str | None, int], pygame.font.Font] = {}
 
-    def _font(self, font_size: int | None) -> pygame.font.Font:
+    def _resolve_font_path(self, font_name: str | None) -> str | None:
+        if font_name is None:
+            return self._font_paths.get("default", self._font_path)
+        if font_name in self._font_paths:
+            return self._font_paths[font_name]
+        return self._font_paths.get("default", self._font_path)
+
+    def _font(
+        self, font_size: int | None, font_name: str | None
+    ) -> pygame.font.Font:
         size = int(font_size or 24)
         size = max(8, size)
-        cached = self._fonts.get(size)
+        cache_key = (font_name, size)
+        cached = self._fonts.get(cache_key)
         if cached:
             return cached
 
-        if self._font_path:
-            f = pygame.font.Font(self._font_path, size)
+        font_path = self._resolve_font_path(font_name)
+        if font_path:
+            f = pygame.font.Font(font_path, size)
         else:
             f = pygame.font.Font(None, size)  # default font
 
-        self._fonts[size] = f
+        self._fonts[cache_key] = f
         return f
 
     def measure(
-        self, text: str, font_size: int | None = None
+        self,
+        text: str,
+        font_size: int | None = None,
+        font_name: str | None = None,
     ) -> tuple[int, int]:
         """
         Measure the width and height of the given text.
@@ -70,7 +88,7 @@ class TextPort:
             if font_size is None
             else max(8, int(round(font_size * self._vp.s)))
         )
-        f = self._font(scaled_size)
+        f = self._font(scaled_size, font_name)
         w_px, h_px = f.size(text)
 
         s = self._vp.s or 1.0
@@ -85,6 +103,7 @@ class TextPort:
         text: str,
         color=(255, 255, 255),
         font_size: int | None = None,
+        font_name: str | None = None,
     ):
         """
         Draw the given text at the specified position.
@@ -108,7 +127,7 @@ class TextPort:
             if font_size is None
             else max(8, int(round(font_size * self._vp.s)))
         )
-        f = self._font(scaled_size)
+        f = self._font(scaled_size, font_name)
 
         surf = f.render(text, True, (r, g, b))
         self._w.screen.blit(surf, (sx, sy))

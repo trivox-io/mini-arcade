@@ -254,7 +254,10 @@ class TextProtocol(Protocol):
     """
 
     def measure(
-        self, text: str, font_size: int | None = None
+        self,
+        text: str,
+        font_size: int | None = None,
+        font_name: str | None = None,
     ) -> tuple[int, int]:
         """
         Measure the width and height of the given text.
@@ -263,6 +266,8 @@ class TextProtocol(Protocol):
         :type text: str
         :param font_size: The font size to use for measurement.
         :type font_size: int | None
+        :param font_name: Optional named font configured by the backend.
+        :type font_name: str | None
         :return: A tuple containing the width and height of the text.
         :rtype: tuple[int, int]
         """
@@ -274,6 +279,7 @@ class TextProtocol(Protocol):
         text: str,
         color=(255, 255, 255),
         font_size: int | None = None,
+        font_name: str | None = None,
     ):
         """
         Draw the given text at the specified position.
@@ -288,6 +294,8 @@ class TextProtocol(Protocol):
         :type color: tuple[int, int, int] | tuple[int, int, int, int]
         :param font_size: The font size to use for drawing.
         :type font_size: int | None
+        :param font_name: Optional named font configured by the backend.
+        :type font_name: str | None
         """
 
 
