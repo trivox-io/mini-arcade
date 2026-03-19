@@ -197,9 +197,9 @@ Temporary Items
 *.icloud
 .trivox_conductor/
 .trivox/
+backup/
 office-horrors/
 experiments/
 snake/
 breakout/
 pacman/
-pong/
