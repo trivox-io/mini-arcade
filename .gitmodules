@@ -10,3 +10,6 @@
 [submodule "games/pong"]
 	path = games/pong
 	url = https://github.com/trivox-io/pong.git
+[submodule "games/breakout"]
+	path = games/breakout
+	url = https://github.com/trivox-io/breakout.git
