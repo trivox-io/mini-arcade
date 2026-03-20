@@ -9,7 +9,8 @@ into runtime for both examples and games.
 
 Games (reference pattern):
 
-- `games/*/src/<game>/app.py`
+- clone/reference games: `games/*/src/<game>/app.py`
+- original local games: `originals/*/src/<game>/app.py`
 - `Settings.for_game("<game-id>", required=True)`
 - `BackendLoader.load_backend(settings.backend_defaults(...))`
 - `run_game(engine_config=..., scene_config=..., gameplay_config=...)`
@@ -27,7 +28,9 @@ Implementation: `packages/mini-arcade/src/mini_arcade/modules/settings/__init__.
 Key points:
 
 1. Scope-aware profile loading:
-   - game: `games/<game-id>/settings/settings.yml|yaml`
+   - game:
+     - `originals/<game-id>/settings/settings.yml|yaml`
+     - `games/<game-id>/settings/settings.yml|yaml`
    - example:
      - shared: `examples/settings/settings.yml|yaml`
      - overlay: `examples/settings/<example-id>.yml|yaml`

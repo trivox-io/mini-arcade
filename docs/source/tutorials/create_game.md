@@ -24,8 +24,8 @@ Choose these values first:
 
 Recommended mapping:
 
-- folder: `games/my-first-game/`
-- package: `games/my-first-game/src/my_first_game/`
+- folder: `originals/my-first-game/`
+- package: `originals/my-first-game/src/my_first_game/`
 - settings profile load call: `Settings.for_game("my-first-game", required=True)`
 
 ## Required Layout
@@ -33,7 +33,7 @@ Recommended mapping:
 Use this minimum structure:
 
 ```text
-games/my-first-game/
+originals/my-first-game/
   pyproject.toml
   manage.py
   settings/

@@ -6,6 +6,12 @@ They are also the main validation loop for Mini Arcade itself: real games are
 used to test reusable systems, clean scene architecture, and the broader
 Trivox-oriented workflow from engine playground to shippable project.
 
+Current repository layout:
+
+- built-in/reference clone games live under `games/`
+- original in-repo games live under `originals/`
+- new scaffolded games default to `originals/`
+
 For a full game scaffolding guide, see [../tutorials/create_game.md](../tutorials/create_game.md).
 
 ```{toctree}

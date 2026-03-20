@@ -69,7 +69,8 @@ This example proves that workflow end-to-end.
 
 This example uses example-scoped YAML, but the same model is used by games in:
 
-- `games/<game-id>/settings/settings.yml`
+- `originals/<game-id>/settings/settings.yml` for scaffolded originals
+- `games/<game-id>/settings/settings.yml` for built-in/reference clones
 
 Recommended game profile shape:
 

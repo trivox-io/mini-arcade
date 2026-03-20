@@ -30,7 +30,7 @@ Developer internals (recommended alongside tutorials):
 Use this baseline layout for CLI-runnable games:
 
 ```text
-games/<game-id>/
+originals/<game-id>/
   pyproject.toml
   manage.py
   settings/
@@ -112,6 +112,12 @@ your game. For a concrete, complete reference, see
 Each game should include a local profile at:
 
 ```text
+originals/<game-id>/settings/settings.yml
+```
+
+Clone/reference projects may also live under:
+
+```text
 games/<game-id>/settings/settings.yml
 ```
 
@@ -135,7 +141,7 @@ game:
   id: <game-id>
 
 project:
-  # Optional. Defaults to games/<game-id> when omitted.
+  # Optional. Defaults to originals/<game-id> for scaffolded originals.
   root: ${settings_dir}/..
   # Optional. Defaults to ${project_root}/assets when omitted.
   assets_root: ${project_root}/assets

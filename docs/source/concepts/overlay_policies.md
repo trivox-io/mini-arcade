@@ -88,4 +88,3 @@ overlay scene.
 ## Tutorial reference
 
 - `docs/source/tutorials/scene/pause_overlay_policy.md`
-

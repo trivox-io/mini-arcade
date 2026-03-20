@@ -50,6 +50,11 @@ from typing import Any
 
 import yaml
 
+from mini_arcade.modules.game_paths import (
+    find_game_dir,
+    game_settings_candidates,
+)
+
 
 @dataclass
 class SettingsArgs:
@@ -72,11 +77,13 @@ class Settings:
     - explicit config_path
     - MINI_ARCADE_CONFIG_PATH env var
     - monorepo game-local settings under `games/<game_id>/settings/`
+      or `originals/<game_id>/settings/`
     - monorepo example settings under `examples/settings/`
     - repo-level defaults under `settings/settings.yml|yaml`
 
     Profile convention under monorepo root:
-    - games: `games/<game_id>/settings/settings.yml|yaml`
+    - clone games: `games/<game_id>/settings/settings.yml|yaml`
+    - original games: `originals/<game_id>/settings/settings.yml|yaml`
     - examples: `examples/settings/<example_id>.yml|yaml`
     - shared examples: `examples/settings/settings.yml|yaml`
     - default: `settings/settings.yml|yaml`
@@ -173,6 +180,22 @@ class Settings:
         return Path(*clean.replace("\\", "/").split("/"))
 
     @classmethod
+    def _local_game_root(cls, name: str | None) -> Path | None:
+        if not name:
+            return None
+
+        basename = cls._name_path(name).name
+        for candidate in (Path.cwd().resolve(), *Path.cwd().resolve().parents):
+            if candidate.name != basename:
+                continue
+            if not (candidate / "pyproject.toml").exists():
+                continue
+            settings_dir = candidate / "settings"
+            if settings_dir.is_dir():
+                return candidate
+        return None
+
+    @classmethod
     def _profile_candidates(
         cls,
         *,
@@ -183,14 +206,20 @@ class Settings:
         if scope == "game":
             if not name:
                 return []
-            base = (
-                repo_root
-                / "games"
-                / cls._name_path(name)
-                / "settings"
-                / "settings"
+            candidates: list[Path] = []
+            local_root = cls._local_game_root(name)
+            if local_root is not None:
+                base = local_root / "settings" / "settings"
+                candidates.extend(
+                    [base.with_suffix(".yml"), base.with_suffix(".yaml")]
+                )
+            candidates.extend(
+                game_settings_candidates(
+                repo_root,
+                str(cls._name_path(name)).replace("\\", "/"),
+                )
             )
-            return [base.with_suffix(".yml"), base.with_suffix(".yaml")]
+            return candidates
 
         if scope == "example":
             settings_root = repo_root / "examples" / "settings"
@@ -442,7 +471,7 @@ class Settings:
         Priority:
         1) project.root / paths.project_root key in yaml
         2) inferred from scope/name:
-           - game -> <repo>/games/<game_id>
+           - game -> discovered under <repo>/originals or <repo>/games
            - example -> <repo>/examples/catalog/<example_id>
         3) repo root
         4) cwd
@@ -512,7 +541,13 @@ class Settings:
             return Path.cwd().resolve()
 
         if self._scope == "game" and self._name:
-            return (repo_root / "games" / str(self._name)).resolve()
+            local_root = self._local_game_root(self._name)
+            if local_root is not None:
+                return local_root.resolve()
+            resolved = find_game_dir(repo_root, self._name)
+            if resolved is not None:
+                return resolved
+            return (repo_root / "originals" / str(self._name)).resolve()
         if self._scope == "example" and self._name:
             rel = str(self._name).replace("\\", "/").strip("/")
             return (repo_root / "examples" / "catalog" / rel).resolve()

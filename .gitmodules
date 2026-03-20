@@ -1,6 +1,3 @@
-[submodule "games/deja-bounce"]
-	path = games/deja-bounce
-	url = https://github.com/trivox-io/deja-bounce.git
 [submodule "games/space-invaders"]
 	path = games/space-invaders
 	url = https://github.com/trivox-io/space-invaders.git

@@ -39,9 +39,16 @@ class ScaffoldGameCommand(BaseCommand):
         ArgumentType(
             "destination",
             str,
-            "Parent directory where the new game folder will be created. Defaults to ./games.",
+            "Parent directory where the new game folder will be created. Defaults to ./originals, or ./games with --clone.",
             required=False,
-            default="games",
+            default=None,
+        ),
+        ArgumentType(
+            "clone",
+            bool,
+            "Create the scaffold under ./games instead of ./originals.",
+            required=False,
+            default=False,
         ),
         ArgumentType(
             "force",
@@ -64,7 +71,8 @@ class ScaffoldGameCommand(BaseCommand):
 
     Usage:
         mini-arcade scaffold-game --game-id my-first-game
-        mini-arcade scaffold-game --game-id my-first-game --destination C:\\dev\\arcade-forge\\games
+        mini-arcade scaffold-game --game-id pong --clone
+        mini-arcade scaffold-game --game-id my-first-game --destination C:\\dev\\arcade-forge\\originals
         mini-arcade scaffold-game --game-id my-first-game --package my_first_game --dry-run
     """
 

@@ -10,8 +10,17 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
+def _game_dir(game_id: str) -> Path | None:
+    repo_root = _repo_root()
+    for root in (repo_root / "originals", repo_root / "games"):
+        direct = root / game_id
+        if (direct / "src").is_dir():
+            return direct
+    return None
+
+
 # games/ are git submodules unavailable in CI.
-_games_available = (_repo_root() / "games" / "asteroids" / "src").is_dir()
+_games_available = _game_dir("asteroids") is not None
 if not _games_available:
     pytest.skip(
         "games/ submodules not available in CI",
@@ -24,6 +33,7 @@ def _bootstrap_repo_imports() -> None:
     candidates = [root]
     candidates.extend(path for path in (root / "packages").glob("*/src"))
     candidates.extend(path for path in (root / "games").glob("*/src"))
+    candidates.extend(path for path in (root / "originals").glob("*/src"))
 
     for path in reversed(candidates):
         value = str(path)

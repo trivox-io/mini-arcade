@@ -19,6 +19,11 @@ except ModuleNotFoundError:  # py39-310
 
 from mini_arcade.cli.base_command_processor import BaseCommandProcessor
 from mini_arcade.cli.exceptions import CommandException
+from mini_arcade.modules.game_paths import (
+    CLONE_GAMES_DIRNAME,
+    ORIGINAL_GAMES_DIRNAME,
+    find_game_dir_under,
+)
 
 # ------------------------- TOML helpers --------------------------------------
 
@@ -276,7 +281,7 @@ class BaseTargetLocator:
             p = Path(parent_override).expanduser().resolve()
             if not p.exists() or not p.is_dir():
                 raise CommandException(
-                    f"--{self.kind}s-dir is not a directory: {p}"
+                    f"Target parent directory is not a directory: {p}"
                 )
             return p
         return self._dev_default_parent_dir
@@ -321,6 +326,14 @@ class GameLocator(BaseTargetLocator):
     """
 
     kind = "game"
+
+    def find_dir(self, parent_dir: Path, target_id: str) -> Path:
+        target_dir = find_game_dir_under(parent_dir, target_id)
+        if target_dir is None:
+            raise CommandException(
+                f"{self.kind.capitalize()} '{target_id}' not found under: {parent_dir}"
+            )
+        return target_dir
 
     def validate(self, target_dir: Path) -> TargetSpec:
         try:
@@ -465,6 +478,7 @@ class GameRunnerProcessor(BaseCommandProcessor):
 
         # games
         self.from_source = kwargs.get("from_source")
+        self.clone = bool(kwargs.get("clone", False))
 
         # examples
         self.examples_dir = kwargs.get("examples_dir")
@@ -483,19 +497,25 @@ class GameRunnerProcessor(BaseCommandProcessor):
                 "Provide exactly one of: --game or --example"
             )
 
-        self._dev_games_dir = (Path.cwd() / "games").resolve()
+        self._dev_clone_games_dir = (Path.cwd() / CLONE_GAMES_DIRNAME).resolve()
+        self._dev_original_games_dir = (
+            Path.cwd() / ORIGINAL_GAMES_DIRNAME
+        ).resolve()
         self._dev_examples_dir = (
             Path.cwd() / "examples" / "catalog"
         ).resolve()
-
-        self._games = GameLocator(dev_default_parent_dir=self._dev_games_dir)
         self._examples = ExampleLocator(
             dev_default_parent_dir=self._dev_examples_dir
         )
 
     def run(self):
         if self.game:
-            locator = self._games
+            default_parent = (
+                self._dev_clone_games_dir
+                if self.clone
+                else self._dev_original_games_dir
+            )
+            locator = GameLocator(dev_default_parent_dir=default_parent)
             parent = locator.resolve_parent_dir(self.from_source)
             target_dir = locator.find_dir(parent, self.game)
             spec = locator.validate(target_dir)
@@ -503,6 +523,11 @@ class GameRunnerProcessor(BaseCommandProcessor):
             cmd = [sys.executable, str(spec.entrypoint), *self.pass_through]
             env = os.environ.copy()
             env["PYTHONPATH"] = _build_pythonpath(spec)
+            settings_path = target_dir / "settings" / "settings.yml"
+            if not settings_path.exists():
+                settings_path = target_dir / "settings" / "settings.yaml"
+            if settings_path.exists():
+                env["MINI_ARCADE_CONFIG_PATH"] = str(settings_path.resolve())
 
         else:
             locator = self._examples

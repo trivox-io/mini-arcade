@@ -15,6 +15,7 @@ def _bootstrap_repo_imports() -> None:
     candidates = [root]
     candidates.extend(path for path in (root / "packages").glob("*/src"))
     candidates.extend(path for path in (root / "games").glob("*/src"))
+    candidates.extend(path for path in (root / "originals").glob("*/src"))
 
     for path in reversed(candidates):
         value = str(path)

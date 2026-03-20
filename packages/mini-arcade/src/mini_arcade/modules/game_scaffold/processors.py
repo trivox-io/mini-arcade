@@ -11,6 +11,10 @@ from pathlib import Path
 from mini_arcade.cli.base_command_processor import BaseCommandProcessor
 from mini_arcade.cli.exceptions import CommandException
 from mini_arcade.constants import APP
+from mini_arcade.modules.game_paths import (
+    CLONE_GAMES_DIRNAME,
+    DEFAULT_GAME_SCAFFOLD_DESTINATION,
+)
 
 
 def _dependency_series(version: str) -> str:
@@ -460,18 +464,20 @@ class GameScaffoldProcessor(BaseCommandProcessor):
         project structure.
     :ivar package (str | None): Optional custom package name for the game's source code.
     :ivar title (str | None): Optional human-readable title for the game.
-    :ivar destination (str): The parent directory where the game scaffold will be created (default
-        is "games").
+    :ivar destination (str): The parent directory where the game scaffold will be created.
     :ivar force (bool): Whether to overwrite existing files if the target directory already exists
         (default is False).
     :ivar dry_run (bool): If True, do not create any files but print the intended
         actions (default is False).
+    :ivar clone (bool): If True, default destination becomes ``games/`` instead
+        of ``originals/``.
     """
 
     game_id: str
     package: str | None = None
     title: str | None = None
-    destination: str = "games"
+    destination: str = DEFAULT_GAME_SCAFFOLD_DESTINATION
+    clone: bool = False
     force: bool = False
     dry_run: bool = False
 
@@ -479,7 +485,13 @@ class GameScaffoldProcessor(BaseCommandProcessor):
         self.game_id = kwargs.get("game_id")
         self.package = kwargs.get("package")
         self.title = kwargs.get("title")
-        self.destination = kwargs.get("destination", "games")
+        self.clone = bool(kwargs.get("clone", False))
+        destination = kwargs.get("destination")
+        self.destination = destination or (
+            CLONE_GAMES_DIRNAME
+            if self.clone
+            else DEFAULT_GAME_SCAFFOLD_DESTINATION
+        )
         self.force = bool(kwargs.get("force", False))
         self.dry_run = bool(kwargs.get("dry_run", False))
 

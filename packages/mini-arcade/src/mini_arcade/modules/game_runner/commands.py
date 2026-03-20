@@ -35,9 +35,16 @@ class GameRunnerCommand(BaseCommand):
         ArgumentType(
             "from_source",
             str,
-            "Parent folder where games live (defaults to ./games in dev)",
+            "Parent folder where target games live (defaults to ./originals, or ./games with --clone).",
             required=False,
             default=None,
+        ),
+        ArgumentType(
+            "clone",
+            bool,
+            "Run a built-in clone from ./games instead of an original from ./originals.",
+            required=False,
+            default=False,
         ),
         ArgumentType(
             "examples_dir",
@@ -60,12 +67,14 @@ class GameRunnerCommand(BaseCommand):
     Run a game or an example.
 
     Usage:
+        mini-arcade run --game my-original-game [--pass-through <args...>]
+        mini-arcade run --game deja-bounce --clone [--pass-through <args...>]
         mini-arcade run --game deja-bounce [--from-source <games_parent>] [--pass-through <args...>]
         mini-arcade run --example config/engine_config_basics [--examples-dir <examples_parent>] [--pass-through <args...>]
         mini-arcade run tour [tour options...]
     
     Description:
-        This command starts a Mini Arcade game or example. You can specify the game/example by its id or folder name. By default, it looks for games in the ./games directory and examples in the ./examples directory (relative to the current working directory). You can override these defaults with the --from-source and --examples-dir options.
+        This command starts a Mini Arcade game or example. You can specify the game/example by its id or folder name. By default, original games are loaded from ./originals and examples from ./examples (relative to the current working directory). Use --clone to load built-in clone games from ./games instead. You can override these defaults with the --from-source and --examples-dir options.
         It also supports the compatibility form `mini-arcade run tour`, which
         routes to the tutorial tour command.
     """

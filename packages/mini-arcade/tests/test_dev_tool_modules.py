@@ -116,10 +116,23 @@ def test_game_scaffold_defaults_to_games_directory(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    (tmp_path / "games").mkdir()
+    (tmp_path / "originals").mkdir()
     monkeypatch.chdir(tmp_path)
 
     processor = GameScaffoldProcessor(game_id="laser-garden")
+
+    assert processor.run() == 0
+    assert (tmp_path / "originals" / "laser-garden" / "manage.py").exists()
+
+
+def test_game_scaffold_clone_flag_defaults_to_games_directory(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    (tmp_path / "games").mkdir()
+    monkeypatch.chdir(tmp_path)
+
+    processor = GameScaffoldProcessor(game_id="laser-garden", clone=True)
 
     assert processor.run() == 0
     assert (tmp_path / "games" / "laser-garden" / "manage.py").exists()

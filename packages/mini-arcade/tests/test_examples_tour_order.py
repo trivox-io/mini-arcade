@@ -12,6 +12,7 @@ if str(SRC_ROOT) not in sys.path:
 from mini_arcade.modules.game_runner.processors import (
     ROADMAP_EXAMPLE_ORDER,
     ExamplesTourProcessor,
+    GameRunnerProcessor,
     TargetSpec,
     _build_pythonpath,
     _discover_example_ids,
@@ -151,3 +152,94 @@ def test_examples_tour_returns_nonzero_when_example_fails(
     captured = capsys.readouterr().out
     assert "[1/1] Failed: scene/minimal_scene (exit code 7)" in captured
     assert "Examples tour completed: total=1, passed=0, failed=1" in captured
+
+
+def _write_minimal_game(root: Path, package: str, game_id: str) -> None:
+    root.mkdir(parents=True)
+    (root / "settings").mkdir()
+    (root / "src" / package).mkdir(parents=True)
+    (root / "pyproject.toml").write_text(
+        "\n".join(
+            [
+                "[tool.mini-arcade.game]",
+                f'id = "{game_id}"',
+                'entrypoint = "manage.py"',
+                'source_roots = ["src"]',
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (root / "manage.py").write_text(
+        "if __name__ == '__main__':\n    pass\n",
+        encoding="utf-8",
+    )
+    (root / "settings" / "settings.yml").write_text(
+        f"game:\n  id: {game_id}\n",
+        encoding="utf-8",
+    )
+
+
+def test_game_runner_defaults_to_originals_and_sets_settings_env(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    original = tmp_path / "originals" / "orbit-garden"
+    clone = tmp_path / "games" / "orbit-garden"
+    _write_minimal_game(original, "orbit_garden", "orbit-garden")
+    _write_minimal_game(clone, "orbit_garden", "orbit-garden")
+    monkeypatch.chdir(tmp_path)
+
+    seen: list[tuple[list[str], Path, dict[str, str]]] = []
+
+    def _fake_run_child_process(
+        *, cmd: list[str], cwd: Path, env: dict[str, str]
+    ):
+        seen.append((cmd, cwd, env))
+        return (0, False)
+
+    monkeypatch.setattr(
+        "mini_arcade.modules.game_runner.processors._run_child_process",
+        _fake_run_child_process,
+    )
+
+    processor = GameRunnerProcessor(game="orbit-garden", pass_through=[])
+
+    assert processor.run() == 0
+    assert len(seen) == 1
+    assert seen[0][1] == original.resolve()
+    assert seen[0][2]["MINI_ARCADE_CONFIG_PATH"] == str(
+        (original / "settings" / "settings.yml").resolve()
+    )
+
+
+def test_game_runner_clone_flag_uses_games_directory(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    clone = tmp_path / "games" / "orbit-garden"
+    _write_minimal_game(clone, "orbit_garden", "orbit-garden")
+    monkeypatch.chdir(tmp_path)
+
+    seen: list[tuple[list[str], Path, dict[str, str]]] = []
+
+    def _fake_run_child_process(
+        *, cmd: list[str], cwd: Path, env: dict[str, str]
+    ):
+        seen.append((cmd, cwd, env))
+        return (0, False)
+
+    monkeypatch.setattr(
+        "mini_arcade.modules.game_runner.processors._run_child_process",
+        _fake_run_child_process,
+    )
+
+    processor = GameRunnerProcessor(
+        game="orbit-garden",
+        clone=True,
+        pass_through=[],
+    )
+
+    assert processor.run() == 0
+    assert len(seen) == 1
+    assert seen[0][1] == clone.resolve()

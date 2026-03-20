@@ -198,5 +198,7 @@ Temporary Items
 .trivox_conductor/
 .trivox/
 backup/
-office-horrors/
-experiments/
+originals/*
+!originals/.gitkeep
+experiments/*
+!experiments/.gitkeep

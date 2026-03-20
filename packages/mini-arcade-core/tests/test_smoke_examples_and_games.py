@@ -18,6 +18,7 @@ def _bootstrap_repo_imports() -> None:
     candidates = [root]
     candidates.extend(path for path in (root / "packages").glob("*/src"))
     candidates.extend(path for path in (root / "games").glob("*/src"))
+    candidates.extend(path for path in (root / "originals").glob("*/src"))
 
     for path in reversed(candidates):
         value = str(path)
@@ -30,6 +31,10 @@ _bootstrap_repo_imports()
 from examples._shared import runner as example_runner  # noqa: E402
 from examples._shared.runner import load_example_spec  # noqa: E402
 from examples._shared.spec import ExampleSpec  # noqa: E402
+from mini_arcade.modules.game_paths import (  # noqa: E402
+    find_game_dir,
+    game_settings_candidates,
+)
 from mini_arcade.modules.game_runner.processors import (  # noqa: E402
     _discover_example_ids,
 )
@@ -70,11 +75,7 @@ GAME_CASES = [
 
 
 def _game_settings_path(game_id: str) -> Path:
-    root = _repo_root()
-    candidates = (
-        root / "games" / game_id / "settings" / "settings.yml",
-        root / "games" / game_id / "settings" / "settings.yaml",
-    )
+    candidates = tuple(game_settings_candidates(_repo_root(), game_id))
     for candidate in candidates:
         if candidate.exists():
             return candidate
@@ -87,15 +88,14 @@ def _game_settings_path(game_id: str) -> Path:
 
 def _missing_game_cases() -> list[str]:
     missing: list[str] = []
-    root = _repo_root()
     for game_id, _scene_ids in GAME_CASES:
-        game_src = root / "games" / game_id / "src"
+        game_dir = find_game_dir(_repo_root(), game_id)
         try:
             _game_settings_path(game_id)
         except FileNotFoundError:
             missing.append(f"{game_id}:missing-settings")
             continue
-        if not game_src.is_dir():
+        if game_dir is None or not (game_dir / "src").is_dir():
             missing.append(f"{game_id}:missing-src")
     return missing
 
