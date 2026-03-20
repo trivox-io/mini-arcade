@@ -74,7 +74,8 @@ def test_settings_for_game_prefers_local_game_directory(
         force_reload=True,
     )
 
-    assert settings.config_path == (
-        game_dir / "settings" / "settings.yml"
-    ).resolve()
+    assert (
+        settings.config_path
+        == (game_dir / "settings" / "settings.yml").resolve()
+    )
     assert settings.project_root() == game_dir.resolve()

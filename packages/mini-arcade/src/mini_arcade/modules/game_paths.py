@@ -17,10 +17,26 @@ def _clean_game_id(game_id: str) -> str:
 
 
 def clone_games_root(repo_root: Path) -> Path:
+    """
+    Return the root directory where cloned games are stored.
+
+    :param repo_root: Root of the monorepo.
+    :type repo_root: Path
+    :return: Absolute path to the clone games root directory.
+    :rtype: Path
+    """
     return Path(repo_root).resolve() / CLONE_GAMES_DIRNAME
 
 
 def original_games_root(repo_root: Path) -> Path:
+    """
+    Return the root directory where original games are stored.
+
+    :param repo_root: Root of the monorepo.
+    :type repo_root: Path
+    :return: Absolute path to the original games root directory.
+    :rtype: Path
+    """
     return Path(repo_root).resolve() / ORIGINAL_GAMES_DIRNAME
 
 
@@ -31,7 +47,7 @@ def _iter_game_dirs_under_one_root(root: Path) -> tuple[Path, ...]:
     Supported layouts:
     - direct children: ``games/<game-id>`` or ``originals/<game-id>``
     - legacy nested children under ``games/clones/<game-id>`` or
-      ``games/originals/<game-id>``
+        ``games/originals/<game-id>``
     """
 
     base = Path(root).resolve()
@@ -96,7 +112,8 @@ def find_game_dir_under(parent_dir: Path, game_id: str) -> Path | None:
 
     basename = Path(clean).name
     matches = [
-        path for path in _iter_game_dirs_under_one_root(root)
+        path
+        for path in _iter_game_dirs_under_one_root(root)
         if path.name == basename
     ]
     if len(matches) == 1:

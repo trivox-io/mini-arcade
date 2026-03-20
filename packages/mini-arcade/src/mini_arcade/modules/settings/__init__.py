@@ -215,8 +215,8 @@ class Settings:
                 )
             candidates.extend(
                 game_settings_candidates(
-                repo_root,
-                str(cls._name_path(name)).replace("\\", "/"),
+                    repo_root,
+                    str(cls._name_path(name)).replace("\\", "/"),
                 )
             )
             return candidates

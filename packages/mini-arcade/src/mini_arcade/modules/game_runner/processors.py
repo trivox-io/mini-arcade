@@ -497,7 +497,9 @@ class GameRunnerProcessor(BaseCommandProcessor):
                 "Provide exactly one of: --game or --example"
             )
 
-        self._dev_clone_games_dir = (Path.cwd() / CLONE_GAMES_DIRNAME).resolve()
+        self._dev_clone_games_dir = (
+            Path.cwd() / CLONE_GAMES_DIRNAME
+        ).resolve()
         self._dev_original_games_dir = (
             Path.cwd() / ORIGINAL_GAMES_DIRNAME
         ).resolve()

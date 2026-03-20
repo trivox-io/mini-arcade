@@ -35,7 +35,10 @@ class GameRunnerCommand(BaseCommand):
         ArgumentType(
             "from_source",
             str,
-            "Parent folder where target games live (defaults to ./originals, or ./games with --clone).",
+            (
+                "Parent folder where target games live "
+                "(defaults to ./originals, or ./games with --clone)."
+            ),
             required=False,
             default=None,
         ),

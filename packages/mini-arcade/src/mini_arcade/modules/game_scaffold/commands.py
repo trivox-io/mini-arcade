@@ -39,7 +39,10 @@ class ScaffoldGameCommand(BaseCommand):
         ArgumentType(
             "destination",
             str,
-            "Parent directory where the new game folder will be created. Defaults to ./originals, or ./games with --clone.",
+            (
+                "Parent directory where the new game folder will be created. "
+                "Defaults to ./originals, or ./games with --clone."
+            ),
             required=False,
             default=None,
         ),
