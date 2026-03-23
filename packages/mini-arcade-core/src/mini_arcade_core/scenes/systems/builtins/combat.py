@@ -75,6 +75,9 @@ class HealthPool:
     alive: bool = True
 
     def clamp(self) -> None:
+        """
+        Clamp current HP to the range [0, max_hp] and update alive status.
+        """
         self.max_hp = max(0.0, float(self.max_hp))
         self.current_hp = max(0.0, min(float(self.current_hp), self.max_hp))
         self.alive = bool(self.current_hp > 0.0 and self.alive)
@@ -148,6 +151,13 @@ class BoundsBounceSystem(Generic[TCtx]):
     bindings: tuple[BoundsBounceBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """
+        For each binding, reflect each reported entity from the reported bounds
+        rect when they intersect, respecting the binding predicate.
+
+        :param ctx: The system context, passed to all binding getters.
+        :type ctx: TCtx
+        """
         if not self.enabled_when(ctx):
             return
 
@@ -233,7 +243,16 @@ class ContactDamageSystem(Generic[TCtx]):
                 survivors[key] = next_remaining
         self._cooldowns = survivors
 
+    # pylint: disable=too-many-branches
     def step(self, ctx: TCtx) -> None:
+        """
+        For each binding, apply damage from each reported attacker to each
+        reported target when they intersect, respecting the binding predicate and
+        per-pair cooldowns.
+
+        :param ctx: The system context, passed to all binding getters.
+        :type ctx: TCtx
+        """
         if not self.enabled_when(ctx):
             return
 
@@ -308,6 +327,14 @@ class ProjectileHitSystem(Generic[TCtx]):
     bindings: tuple[ProjectileHitBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """
+        For each binding, apply damage from each reported projectile to each
+        reported target when they intersect, respecting the binding predicate and
+        optionally destroying the projectile on hit.
+
+        :param ctx: The system context, passed to all binding getters.
+        :type ctx: TCtx
+        """
         if not self.enabled_when(ctx):
             return
 

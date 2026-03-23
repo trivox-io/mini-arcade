@@ -48,21 +48,6 @@ from .bomberman import (  # noqa: E402  (re-export)
     is_walkable_arena_tile,
     spawn_explosion_from_bomb,
 )
-from .brick_breaker import (  # noqa: E402  (re-export)
-    BounceCollisionBinding,
-    BounceCollisionSystem,
-    BounceHit,
-    BrickField,
-    BrickFieldCollisionBinding,
-    BrickFieldCollisionSystem,
-    BrickState,
-    PaddleBouncePolicy,
-    ViewportBounceBinding,
-    ViewportBounceSystem,
-    apply_bounce_hit,
-    reflect_from_viewport,
-    resolve_rect_bounce,
-)
 from .brackets import (  # noqa: E402  (re-export)
     ContestantProfile,
     KnockoutBracketProgressBinding,
@@ -81,6 +66,21 @@ from .brackets import (  # noqa: E402  (re-export)
     playable_knockout_matches,
     resolve_knockout_byes,
     seed_knockout_bracket,
+)
+from .brick_breaker import (  # noqa: E402  (re-export)
+    BounceCollisionBinding,
+    BounceCollisionSystem,
+    BounceHit,
+    BrickField,
+    BrickFieldCollisionBinding,
+    BrickFieldCollisionSystem,
+    BrickState,
+    PaddleBouncePolicy,
+    ViewportBounceBinding,
+    ViewportBounceSystem,
+    apply_bounce_hit,
+    reflect_from_viewport,
+    resolve_rect_bounce,
 )
 from .capture_hotkeys import (  # noqa: E402  (re-export)
     CaptureHotkey,

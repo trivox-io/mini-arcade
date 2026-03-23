@@ -706,9 +706,9 @@ def test_ball_vs_ball_powerup_sandbox_runs_headless(capsys) -> None:
 def test_ball_vs_ball_powerup_sandbox_spawned_pickup_is_indexed() -> None:
     from experiments.ball_vs_ball_powerup_sandbox.system_lab_case import (
         BallVsBallPowerupSandboxContext,
-        build_powerup_sandbox_world,
         _entity_actual_center,
         _spawn_selected_pickup_at,
+        build_powerup_sandbox_world,
     )
     from mini_arcade_core.engine.commands import CommandQueue
     from mini_arcade_core.runtime.input_frame import InputFrame

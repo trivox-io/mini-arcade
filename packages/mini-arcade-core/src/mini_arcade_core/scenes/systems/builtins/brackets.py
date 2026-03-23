@@ -242,9 +242,15 @@ def resolve_knockout_byes(state: KnockoutBracketState) -> None:
                 if match.winner_id is not None:
                     continue
                 winner_id = None
-                if _slot_is_true_bye(state, match, slot="b") and match.entrant_a_id:
+                if (
+                    _slot_is_true_bye(state, match, slot="b")
+                    and match.entrant_a_id
+                ):
                     winner_id = match.entrant_a_id
-                elif _slot_is_true_bye(state, match, slot="a") and match.entrant_b_id:
+                elif (
+                    _slot_is_true_bye(state, match, slot="a")
+                    and match.entrant_b_id
+                ):
                     winner_id = match.entrant_b_id
                 if winner_id is None:
                     continue
@@ -268,7 +274,9 @@ def _slot_is_true_bye(
     )
     if source_match_id is None:
         return (
-            match.entrant_a_id is None if slot == "a" else match.entrant_b_id is None
+            match.entrant_a_id is None
+            if slot == "a"
+            else match.entrant_b_id is None
         )
 
     source_match = _find_match(state, source_match_id)
@@ -290,9 +298,17 @@ def seed_knockout_bracket(
 ) -> None:
     """
     Replace the bracket with a new seeded contestant order.
-    """
 
-    profiles = [profile for profile in contestants]
+    :param state: The knockout bracket state to seed.
+    :type state: KnockoutBracketState
+    :param contestants: An iterable of contestant profiles to seed into the bracket.
+    :type contestants: Iterable[ContestantProfile]
+    :param seed: An optional seed value for shuffling the contestants.
+    :type seed: int
+    :param shuffle: Whether to shuffle the contestants before seeding.
+    :type shuffle: bool
+    """
+    profiles = list(contestants)
     state.seed_value = int(seed)
     state.contestants = {profile.id: profile for profile in profiles}
     ordered_ids = [profile.id for profile in profiles]
@@ -509,6 +525,12 @@ class KnockoutBracketSeedSystem(Generic[TCtx]):
     bindings: tuple[KnockoutBracketSeedBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """
+        Seed or reshape the bracket based on the current context.
+
+        :param ctx: The system context, passed to all binding getters.
+        :type ctx: TCtx
+        """
         for binding in self.bindings:
             state = binding.state_getter(ctx)
             trigger = (
@@ -554,6 +576,12 @@ class KnockoutBracketProgressSystem(Generic[TCtx]):
     bindings: tuple[KnockoutBracketProgressBinding[TCtx], ...] = ()
 
     def step(self, ctx: TCtx) -> None:
+        """
+        For each binding, claim the reported match winner and clear the result.
+
+        :param ctx: The system context, passed to all binding getters.
+        :type ctx: TCtx
+        """
         if not self.enabled_when(ctx):
             return
 
