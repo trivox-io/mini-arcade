@@ -47,6 +47,8 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     BombState,
     BounceCollisionBinding,
     BounceCollisionSystem,
+    BoundsBounceBinding,
+    BoundsBounceSystem,
     BrickField,
     BrickFieldCollisionBinding,
     BrickFieldCollisionSystem,
@@ -62,6 +64,9 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     CollectibleField,
     CollectibleKind,
     CollectibleState,
+    ContactDamageBinding,
+    ContactDamageSystem,
+    ContestantProfile,
     CullOutOfViewportSystem,
     DestructibleTileBinding,
     DestructibleTileSystem,
@@ -80,8 +85,15 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     GridNavigatorState,
     HazardCollisionBinding,
     HazardCollisionSystem,
+    HealthPool,
     IntentAxisVelocitySystem,
     KinematicMotionSystem,
+    KnockoutBracketProgressBinding,
+    KnockoutBracketProgressSystem,
+    KnockoutBracketSeedBinding,
+    KnockoutBracketSeedSystem,
+    KnockoutBracketState,
+    KnockoutMatchResult,
     ModeTimerBinding,
     ModeTimerState,
     ModeTimerSystem,
@@ -94,6 +106,8 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     ProceduralParticleSimulationSystem,
     ProjectileLifecycleBinding,
     ProjectileLifecycleBundle,
+    ProjectileHitBinding,
+    ProjectileHitSystem,
     ScoreChainBinding,
     ScoreChainState,
     ScoreChainSystem,
@@ -117,18 +131,24 @@ from mini_arcade_core.scenes.systems.builtins import (  # noqa: E402
     available_directions,
     blast_cells,
     block_cells_from_strings,
+    build_knockout_layout,
+    build_knockout_rounds,
     choose_direction_away,
     choose_direction_toward,
     choose_random_direction,
+    claim_knockout_match_winner,
     claim_score_chain_points,
     clear_timed_state,
+    damage_health_pool,
     fire_particle_binding,
     free_grid_cells,
+    heal_health_pool,
     is_junction,
     is_walkable_arena_tile,
     magic_particle_binding,
     occupied_grid_cells,
     piece_fits,
+    playable_knockout_matches,
     project_piece_down,
     reset_score_chain,
     resolve_rect_bounce,
@@ -171,6 +191,20 @@ class _Bundle:
 
     def iter_systems(self) -> Iterable[object]:
         return self.systems
+
+
+@dataclass
+class _BracketCtx:
+    world: object
+
+
+@dataclass
+class _BracketWorld:
+    entrants: list[ContestantProfile]
+    bracket: KnockoutBracketState = field(default_factory=KnockoutBracketState)
+    seed_value: int = 9
+    should_seed: bool = True
+    pending_result: KnockoutMatchResult | None = None
 
 
 def test_animation_tick_system_advances_anim2d_entities() -> None:
@@ -1608,3 +1642,278 @@ def test_procedural_particle_intensity_changes_spawned_particle_shape() -> (
     )
     assert abs(world.high.particles[0].vy) > abs(world.low.particles[0].vy)
     assert world.high.particles[0].lifetime > world.low.particles[0].lifetime
+
+
+def test_health_pool_heal_and_damage_clamp_values() -> None:
+    pool = HealthPool(current_hp=20.0, max_hp=30.0)
+
+    assert damage_health_pool(pool, 9.0) == 9.0
+    assert pool.current_hp == 11.0
+    assert pool.alive is True
+
+    assert heal_health_pool(pool, 50.0) == 19.0
+    assert pool.current_hp == 30.0
+
+    assert damage_health_pool(pool, 100.0) == 30.0
+    assert pool.current_hp == 0.0
+    assert pool.alive is False
+    assert heal_health_pool(pool, 5.0) == 0.0
+
+
+def test_contact_damage_system_applies_damage_with_cooldown() -> None:
+    attacker = BaseEntity.from_dict(
+        {
+            "id": 1,
+            "name": "Attacker",
+            "transform": {
+                "center": {"x": 20.0, "y": 20.0},
+                "size": {"width": 16.0, "height": 16.0},
+            },
+            "shape": {"kind": "rect"},
+        }
+    )
+    target = BaseEntity.from_dict(
+        {
+            "id": 2,
+            "name": "Target",
+            "transform": {
+                "center": {"x": 22.0, "y": 22.0},
+                "size": {"width": 16.0, "height": 16.0},
+            },
+            "shape": {"kind": "rect"},
+        }
+    )
+    target.combat_health = HealthPool(current_hp=30.0, max_hp=30.0)
+    hits: list[float] = []
+    world = _World(entities=[attacker, target])
+    ctx = _Ctx(dt=0.1, world=world)
+
+    system = ContactDamageSystem(
+        bindings=(
+            ContactDamageBinding(
+                attackers_getter=lambda ctx: (attacker,),
+                targets_getter=lambda ctx: (target,),
+                health_getter=lambda ctx, entity: entity.combat_health,
+                damage_getter=lambda ctx, attacker, target: 7.0,
+                cooldown_seconds=0.3,
+                on_damage=lambda ctx, attacker, target, damage: hits.append(
+                    damage
+                ),
+            ),
+        )
+    )
+
+    system.step(ctx)
+    system.step(ctx)
+    assert target.combat_health.current_hp == 23.0
+    assert hits == [7.0]
+
+    system.step(_Ctx(dt=0.31, world=world))
+    assert target.combat_health.current_hp == 16.0
+    assert hits == [7.0, 7.0]
+
+
+def test_bounds_bounce_system_uses_offset_arena_rect() -> None:
+    entity = BaseEntity.from_dict(
+        {
+            "id": 21,
+            "name": "Arena Ball",
+            "transform": {
+                "center": {"x": 8.0, "y": 18.0},
+                "size": {"width": 12.0, "height": 12.0},
+            },
+            "shape": {"kind": "rect"},
+            "kinematic": {
+                "velocity": {"vx": -120.0, "vy": -80.0},
+            },
+        }
+    )
+    world = _World(entities=[entity])
+
+    BoundsBounceSystem(
+        bindings=(
+            BoundsBounceBinding(
+                entities_getter=lambda ctx: (entity,),
+                bounds_getter=lambda ctx: (10.0, 20.0, 100.0, 80.0),
+            ),
+        )
+    ).step(_Ctx(dt=0.1, world=world))
+
+    assert entity.transform.center.x == 10.0
+    assert entity.transform.center.y == 20.0
+    assert entity.kinematic.velocity.x == 120.0
+    assert entity.kinematic.velocity.y == 80.0
+
+
+def test_projectile_hit_system_damages_target_and_kills_projectile() -> None:
+    projectile = BaseEntity.from_dict(
+        {
+            "id": 10,
+            "name": "Bolt",
+            "transform": {
+                "center": {"x": 40.0, "y": 40.0},
+                "size": {"width": 8.0, "height": 8.0},
+            },
+            "shape": {"kind": "rect"},
+        }
+    )
+    projectile.alive = True
+    target = BaseEntity.from_dict(
+        {
+            "id": 11,
+            "name": "Target",
+            "transform": {
+                "center": {"x": 40.0, "y": 40.0},
+                "size": {"width": 18.0, "height": 18.0},
+            },
+            "shape": {"kind": "rect"},
+        }
+    )
+    target.combat_health = HealthPool(current_hp=24.0, max_hp=24.0)
+    hits: list[float] = []
+    world = _World(entities=[projectile, target])
+
+    ProjectileHitSystem(
+        bindings=(
+            ProjectileHitBinding(
+                projectiles_getter=lambda ctx: (projectile,),
+                targets_getter=lambda ctx: (target,),
+                health_getter=lambda ctx, entity: entity.combat_health,
+                damage_getter=lambda ctx, projectile, target: 9.0,
+                on_hit=lambda ctx, projectile, target, damage: hits.append(
+                    damage
+                ),
+            ),
+        )
+    ).step(_Ctx(dt=0.1, world=world))
+
+    assert target.combat_health.current_hp == 15.0
+    assert projectile.alive is False
+    assert hits == [9.0]
+
+
+def test_knockout_bracket_seed_system_builds_expected_rounds() -> None:
+    world = _BracketWorld(
+        entrants=[
+            ContestantProfile(id=f"entrant_{idx}", name=f"Entrant {idx}")
+            for idx in range(16)
+        ]
+    )
+    ctx = _BracketCtx(world=world)
+
+    KnockoutBracketSeedSystem(
+        bindings=(
+            KnockoutBracketSeedBinding(
+                state_getter=lambda ctx: ctx.world.bracket,
+                contestants_getter=lambda ctx: ctx.world.entrants,
+                seed_getter=lambda ctx: ctx.world.seed_value,
+                should_seed=lambda ctx, _state: ctx.world.should_seed,
+                on_seeded=lambda ctx, _state: setattr(
+                    ctx.world, "should_seed", False
+                ),
+            ),
+        )
+    ).step(ctx)
+
+    assert [len(round_matches) for round_matches in world.bracket.rounds] == [
+        8,
+        4,
+        2,
+        1,
+    ]
+    assert len(world.bracket.contestants) == 16
+    assert world.bracket.champion_id is None
+    assert world.should_seed is False
+
+
+def test_knockout_bracket_progress_system_advances_winners() -> None:
+    world = _BracketWorld(
+        entrants=[
+            ContestantProfile(id=f"entrant_{idx}", name=f"Entrant {idx}")
+            for idx in range(4)
+        ]
+    )
+    ctx = _BracketCtx(world=world)
+
+    KnockoutBracketSeedSystem(
+        bindings=(
+            KnockoutBracketSeedBinding(
+                state_getter=lambda ctx: ctx.world.bracket,
+                contestants_getter=lambda ctx: ctx.world.entrants,
+                seed_getter=lambda ctx: ctx.world.seed_value,
+                should_seed=lambda ctx, _state: ctx.world.should_seed,
+                on_seeded=lambda ctx, _state: setattr(
+                    ctx.world, "should_seed", False
+                ),
+            ),
+        )
+    ).step(ctx)
+
+    first_match = world.bracket.rounds[0][0]
+    winner_id = first_match.entrant_a_id
+    assert winner_id is not None
+    world.pending_result = KnockoutMatchResult(
+        match_id=first_match.id,
+        winner_id=winner_id,
+    )
+
+    KnockoutBracketProgressSystem(
+        bindings=(
+            KnockoutBracketProgressBinding(
+                state_getter=lambda ctx: ctx.world.bracket,
+                result_getter=lambda ctx: ctx.world.pending_result,
+                clear_result=lambda ctx: setattr(
+                    ctx.world, "pending_result", None
+                ),
+            ),
+        )
+    ).step(ctx)
+
+    assert world.pending_result is None
+    assert world.bracket.rounds[0][0].winner_id == winner_id
+    assert world.bracket.rounds[1][0].entrant_a_id == winner_id
+    assert world.bracket.rounds[1][0].winner_id is None
+    assert world.bracket.champion_id is None
+    assert playable_knockout_matches(world.bracket)
+
+
+def test_knockout_layout_mirrors_around_center_final() -> None:
+    state = KnockoutBracketState(
+        contestants={
+            f"entrant_{idx}": ContestantProfile(
+                id=f"entrant_{idx}",
+                name=f"Entrant {idx}",
+            )
+            for idx in range(16)
+        }
+    )
+    state.contestant_ids = list(state.contestants)
+    state.rounds = build_knockout_rounds(state.contestant_ids)
+
+    layout = build_knockout_layout(state)
+    layout_by_id = {item.match_id: item for item in layout}
+    final = layout_by_id[state.rounds[-1][0].id]
+    left_round_of_16 = [
+        layout_by_id[match.id] for match in state.rounds[0][:4]
+    ]
+    right_round_of_16 = [
+        layout_by_id[match.id] for match in state.rounds[0][4:]
+    ]
+    left_semifinal = layout_by_id[state.rounds[2][0].id]
+    right_semifinal = layout_by_id[state.rounds[2][1].id]
+
+    assert len(layout) == 15
+    assert max(item.center.x for item in left_round_of_16) < final.center.x
+    assert min(item.center.x for item in right_round_of_16) > final.center.x
+    assert left_semifinal.center.x < final.center.x < right_semifinal.center.x
+    assert left_round_of_16[0].center.y < left_round_of_16[-1].center.y
+    assert right_round_of_16[0].center.y < right_round_of_16[-1].center.y
+
+    left_quarterfinal = layout_by_id[state.rounds[1][0].id]
+    right_quarterfinal = layout_by_id[state.rounds[1][3].id]
+    assert left_round_of_16[0].center.x + (
+        left_round_of_16[0].size.width * 0.5
+    ) < left_quarterfinal.center.x - (left_quarterfinal.size.width * 0.5)
+    assert right_quarterfinal.center.x + (
+        right_quarterfinal.size.width * 0.5
+    ) < right_round_of_16[0].center.x - (right_round_of_16[0].size.width * 0.5)

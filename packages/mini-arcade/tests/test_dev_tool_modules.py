@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = PACKAGE_ROOT / "src"
@@ -662,6 +663,155 @@ def test_camera_lab_case_runs_headless(capsys) -> None:
     assert '"case": "camera_lab"' in output
     assert '"camera_center":' in output
     assert '"camera_zoom":' in output
+
+
+def test_ball_vs_ball_combat_lab_runs_headless(capsys) -> None:
+    SystemLabRegistry.clear()
+
+    assert (
+        SystemLabProcessor(
+            module=["experiments.ball_vs_ball_combat.system_lab_case"],
+            case="ball_vs_ball_combat",
+            steps=240,
+            json=True,
+        ).run()
+        == 0
+    )
+    output = capsys.readouterr().out
+    assert '"case": "ball_vs_ball_combat"' in output
+    assert '"ball_count": 2' in output
+    assert '"damage_events":' in output
+
+
+def test_ball_vs_ball_powerup_sandbox_runs_headless(capsys) -> None:
+    SystemLabRegistry.clear()
+
+    assert (
+        SystemLabProcessor(
+            module=[
+                "experiments.ball_vs_ball_powerup_sandbox.system_lab_case"
+            ],
+            case="ball_vs_ball_powerup_sandbox",
+            steps=120,
+            json=True,
+        ).run()
+        == 0
+    )
+    output = capsys.readouterr().out
+    assert '"case": "ball_vs_ball_powerup_sandbox"' in output
+    assert '"selected_powerup": "cure"' in output
+    assert '"placement_count": 0' in output
+
+
+def test_ball_vs_ball_powerup_sandbox_spawned_pickup_is_indexed() -> None:
+    from experiments.ball_vs_ball_powerup_sandbox.system_lab_case import (
+        BallVsBallPowerupSandboxContext,
+        build_powerup_sandbox_world,
+        _entity_actual_center,
+        _spawn_selected_pickup_at,
+    )
+    from mini_arcade_core.engine.commands import CommandQueue
+    from mini_arcade_core.runtime.input_frame import InputFrame
+
+    world = build_powerup_sandbox_world(viewport=(540.0, 960.0))
+    ctx = BallVsBallPowerupSandboxContext(
+        input_frame=InputFrame(frame_index=0, dt=1.0 / 60.0),
+        dt=1.0 / 60.0,
+        world=world,
+        commands=CommandQueue(),
+    )
+    ball = world.fighter("ball_a")
+    assert ball is not None
+    x, y = _entity_actual_center(ball)
+
+    assert _spawn_selected_pickup_at(ctx, x=x, y=y) is True
+    assert len(world.pickups()) == 1
+
+
+def test_knockout_bracket_seed_lab_runs_headless(capsys) -> None:
+    SystemLabRegistry.clear()
+
+    assert (
+        SystemLabProcessor(
+            module=["experiments.knockout_bracket_seed_lab.system_lab_case"],
+            case="knockout_bracket_seed",
+            steps=1,
+            json=True,
+        ).run()
+        == 0
+    )
+    output = capsys.readouterr().out
+    assert '"case": "knockout_bracket_seed"' in output
+    assert '"round_count": 4' in output
+    assert '"entrant_count": 16' in output
+
+
+def test_knockout_bracket_progress_lab_runs_headless(capsys) -> None:
+    SystemLabRegistry.clear()
+
+    assert (
+        SystemLabProcessor(
+            module=[
+                "experiments.knockout_bracket_progress_lab.system_lab_case"
+            ],
+            case="knockout_bracket_progress",
+            steps=1,
+            json=True,
+        ).run()
+        == 0
+    )
+    output = capsys.readouterr().out
+    assert '"case": "knockout_bracket_progress"' in output
+    assert '"playable_matches": 8' in output
+
+
+def test_knockout_bracket_progress_selection_uses_next_playable_match() -> (
+    None
+):
+    from experiments.knockout_bracket_common import (
+        BracketLabIntent,
+        BracketProgressSelectionSystem,
+        build_bracket_world,
+        build_progress_system,
+        build_seed_system,
+    )
+    from mini_arcade_core.engine.commands import CommandQueue
+    from mini_arcade_core.runtime.input_frame import InputFrame
+
+    ctx = SimpleNamespace(
+        input_frame=InputFrame(frame_index=0, dt=1.0 / 60.0),
+        dt=1.0 / 60.0,
+        world=build_bracket_world(
+            title="Knockout Bracket Progress Lab",
+            subtitle="Advance the next playable match and propagate winners through the tree.",
+            progress_mode=True,
+            progressive_mode=True,
+        ),
+        commands=CommandQueue(),
+        intent=BracketLabIntent(),
+    )
+
+    build_seed_system().step(ctx)
+    ctx.world.selected_playable_index = 99
+    BracketProgressSelectionSystem().step(ctx)
+    assert ctx.world.pending_result is None
+    assert ctx.world.selected_playable_index == 0
+
+    playable = [
+        match
+        for round_matches in ctx.world.bracket.rounds
+        for match in round_matches
+        if match.playable
+    ]
+    for match in playable[:-1]:
+        ctx.world.pending_result = SimpleNamespace(
+            match_id=match.id,
+            winner_id=match.entrant_a_id,
+        )
+        build_progress_system().step(ctx)
+
+    BracketProgressSelectionSystem().step(ctx)
+    assert ctx.world.selected_playable_index == 0
 
 
 def test_load_command_packages_skips_non_command_modules(

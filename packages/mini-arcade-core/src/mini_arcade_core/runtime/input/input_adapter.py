@@ -12,6 +12,17 @@ from mini_arcade_core.runtime.input.input_port import InputPort
 from mini_arcade_core.runtime.input_frame import ButtonState, InputFrame
 
 
+def _mouse_button_name(button: int | None) -> str | None:
+    mapping = {
+        1: "mouse_left",
+        2: "mouse_middle",
+        3: "mouse_right",
+    }
+    if button is None:
+        return None
+    return mapping.get(int(button), f"mouse_button_{int(button)}")
+
+
 @dataclass
 class InputAdapter(InputPort):
     """Adapter for processing input events."""
@@ -74,6 +85,17 @@ class InputAdapter(InputPort):
             ):
                 if ev.x is not None and ev.y is not None:
                     self._mouse_pos = (int(ev.x), int(ev.y))
+                button_name = _mouse_button_name(ev.button)
+                if button_name is None:
+                    continue
+                if ev.type == EventType.MOUSEBUTTONDOWN:
+                    if button_name not in self._buttons_down:
+                        buttons_pressed.add(button_name)
+                    self._buttons_down.add(button_name)
+                else:
+                    if button_name in self._buttons_down:
+                        self._buttons_down.remove(button_name)
+                    buttons_released.add(button_name)
 
             elif ev.type == EventType.TEXTINPUT and ev.text:
                 text_parts.append(str(ev.text))

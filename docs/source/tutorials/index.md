@@ -16,6 +16,8 @@ Developer internals (recommended alongside tutorials):
 - [Brick Breaker Internals](../concepts/brick_breaker_gameplay.md)
 - [Maze Gameplay Internals](../concepts/maze_gameplay.md)
 - [Bomberman Gameplay Internals](../concepts/bomberman_gameplay.md)
+- [Knockout Brackets Internals](../concepts/knockout_brackets.md)
+- [Combat and Power-Up Internals](../concepts/combat_systems.md)
 - [Menu Scenes Internals](../concepts/menu_scenes.md)
 - [Scene Transitions Internals](../concepts/scene_transitions.md)
 - [Overlay Policies Internals](../concepts/overlay_policies.md)
