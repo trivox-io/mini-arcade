@@ -6,6 +6,14 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.3] - 2026-03-24
+
+### Added
+- Add profiler enable option to system lab visual spec and runner
+
+### Other
+- Merge branch 'main' of https://github.com/trivox-io/mini-arcade
+
 ## [1.6.2] - 2026-03-24
 
 ### Added
