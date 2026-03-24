@@ -5,11 +5,12 @@ Command line interface for the Mini Arcade application.
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 from dataclasses import dataclass
 from typing import Any, Iterable, List, Optional, Type
 
-from mini_arcade.cli.argument_type import coerce_type
+from mini_arcade.cli.argument_type import ArgumentType, coerce_type
 from mini_arcade.cli.base_command import BaseCommand
 from mini_arcade.cli.exceptions import CommandException
 from mini_arcade.cli.registry import CommandRegistry
@@ -64,7 +65,6 @@ class ParserFactory:
         return p
 
 
-# pylint: disable=too-many-instance-attributes
 @dataclass
 class ArgumentOptions:
     """
@@ -98,11 +98,8 @@ class ArgumentOptions:
     metavar: Optional[str] = None
 
     # Special flags
-    action: Optional[str] = None
+    action: Optional[Any] = None
     version: Optional[str] = None  # only used when action == "version"
-
-
-# pylint: enable=too-many-instance-attributes
 
 
 class ArgumentParserFactory:
@@ -155,6 +152,44 @@ class ArgumentParserFactory:
         return parser
 
 
+class LocAction(argparse.Action):
+    """
+    Custom argparse action that prints codebase LOC/byte stats and exits,
+    mirroring the behaviour of the built-in ``version`` action.
+    """
+
+    def __init__(
+        self, option_strings, dest, default=argparse.SUPPRESS, **kwargs
+    ):
+        super().__init__(
+            option_strings=option_strings,
+            dest=dest,
+            default=default,
+            nargs=0,
+            **kwargs,
+        )
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        from mini_arcade.utils.codebase_length import (  # pylint: disable=import-outside-toplevel
+            codebase_length,
+        )
+
+        s = codebase_length(
+            [
+                "mini_arcade",
+                "mini_arcade_core",
+                "mini_arcade_pygame_backend",
+                "mini_arcade_native_backend",
+            ]
+        )
+        print(
+            f"Python : {s.python_loc:>7,} lines  {s.python_bytes:>10,} bytes"
+        )
+        print(f"C++    : {s.cpp_loc:>7,} lines  {s.cpp_bytes:>10,} bytes")
+        print(f"Total  : {s.total_loc:>7,} lines  {s.total_bytes:>10,} bytes")
+        parser.exit()
+
+
 class GlobalParserBuilder:
     """
     Builder class to create the global parser for the CLI application.
@@ -195,11 +230,45 @@ class GlobalParserBuilder:
         )
         ArgumentParserFactory.add_argument_parser(parser, verbose_opts)
 
+        # Codebase length flag
+        loc_opts = ArgumentOptions(
+            name="loc",
+            aliases=["--loc"],
+            help_text="Print codebase line/byte counts (Python + C++) and exit.",
+            action=LocAction,
+        )
+        ArgumentParserFactory.add_argument_parser(parser, loc_opts)
+
         # Custom globals
         for opts in extra_args or []:
             ArgumentParserFactory.add_argument_parser(parser, opts)
 
         return parser
+
+
+def apply_global_flags(args: argparse.Namespace) -> None:
+    """
+    Apply global flags to the runtime environment before command dispatch.
+
+    Verbose level → root log level mapping:
+
+    * 0 (default): ERROR  — quiet, only fatal issues visible.
+    * 1 ``-v``   : WARNING
+    * 2 ``-vv``  : INFO
+    * 3+ ``-vvv``: DEBUG
+
+    :param args: Namespace returned by the global parser.
+    :type args: argparse.Namespace
+    """
+    verbose = getattr(args, "verbose", 0) or 0
+    _levels = {
+        0: logging.ERROR,
+        1: logging.WARNING,
+        2: logging.INFO,
+        3: logging.DEBUG,
+    }
+    level = _levels.get(verbose, logging.DEBUG)
+    logging.getLogger().setLevel(level)
 
 
 class BaseCLIApp:
@@ -295,7 +364,31 @@ class BaseCLIApp:
             self.define_command_arguments(command_parser, command_cls)
             self._register_command(command_cls)
 
-    # TODO: refactor to reduce complexity
+    def _get_kwargs_for_command(self, arg: ArgumentType):
+        default = arg.default
+        if arg.env and default is None:
+            default = os.getenv(arg.env)
+
+        kwargs = {
+            "help": arg.help_text,
+            "required": arg.required,
+            "default": default,
+        }
+        if arg.choices:
+            kwargs["choices"] = arg.choices
+        if arg.nargs is not None:
+            kwargs["nargs"] = arg.nargs
+        if arg.metavar:
+            kwargs["metavar"] = arg.metavar
+
+        ty = coerce_type(arg.data_type)
+        if ty is bool:
+            kwargs["action"] = "store_true"
+        else:
+            kwargs["type"] = ty
+
+        return kwargs
+
     def define_command_arguments(
         self, command_parser: argparse.ArgumentParser, command_cls: BaseCommand
     ) -> None:
@@ -313,27 +406,8 @@ class BaseCLIApp:
                 raise ValueError(
                     f"Boolean flag --{arg.name} cannot be required"
                 )
-            default = arg.default
-            if arg.env and default is None:
-                default = os.getenv(arg.env)
 
-            kwargs = {
-                "help": arg.help_text,
-                "required": arg.required,
-                "default": default,
-            }
-            if arg.choices:
-                kwargs["choices"] = arg.choices
-            if arg.nargs is not None:
-                kwargs["nargs"] = arg.nargs
-            if arg.metavar:
-                kwargs["metavar"] = arg.metavar
-
-            ty = coerce_type(arg.data_type)
-            if ty is bool:
-                kwargs["action"] = "store_true"
-            else:
-                kwargs["type"] = ty
+            kwargs = self._get_kwargs_for_command(arg)
 
             flags = [f"--{arg.name}"]
             dashed = arg.name.replace("_", "-")

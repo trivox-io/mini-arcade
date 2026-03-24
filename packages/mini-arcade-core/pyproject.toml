@@ -61,21 +61,26 @@ strict = false
 
 [tool.pylint.messages_control]
 disable = [
-    # Justification: Allow classes with few public methods for simplicity.
+    # Justification: Classes with few public methods are common, specially interfaces,
+    # data containers and base classes.
     "too-few-public-methods",
     # Justification: f-strings are preferred for logging.
     "logging-fstring-interpolation",
+    # Justification: Some functions naturally require many arguments to function.
+    "too-many-arguments",
+    # Justification: Broad exceptions are sometimes necessary for simplicity.
+    "broad-exception-caught",
+    # Justification: isort owns import ordering; pylint misclassifies sibling packages as third-party.
+    "wrong-import-order",
     # Justification: TODOs are acceptable during development.
     "fixme",
-    # Justification: Render passes intentionally share orchestration patterns.
+    # Justification: Some code patterns are intentionally duplicated across packages
+    # for simplicity.
     "duplicate-code",
     # Justification: Some classes naturally require many attributes to function.
     "too-many-instance-attributes",
+    # Justification: Some functions naturally require many local variables to function.
     "too-many-locals",
-    "too-many-arguments",
-    "broad-exception-caught",
-    # isort owns import ordering; pylint misclassifies sibling packages as third-party.
-    "wrong-import-order",
 ]
 
 [tool.pylint.MAIN]

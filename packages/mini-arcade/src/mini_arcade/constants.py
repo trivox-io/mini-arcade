@@ -6,14 +6,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from mini_arcade.utils.codebase_length import CodebaseStats, codebase_length
 from mini_arcade.utils.get_package_version import get_package_version
 
 PACKAGE_NAME = "mini-arcade"
+
+_PACKAGES = [
+    "mini_arcade",
+    "mini_arcade_core",
+    "mini_arcade_pygame_backend",
+    "mini_arcade_native_backend",
+]
 
 
 @dataclass(frozen=True)
 class _App:
     version: str = get_package_version(PACKAGE_NAME)
+    codebase: CodebaseStats = codebase_length(_PACKAGES)
 
 
 @dataclass(frozen=True)

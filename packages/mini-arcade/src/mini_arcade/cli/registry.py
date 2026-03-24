@@ -42,7 +42,7 @@ class CommandRegistry(ImplementationRegistry[CommandProtocol]):
         replace: bool = False,
         aliases: tuple[str, ...] = (),
         abstract: bool = False,
-    ):  # pylint: disable=too-many-arguments
+    ):
         """
         Register a command class under a primary `name` and optional `aliases`.
         Abstract commands are skipped.

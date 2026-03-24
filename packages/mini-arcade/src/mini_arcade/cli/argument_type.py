@@ -13,7 +13,6 @@ JSON = object()
 DataType = Type[Union[str, int, float, bool]]
 
 
-# pylint: disable=too-many-instance-attributes
 @dataclass
 class ArgumentType:
     """
@@ -49,9 +48,6 @@ class ArgumentType:
         """
 
         return asdict(self)
-
-
-# pylint: enable=too-many-instance-attributes
 
 
 def coerce_type(t: DataType) -> Callable[[str], DataType]:
