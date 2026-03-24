@@ -30,3 +30,22 @@ class AudioPort:
             0 = play once, -1 = infinite loop, 1 = play twice, etc.
         :type loops: int
         """
+
+    def set_master_volume(self, volume: int):
+        """
+        Set the global audio volume.
+
+        :param volume: Volume level in the backend's native 0-128 range.
+        :type volume: int
+        """
+
+    def set_sound_volume(self, sound_id: str, volume: int):
+        """
+        Set the volume for one loaded sound.
+
+        :param sound_id: Identifier of the sound to update.
+        :type sound_id: str
+
+        :param volume: Volume level in the backend's native 0-128 range.
+        :type volume: int
+        """

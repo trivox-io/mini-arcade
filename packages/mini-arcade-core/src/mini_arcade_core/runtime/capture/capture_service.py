@@ -5,9 +5,10 @@ Capture service managing screenshots, replay, and video recording.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import asdict
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 from uuid import uuid4
 
 from mini_arcade_core.backend import Backend
@@ -43,6 +44,9 @@ from mini_arcade_core.runtime.capture.video_manifest import VideoManifest
 from mini_arcade_core.runtime.input_frame import InputFrame
 from mini_arcade_core.utils import logger
 
+VideoStartHook = Callable[[Path, str, int, int], None]
+VideoFinalizeHook = Callable[[Path, VideoManifest, Union[str, None]], None]
+
 
 # pylint: disable=too-many-instance-attributes
 class CaptureService(CaptureServicePort):
@@ -72,7 +76,11 @@ class CaptureService(CaptureServicePort):
         self.replay_player = replay_player or ReplayPlayer()
         self.video = VideoRecorder(VideoRecordConfig(fps=60, capture_fps=15))
         self._video_manifest: Optional[VideoManifest] = None
+        self._video_elapsed_seconds: float = 0.0
+        self._video_last_frame_index: int | None = None
         self.encoder = EncodeWorker()
+        self.on_video_start: VideoStartHook | None = None
+        self.on_video_finalize: VideoFinalizeHook | None = None
 
         # Emit completion events when worker jobs finish.
         self.screenshots.worker.set_on_done(self._on_capture_done)
@@ -161,11 +169,25 @@ class CaptureService(CaptureServicePort):
     def video_recording(self) -> bool:
         return self.video.active
 
+    @property
+    def current_video_time_seconds(self) -> float:
+        """
+        Return the current elapsed video recording time in seconds, based on frame indices
+        and configured FPS. This is more accurate than wall clock time for determining video
+        timestamps, especially if frames are dropped or if the game experiences lag.
+
+        :return: Elapsed video recording time in seconds.
+        :rtype: float
+        """
+        return float(self._video_elapsed_seconds)
+
     def start_video_record(
         self, *, fps: int = 60, capture_fps: int = 15
     ) -> Path:
         self.video.cfg.fps = fps
         self.video.cfg.capture_fps = capture_fps
+        self._video_elapsed_seconds = 0.0
+        self._video_last_frame_index = None
 
         base_dir = self.video.start()
         self._video_manifest = VideoManifest(
@@ -175,6 +197,16 @@ class CaptureService(CaptureServicePort):
             frames=0,
         )
         self._write_video_manifest(base_dir)
+        if self.on_video_start is not None:
+            try:
+                self.on_video_start(
+                    base_dir,
+                    self.video.run_id,
+                    fps,
+                    capture_fps,
+                )
+            except Exception:  # pylint: disable=broad-exception-caught
+                logger.exception("[capture] on_video_start hook failed")
         event_bus.emit(capture_events.VIDEO_STARTED, path=str(base_dir))
         return base_dir
 
@@ -194,15 +226,27 @@ class CaptureService(CaptureServicePort):
         self._write_video_manifest(base_dir)
         logger.info(f"Video frames saved to: {base_dir}")
 
+        if self.on_video_finalize is not None:
+            try:
+                self.on_video_finalize(
+                    base_dir,
+                    manifest,
+                    self.settings.ffmpeg_path,
+                )
+            except Exception:  # pylint: disable=broad-exception-caught
+                logger.exception("[capture] on_video_finalize hook failed")
+
         out_mp4: Path | None = None
         encode_queued = False
         if self.settings.encode_on_stop:
             out_mp4 = base_dir / "video.mp4"
+            audio_path = base_dir / "audio.wav"
             job = EncodeJob(
                 job_id=f"encode:{uuid4().hex}",
                 ffmpeg_path=self.settings.ffmpeg_path,
                 frames_dir=base_dir,
                 output_path=out_mp4,
+                audio_path=audio_path if audio_path.is_file() else None,
                 input_fps=manifest.capture_fps,
                 output_fps=manifest.fps,
                 codec=self.settings.video_codec,
@@ -224,6 +268,7 @@ class CaptureService(CaptureServicePort):
 
         self.video.stop()
         self._video_manifest = None
+        self._video_last_frame_index = None
         logger.info("Video recording stopped.")
         event_bus.emit(capture_events.VIDEO_STOPPED, path=str(base_dir))
 
@@ -233,6 +278,17 @@ class CaptureService(CaptureServicePort):
         """
         if not self.video.active:
             return
+        if self._video_last_frame_index is None:
+            self._video_last_frame_index = int(frame_index)
+        else:
+            delta_frames = max(
+                0,
+                int(frame_index) - int(self._video_last_frame_index),
+            )
+            self._video_elapsed_seconds += float(delta_frames) / float(
+                max(1, int(self.video.cfg.fps))
+            )
+            self._video_last_frame_index = int(frame_index)
         if not self.video.should_capture(frame_index):
             return
 

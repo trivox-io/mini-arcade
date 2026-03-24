@@ -33,6 +33,7 @@ def encode_png_sequence_to_mp4(
     ffmpeg_path: str,
     frames_dir: Path,
     output_path: Path,
+    audio_path: Path | None = None,
     input_fps: int,  # <-- capture_fps
     output_fps: (
         int | None
@@ -81,6 +82,11 @@ def encode_png_sequence_to_mp4(
         "-i",
         str(frames_glob),
     ]
+    if audio_path is not None and audio_path.is_file():
+        cmd += [
+            "-i",
+            str(audio_path),
+        ]
 
     if output_fps is not None and output_fps > 0:
         if video_interpolate:
@@ -99,6 +105,16 @@ def encode_png_sequence_to_mp4(
         str(crf),
         "-preset",
         preset,
+    ]
+    if audio_path is not None and audio_path.is_file():
+        cmd += [
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "-shortest",
+        ]
+    cmd += [
         str(output_path),
     ]
 

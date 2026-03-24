@@ -39,6 +39,7 @@ class EncodeJob(BaseJob):
     ffmpeg_path: str
     frames_dir: Path
     output_path: Path
+    audio_path: Path | None
     input_fps: int
     output_fps: int | None
     codec: str
@@ -114,6 +115,7 @@ class EncodeWorker(BaseWorker):
                 ffmpeg_path=job.ffmpeg_path,
                 frames_dir=job.frames_dir,
                 output_path=job.output_path,
+                audio_path=job.audio_path,
                 input_fps=job.input_fps,
                 output_fps=job.output_fps,
                 codec=job.codec,

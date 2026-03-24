@@ -73,6 +73,7 @@ class MenuStyle:
     :ivar panel_padding_y (int): Vertical padding inside the panel.
     :ivar button_enabled (bool): Whether to render items as buttons.
     :ivar button_fill (Color): Fill color for buttons.
+    :ivar button_selected_fill (Color | None): Fill color for the selected button.
     :ivar button_border (Color): Border color for buttons.
     :ivar button_selected_border (Color): Border color for the selected button.
     :ivar button_width (int | None): Fixed width for buttons, or None for auto-fit.
@@ -113,6 +114,7 @@ class MenuStyle:
     # Button rendering (optional)
     button_enabled: bool = False
     button_fill: Color = (30, 30, 30, 1.0)
+    button_selected_fill: Color | None = None
     button_border: Color = (120, 120, 120, 1.0)
     button_selected_border: Color = (255, 255, 0, 1.0)
     button_width: int | None = (
@@ -176,6 +178,7 @@ class Menu:
         self._max_content_w_seen = 0
         self._max_button_w_seen = 0
         self.stable_width = True
+        self._item_rects: list[tuple[int, int, int, int]] = []
 
     # pylint: enable=too-many-arguments
 
@@ -226,6 +229,15 @@ class Menu:
         item = self.items[self.selected_index]
         if self._on_select is not None:
             self._on_select(item)
+
+    def hit_test(self, x: int, y: int) -> int | None:
+        """
+        Return the item index under the given mouse position.
+        """
+        for index, (rx, ry, rw, rh) in enumerate(self._item_rects):
+            if rx <= int(x) <= (rx + rw) and ry <= int(y) <= (ry + rh):
+                return index
+        return None
 
     def handle_event(
         self,
@@ -279,6 +291,8 @@ class Menu:
             )
 
         vw, vh = self.viewport
+
+        self._item_rects = []
 
         # 0) Solid background (for main menus)
         if self.style.background_color is not None:
@@ -407,9 +421,13 @@ class Menu:
                 x - 4, y - 4, bw + 8, bh + 8, color=border
             )
             # Fill rect
-            surface.render.draw_rect(
-                x, y, bw, bh, color=self.style.button_fill
+            fill = (
+                self.style.button_selected_fill
+                if selected and self.style.button_selected_fill is not None
+                else self.style.button_fill
             )
+            surface.render.draw_rect(x, y, bw, bh, color=fill)
+            self._item_rects.append((int(x), int(y), int(bw), int(bh)))
 
             # Label color
             text_color = self.style.selected if selected else self.style.normal
@@ -607,6 +625,7 @@ class MenuIntent(BaseIntent):
     move_down: bool = False
     select: bool = False
     quit: bool = False
+    mouse_select_index: int | None = None
 
 
 # TODO: Solve too-many-instance-attributes warning later
@@ -642,11 +661,20 @@ class MenuInputSystem(InputIntentSystem):
 
     def build_intent(self, ctx: MenuTickContext):
         pressed = ctx.input_frame.keys_pressed
+        mouse_state = ctx.input_frame.buttons.get("mouse_left")
+        mouse_select_index = None
+        if (
+            mouse_state is not None
+            and mouse_state.pressed
+            and ctx.menu is not None
+        ):
+            mouse_select_index = ctx.menu.hit_test(*ctx.input_frame.mouse_pos)
         return MenuIntent(
             move_up=Key.UP in pressed,
             move_down=Key.DOWN in pressed,
             select=(Key.ENTER in pressed) or (Key.SPACE in pressed),
             quit=Key.ESCAPE in pressed,
+            mouse_select_index=mouse_select_index,
         )
 
 
@@ -666,6 +694,13 @@ class MenuNavigationSystem:
         ctx.world.step_timer(ctx.dt)
 
         if not ctx.world.can_move():
+            if intent.mouse_select_index is None:
+                return
+
+        if intent.mouse_select_index is not None:
+            ctx.menu.set_selected_index(intent.mouse_select_index)
+            ctx.world.selected = ctx.menu.selected_index
+            ctx.world.consume_move()
             return
 
         if intent.move_up:
@@ -696,6 +731,13 @@ class MenuActionSystem:
         if intent.select and ctx.menu.items:
             item = ctx.menu.items[ctx.menu.selected_index]
             ctx.commands.push(item.command_factory())
+            return
+
+        if intent.mouse_select_index is not None and ctx.menu.items:
+            ctx.menu.set_selected_index(intent.mouse_select_index)
+            item = ctx.menu.items[ctx.menu.selected_index]
+            ctx.commands.push(item.command_factory())
+            return
 
         if intent.quit and ctx.quit_cmd_factory is not None:
             cmd = ctx.quit_cmd_factory()

@@ -16,6 +16,7 @@ _SDLK_RETURN = 13
 _SDLK_SPACE = 32
 _SDLK_TAB = 9
 _SDLK_BACKSPACE = 8
+_SDLK_DELETE = 127
 
 _SDLK_UP = 1073741906
 _SDLK_DOWN = 1073741905
@@ -74,6 +75,7 @@ SDL_KEYCODE_TO_KEY: dict[int, Key] = {
     _SDLK_RETURN: Key.ENTER,
     _SDLK_TAB: Key.TAB,
     _SDLK_BACKSPACE: Key.BACKSPACE,
+    _SDLK_DELETE: Key.DELETE,
     # Numbers
     ord("0"): Key.NUM_0,
     ord("1"): Key.NUM_1,

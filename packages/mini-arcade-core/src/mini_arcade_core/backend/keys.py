@@ -14,7 +14,7 @@ class Key(Enum):
 
     :ivar A-Z: Letter keys.
     :ivar arrow_up, arrow_down, arrow_left, arrow_right: Arrow keys.
-    :ivar escape, space, enter, tab, backspace: Common control keys.
+    :ivar escape, space, enter, tab, backspace, delete: Common control keys.
     :ivar num_0 - num_9: Number keys.
     :ivar f1 - f12: Function keys.
     """
@@ -59,6 +59,7 @@ class Key(Enum):
     ENTER = auto()
     TAB = auto()
     BACKSPACE = auto()
+    DELETE = auto()
 
     # Numbers
     NUM_0 = auto()
@@ -129,6 +130,7 @@ class _Keys:
     enter: Key = Key.ENTER
     tab: Key = Key.TAB
     backspace: Key = Key.BACKSPACE
+    delete: Key = Key.DELETE
 
     num_0: Key = Key.NUM_0
     num_1: Key = Key.NUM_1
