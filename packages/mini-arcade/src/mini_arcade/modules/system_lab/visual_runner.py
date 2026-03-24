@@ -391,7 +391,7 @@ def run_system_lab_visual_case(
             engine_config={
                 "fps": int(spec.fps),
                 "virtual_resolution": list(spec.virtual_resolution),
-                "enable_profiler": False,
+                "enable_profiler": bool(spec.enable_profiler),
                 "postfx": {
                     "enabled": False,
                     "active": [],

@@ -43,6 +43,8 @@ class SystemLabVisualSpec:
     hot_reload_enabled: bool = True
     hot_reload_key: str = "F5"
     hot_reload_poll_seconds: float = 0.5
+    enable_profiler: bool = False
+    enable_profiler: bool = False
 
 
 class BaseSystemLabCase(ABC):
@@ -74,6 +76,7 @@ class BaseSystemLabCase(ABC):
     visual_hot_reload_enabled: bool = True
     visual_hot_reload_key: str = "F5"
     visual_hot_reload_poll_seconds: float = 0.5
+    visual_enable_profiler: bool = False
 
     @abstractmethod
     def build_system(self) -> object:
@@ -170,6 +173,7 @@ class BaseSystemLabCase(ABC):
             hot_reload_enabled=bool(self.visual_hot_reload_enabled),
             hot_reload_key=str(self.visual_hot_reload_key),
             hot_reload_poll_seconds=float(self.visual_hot_reload_poll_seconds),
+            enable_profiler=bool(self.visual_enable_profiler),
         )
 
     def build_visual_world(
