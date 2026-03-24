@@ -6,6 +6,31 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-03-24
+
+### Added
+- Enhance key definitions and audio handling; add form helpers for in-game editors
+- Add combat and knockout bracket systems with tests and documentation
+- Add tetris game submodule
+- Add project_piece_down function and update tests for falling blocks and cadence system
+- Add pacman game submodule
+- Add snake game submodule
+- Add breakout game submodule
+- Add pong game submodule
+
+### Fixed
+- Update experiment availability check for bouncing balls case in tests
+- Add missing imports for CommandQueue and InputFrame in test cases
+
+### Changed
+- Update pylint disable comments and improve code organization in input adapter and builtins
+- Refactor game directory structure and update related commands and settings handling
+
+### Other
+- test: Add stress test for bounce box case in headless mode
+- Move game submodules to Trivox org
+- Merge branch 'main' of https://github.com/trivox-io/mini-arcade
+
 ## [1.6.1] - 2026-03-19
 
 ### Other
