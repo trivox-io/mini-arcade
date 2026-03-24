@@ -292,6 +292,12 @@ class Settings:
                 return candidate.resolve()
         return None
 
+    def _resolve_path(self, config_path: str | Path) -> Path:
+        resolved = Path(config_path).expanduser()
+        if not resolved.is_absolute():
+            resolved = (Path.cwd() / resolved).resolve()
+        return resolved
+
     def _resolve_config_paths(
         self,
         config_path: str | Path | None = None,
@@ -300,14 +306,12 @@ class Settings:
         name: str | None = None,
     ) -> list[Path]:
         if config_path is not None:
-            resolved = Path(config_path).expanduser()
-            if not resolved.is_absolute():
-                resolved = (Path.cwd() / resolved).resolve()
+            resolved = self._resolve_path(config_path)
             return [resolved]
 
         env_path = os.getenv("MINI_ARCADE_CONFIG_PATH")
         if env_path:
-            return [Path(env_path).expanduser().resolve()]
+            return [self._resolve_path(env_path)]
 
         repo_root = self._find_repo_root()
         if repo_root is None:
@@ -471,8 +475,8 @@ class Settings:
         Priority:
         1) project.root / paths.project_root key in yaml
         2) inferred from scope/name:
-           - game -> discovered under <repo>/originals or <repo>/games
-           - example -> <repo>/examples/catalog/<example_id>
+            - game -> discovered under <repo>/originals or <repo>/games
+            - example -> <repo>/examples/catalog/<example_id>
         3) repo root
         4) cwd
         """

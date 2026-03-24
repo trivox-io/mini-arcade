@@ -22,6 +22,11 @@ def _classname_from_locals(locals_: dict) -> Optional[str]:
     return None
 
 
+def _should_emit_record(record: logging.LogRecord) -> bool:
+    """Emit all records unless explicitly marked as suppressed upstream."""
+    return not bool(getattr(record, "suppress_log_record", False))
+
+
 class EnsureClassName(logging.Filter):
     """
     Populate record.classname by finding the *emitting* frame:
@@ -31,28 +36,33 @@ class EnsureClassName(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         # record_factory ensures classname exists, but allow explicit override
-        if getattr(record, "classname", None) not in (None, "-"):
-            return True
+        if getattr(record, "classname", None) in (None, "-"):
+            target_path = record.pathname
+            target_func = record.funcName
 
-        target_path = record.pathname
-        target_func = record.funcName
+            # Justification: Seems pretty obvious here.
+            # pylint: disable=protected-access
+            f = sys._getframe()
+            # pylint: enable=protected-access
 
-        # Justification: Seems pretty obvious here.
-        # pylint: disable=protected-access
-        f = sys._getframe()
-        # pylint: enable=protected-access
+            for _ in range(200):
+                if f is None:
+                    break
+                code = f.f_code
+                if (
+                    code.co_filename == target_path
+                    and code.co_name == target_func
+                ):
+                    record.classname = (
+                        _classname_from_locals(f.f_locals) or "-"
+                    )
+                    break
+                f = f.f_back
 
-        for _ in range(200):
-            if f is None:
-                break
-            code = f.f_code
-            if code.co_filename == target_path and code.co_name == target_func:
-                record.classname = _classname_from_locals(f.f_locals) or "-"
-                return True
-            f = f.f_back
+            if getattr(record, "classname", None) in (None, "-"):
+                record.classname = "-"
 
-        record.classname = "-"
-        return True
+        return _should_emit_record(record)
 
 
 class ConsoleColorFormatter(logging.Formatter):
@@ -121,17 +131,13 @@ def _enable_windows_ansi():
         # pylint: enable=import-outside-toplevel
 
         kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
-        handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE = -11
+        handle = kernel32.GetStdHandle(-11)
         mode = ctypes.c_uint32()
         if kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
-            # ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
             kernel32.SetConsoleMode(handle, mode.value | 0x0004)
-    # Justification: We want to catch all exceptions here.
-    # pylint: disable=broad-exception-caught
     except Exception:
         # If it fails, we just keep going without breaking logging.
         pass
-    # pylint: enable=broad-exception-caught
 
 
 def _install_record_factory_defaults():
@@ -168,7 +174,7 @@ def configure_logging(level: int = logging.DEBUG):
 
     # --- main console handler (your current one) ---
     main_console = None
-    for h in list(root.handlers):
+    for h in root.handlers:
         if getattr(h, handler_tag, False):
             main_console = h
             break
