@@ -106,7 +106,7 @@ _bootstrap_paths()
 
 # Justification: local path bootstrap must run before importing mini_arcade.
 # pylint: disable=wrong-import-position
-from mini_arcade.modules.system_lab.processors import SystemLabProcessor
+from mini_arcade.commands.system_lab.processors import SystemLabProcessor
 # pylint: enable=wrong-import-position
 
 
@@ -140,7 +140,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from mini_arcade.modules.system_lab import (
+from mini_arcade.commands.system_lab import (
     BaseSystemLabCase,
     SystemLabRegistry,
 )

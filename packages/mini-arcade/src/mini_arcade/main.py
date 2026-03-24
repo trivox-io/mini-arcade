@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-import mini_arcade.modules as commands_pkg
+import mini_arcade.commands as commands_pkg
 from mini_arcade.app import MiniArcadeCLI
 from mini_arcade.cli.cli import CLIConfig, GlobalParserBuilder
 from mini_arcade.constants import APP, CLI
@@ -51,7 +51,7 @@ def main(argv: Optional[list[str]] = None):
     commands_dir = Path(commands_pkg.__file__).parent
 
     load_command_packages(
-        base_namespace="mini_arcade.modules",
+        base_namespace="mini_arcade.commands",
         base_dir=commands_dir,
     )
 

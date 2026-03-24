@@ -20,29 +20,29 @@ for path in reversed(EXTRA_PATHS):
     if value not in sys.path:
         sys.path.insert(0, value)
 
-import mini_arcade.modules as commands_pkg
+import mini_arcade.commands as commands_pkg
 from mini_arcade.app import MiniArcadeCLI
 from mini_arcade.cli.cli import CLIConfig, GlobalParserBuilder
 from mini_arcade.cli.registry import CommandRegistry
-from mini_arcade.constants import APP, CLI
-from mini_arcade.modules.game_scaffold.commands import ScaffoldGameCommand
-from mini_arcade.modules.game_scaffold.processors import GameScaffoldProcessor
-from mini_arcade.modules.system_lab.commands import SystemLabCommand
-from mini_arcade.modules.system_lab.processors import SystemLabProcessor
-from mini_arcade.modules.system_lab.registry import SystemLabRegistry
-from mini_arcade.modules.system_lab_scaffold.commands import (
+from mini_arcade.commands.game_scaffold.commands import ScaffoldGameCommand
+from mini_arcade.commands.game_scaffold.processors import GameScaffoldProcessor
+from mini_arcade.commands.system_lab.commands import SystemLabCommand
+from mini_arcade.commands.system_lab.processors import SystemLabProcessor
+from mini_arcade.commands.system_lab.registry import SystemLabRegistry
+from mini_arcade.commands.system_lab_scaffold.commands import (
     ScaffoldSystemLabCommand,
 )
-from mini_arcade.modules.system_lab_scaffold.processors import (
+from mini_arcade.commands.system_lab_scaffold.processors import (
     SystemLabScaffoldProcessor,
 )
+from mini_arcade.constants import APP, CLI
 from mini_arcade.utils.module_loader import load_command_packages
 
 
 def _build_cli() -> MiniArcadeCLI:
     global_parser = GlobalParserBuilder.build_global_parser(APP.version)
     load_command_packages(
-        base_namespace="mini_arcade.modules",
+        base_namespace="mini_arcade.commands",
         base_dir=Path(commands_pkg.__file__).parent,
     )
     return MiniArcadeCLI(
@@ -217,7 +217,7 @@ def test_system_lab_lists_and_runs_registered_case(
     package_dir.mkdir()
     (package_dir / "__init__.py").write_text("", encoding="utf-8")
     (package_dir / "sample_cases.py").write_text(
-        """from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
+        """from mini_arcade.commands.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
 
 
 class CounterSystem:
@@ -272,7 +272,7 @@ def test_system_lab_command_ignores_global_cli_kwargs(
     package_dir.mkdir()
     (package_dir / "__init__.py").write_text("", encoding="utf-8")
     (package_dir / "sample_cases.py").write_text(
-        """from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
+        """from mini_arcade.commands.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
 
 
 class CounterSystem:
@@ -342,7 +342,7 @@ def test_system_lab_visual_runner_path(
     package_dir.mkdir()
     (package_dir / "__init__.py").write_text("", encoding="utf-8")
     (package_dir / "sample_cases.py").write_text(
-        """from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
+        """from mini_arcade.commands.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
 
 
 @SystemLabRegistry.implementation("visual_case")
@@ -382,7 +382,7 @@ def test_system_lab_visual_runner_auto_selects_single_case(
     package_dir.mkdir()
     (package_dir / "__init__.py").write_text("", encoding="utf-8")
     (package_dir / "sample_cases.py").write_text(
-        """from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
+        """from mini_arcade.commands.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
 
 
 @SystemLabRegistry.implementation("visual_case")
@@ -423,7 +423,7 @@ def test_system_lab_default_visual_runner_uses_builtin_lab(
     (package_dir / "sample_cases.py").write_text(
         """from dataclasses import dataclass
 
-from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
+from mini_arcade.commands.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
 
 
 class DummySystem:
@@ -469,7 +469,7 @@ class VisualCase(BaseSystemLabCase):
         return 0
 
     monkeypatch.setattr(
-        "mini_arcade.modules.system_lab.visual_runner.run_system_lab_visual_case",
+        "mini_arcade.commands.system_lab.visual_runner.run_system_lab_visual_case",
         fake_run,
     )
 
@@ -506,7 +506,7 @@ def test_system_lab_visual_backend_override_reaches_visual_runner(
     (package_dir / "sample_cases.py").write_text(
         """from dataclasses import dataclass
 
-from mini_arcade.modules.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
+from mini_arcade.commands.system_lab.registry import BaseSystemLabCase, SystemLabRegistry
 
 
 class DummySystem:
@@ -550,7 +550,7 @@ class VisualCase(BaseSystemLabCase):
         return 0
 
     monkeypatch.setattr(
-        "mini_arcade.modules.system_lab.visual_runner.run_system_lab_visual_case",
+        "mini_arcade.commands.system_lab.visual_runner.run_system_lab_visual_case",
         fake_run,
     )
 
@@ -589,7 +589,7 @@ def test_system_lab_visual_runner_discovers_watch_paths(
 
     importlib.import_module("labcases_reload.sample_cases")
 
-    from mini_arcade.modules.system_lab.visual_runner import (
+    from mini_arcade.commands.system_lab.visual_runner import (
         _discover_watch_paths,
     )
 
@@ -840,7 +840,7 @@ def test_load_command_packages_skips_non_command_modules(
     monkeypatch,
 ) -> None:
     root = tmp_path / "demo_pkg"
-    modules_dir = root / "modules"
+    modules_dir = root / "commands"
     modules_dir.mkdir(parents=True)
     (root / "__init__.py").write_text("", encoding="utf-8")
     (modules_dir / "__init__.py").write_text("", encoding="utf-8")
@@ -872,11 +872,11 @@ class TempLightCommand(BaseCommand):
 
     monkeypatch.syspath_prepend(str(tmp_path))
     loaded = load_command_packages(
-        base_namespace="demo_pkg.modules",
+        base_namespace="demo_pkg.commands",
         base_dir=modules_dir,
     )
 
     assert [pkg.import_name for pkg in loaded] == [
-        "demo_pkg.modules.light_cmd"
+        "demo_pkg.commands.light_cmd"
     ]
     assert CommandRegistry.contains("temp-light-cmd")

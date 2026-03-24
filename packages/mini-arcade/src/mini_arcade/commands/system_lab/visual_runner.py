@@ -400,7 +400,7 @@ def run_system_lab_visual_case(
             scene_config={
                 "initial_scene": "system_lab_visual",
                 "discover_packages": [
-                    "mini_arcade.modules.system_lab.visual_runner",
+                    "mini_arcade.commands.system_lab.visual_runner",
                     "mini_arcade_core.scenes",
                 ],
             },
