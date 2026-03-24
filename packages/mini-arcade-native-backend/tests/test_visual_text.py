@@ -10,12 +10,14 @@ from PIL import Image
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = PACKAGE_ROOT / "src"
 REPO_ROOT = PACKAGE_ROOT.parents[1]
+BOUNCING_BALLS_CASE = (
+    REPO_ROOT / "experiments" / "bouncing_balls" / "system_lab_case.py"
+)
 
-# experiments/ is gitignored and unavailable in CI.
-_experiments_available = (REPO_ROOT / "experiments").is_dir()
-if not _experiments_available:
+# experiments/ content may be unavailable in CI.
+if not BOUNCING_BALLS_CASE.is_file():
     pytest.skip(
-        "experiments/ directory not available (gitignored)",
+        "experiments bouncing_balls case not available",
         allow_module_level=True,
     )
 
