@@ -647,6 +647,25 @@ def test_bouncing_balls_case_runs_headless(capsys) -> None:
     assert '"ball_b":' in output
 
 
+def test_bounce_box_stress_case_runs_headless(capsys) -> None:
+    SystemLabRegistry.clear()
+
+    assert (
+        SystemLabProcessor(
+            module=["experiments.bounce_box_stress_lab.system_lab_case"],
+            case="bounce_box_stress",
+            steps=3,
+            json=True,
+        ).run()
+        == 0
+    )
+    output = capsys.readouterr().out
+    assert '"case": "bounce_box_stress"' in output
+    assert '"ball_count": 4' in output
+    assert '"fps":' in output
+    assert '"total_collisions":' in output
+
+
 def test_camera_lab_case_runs_headless(capsys) -> None:
     SystemLabRegistry.clear()
 
