@@ -8,5 +8,6 @@ Contribution docs for local setup, repository structure, and release flow.
 
 dev_setup
 repo_layout
+sable_target_architecture
 release_process
 ```
