@@ -202,3 +202,11 @@ originals/*
 !originals/.gitkeep
 experiments/*
 !experiments/.gitkeep
+games/*
+!games/asteroids/
+!games/breakout/
+!games/pacman/
+!games/pong/
+!games/snake/
+!games/space-invaders/
+!games/tetris/
