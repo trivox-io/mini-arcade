@@ -10,11 +10,11 @@ from pathlib import Path
 
 from mini_arcade.cli.base_command_processor import BaseCommandProcessor
 from mini_arcade.cli.exceptions import CommandException
-from mini_arcade.constants import APP
-from mini_arcade.modules.game_paths import (
+from mini_arcade.common.game_paths import (
     CLONE_GAMES_DIRNAME,
     DEFAULT_GAME_SCAFFOLD_DESTINATION,
 )
+from mini_arcade.constants import APP
 
 
 def _dependency_series(version: str) -> str:

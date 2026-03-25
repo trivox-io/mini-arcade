@@ -19,7 +19,7 @@ except ModuleNotFoundError:  # py39-310
 
 from mini_arcade.cli.base_command_processor import BaseCommandProcessor
 from mini_arcade.cli.exceptions import CommandException
-from mini_arcade.modules.game_paths import (
+from mini_arcade.common.game_paths import (
     CLONE_GAMES_DIRNAME,
     ORIGINAL_GAMES_DIRNAME,
     find_game_dir_under,

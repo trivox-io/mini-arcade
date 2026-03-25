@@ -31,12 +31,12 @@ _bootstrap_repo_imports()
 from examples._shared import runner as example_runner  # noqa: E402
 from examples._shared.runner import load_example_spec  # noqa: E402
 from examples._shared.spec import ExampleSpec  # noqa: E402
-from mini_arcade.modules.game_paths import (  # noqa: E402
+from mini_arcade.commands.game_runner.processors import (  # noqa: E402
+    _discover_example_ids,
+)
+from mini_arcade.common.game_paths import (  # noqa: E402
     find_game_dir,
     game_settings_candidates,
-)
-from mini_arcade.modules.game_runner.processors import (  # noqa: E402
-    _discover_example_ids,
 )
 from mini_arcade.modules.settings import Settings  # noqa: E402
 from mini_arcade_core.backend.events import Event, EventType  # noqa: E402

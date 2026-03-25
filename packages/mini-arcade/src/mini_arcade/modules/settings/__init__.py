@@ -50,7 +50,7 @@ from typing import Any
 
 import yaml
 
-from mini_arcade.modules.game_paths import (
+from mini_arcade.common.game_paths import (
     find_game_dir,
     game_settings_candidates,
 )
