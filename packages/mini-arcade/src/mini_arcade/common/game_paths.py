@@ -10,6 +10,7 @@ CLONE_GAMES_DIRNAME = "games"
 ORIGINAL_GAMES_DIRNAME = "originals"
 LEGACY_GAME_COLLECTION_DIRS: tuple[str, ...] = ("clones", "originals")
 DEFAULT_GAME_SCAFFOLD_DESTINATION = ORIGINAL_GAMES_DIRNAME
+PYPROJECT_FILENAME = "pyproject.toml"
 
 
 def _clean_game_id(game_id: str) -> str:
@@ -49,7 +50,6 @@ def _iter_game_dirs_under_one_root(root: Path) -> tuple[Path, ...]:
     - legacy nested children under ``games/clones/<game-id>`` or
         ``games/originals/<game-id>``
     """
-
     base = Path(root).resolve()
     if not base.exists() or not base.is_dir():
         return ()
@@ -58,13 +58,13 @@ def _iter_game_dirs_under_one_root(root: Path) -> tuple[Path, ...]:
     for child in sorted(base.iterdir(), key=lambda path: path.name):
         if not child.is_dir():
             continue
-        if (child / "pyproject.toml").exists():
+        if (child / PYPROJECT_FILENAME).exists():
             discovered.append(child.resolve())
             continue
         if child.name not in LEGACY_GAME_COLLECTION_DIRS:
             continue
         for nested in sorted(child.iterdir(), key=lambda path: path.name):
-            if nested.is_dir() and (nested / "pyproject.toml").exists():
+            if nested.is_dir() and (nested / PYPROJECT_FILENAME).exists():
                 discovered.append(nested.resolve())
     return tuple(discovered)
 
@@ -80,8 +80,14 @@ def iter_repo_game_dirs(
     ``clone=True`` limits discovery to ``games/``.
     ``clone=False`` limits discovery to ``originals/``.
     ``clone=None`` searches originals first, then clones.
-    """
 
+    :param repo_root: Root of the monorepo.
+    :type repo_root: Path
+    :param clone: Whether to limit discovery to clones, originals, or both.
+    :type clone: bool | None
+    :return: Tuple of absolute paths to discovered game root directories.
+    :rtype: tuple[Path, ...]
+    """
     repo = Path(repo_root).resolve()
     if clone is True:
         roots = (clone_games_root(repo),)
@@ -99,15 +105,21 @@ def iter_repo_game_dirs(
 def find_game_dir_under(parent_dir: Path, game_id: str) -> Path | None:
     """
     Resolve one game root by id under a specific parent directory.
-    """
 
+    :param parent_dir: Parent directory to search under.
+    :type parent_dir: Path
+    :param game_id: ID of the game to find.
+    :type game_id: str
+    :return: Absolute path to the game root directory, or None if not found.
+    :rtype: Path | None
+    """
     root = Path(parent_dir).resolve()
     clean = _clean_game_id(game_id)
     if not clean:
         return None
 
     direct = (root / Path(clean)).resolve()
-    if (direct / "pyproject.toml").exists():
+    if (direct / PYPROJECT_FILENAME).exists():
         return direct
 
     basename = Path(clean).name
@@ -129,8 +141,16 @@ def find_game_dir(
 ) -> Path | None:
     """
     Resolve one game root by id across repo-level clone and original roots.
-    """
 
+    :param repo_root: Root of the monorepo.
+    :type repo_root: Path
+    :param game_id: ID of the game to find.
+    :type game_id: str
+    :param clone: Whether to limit search to clones, originals, or both.
+    :type clone: bool | None
+    :return: Absolute path to the game root directory, or None if not found.
+    :rtype: Path | None
+    """
     clean = _clean_game_id(game_id)
     if not clean:
         return None
@@ -154,8 +174,16 @@ def game_settings_candidates(
 ) -> list[Path]:
     """
     Return likely settings file candidates for one game id across repo roots.
-    """
 
+    :param repo_root: Root of the monorepo.
+    :type repo_root: Path
+    :param game_id: ID of the game to find settings for.
+    :type game_id: str
+    :param clone: Whether to limit search to clones, originals, or both.
+    :type clone: bool | None
+    :return: List of absolute paths to likely settings files.
+    :rtype: list[Path]
+    """
     clean = _clean_game_id(game_id)
     if not clean:
         return []
@@ -178,8 +206,18 @@ def iter_repo_game_source_roots(
 ) -> tuple[Path, ...]:
     """
     Return ``src`` roots for all discovered games across repo-level roots.
-    """
 
+        ``clone=True`` limits discovery to ``games/``.
+        ``clone=False`` limits discovery to ``originals/``.
+        ``clone=None`` searches originals first, then clones.
+
+    :param repo_root: Root of the monorepo.
+    :type repo_root: Path
+    :param clone: Whether to limit discovery to clones, originals, or both.
+    :type clone: bool | None
+    :return: Tuple of absolute paths to discovered ``src`` roots.
+    :rtype: tuple[Path, ...]
+    """
     roots: list[Path] = []
     for game_dir in iter_repo_game_dirs(repo_root, clone=clone):
         src_dir = game_dir / "src"
