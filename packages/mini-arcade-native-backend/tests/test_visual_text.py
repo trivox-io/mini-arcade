@@ -38,7 +38,7 @@ from experiments.bouncing_balls.system_lab_case import (  # noqa: E402
     BouncingBallsRenderSystem,
     build_bouncing_balls_world,
 )
-from mini_arcade.modules.backend_loader import BackendLoader  # noqa: E402
+from mini_arcade.common.backend_loader import BackendLoader  # noqa: E402
 from mini_arcade_core.engine.commands import CommandQueue  # noqa: E402
 from mini_arcade_core.engine.render.context import RenderContext  # noqa: E402
 from mini_arcade_core.engine.render.frame_packet import (  # noqa: E402

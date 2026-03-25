@@ -12,7 +12,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
-from mini_arcade.modules.backend_loader import BackendLoader
+from mini_arcade.common.backend_loader import BackendLoader
 from mini_arcade_core import run_game
 from mini_arcade_core.backend.keys import Key
 from mini_arcade_core.engine.render.camera import packet_with_camera

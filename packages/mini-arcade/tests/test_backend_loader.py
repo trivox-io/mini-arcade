@@ -8,7 +8,7 @@ SRC_ROOT = PACKAGE_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from mini_arcade.modules.backend_loader import BackendLoader
+from mini_arcade.common.backend_loader import BackendLoader
 
 
 def test_backend_loader_raises_when_explicit_native_backend_fails(
