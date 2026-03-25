@@ -40,6 +40,10 @@ are loaded automatically when running examples using
 ```
 """
 
+# TODO: Refactor this module to be more testable and reduce reliance on repo structure,
+# while maintaining support for the current file-based settings approach.
+# Consider breaking out file discovery and loading into separate components
+
 from __future__ import annotations
 
 import os
@@ -54,6 +58,8 @@ from mini_arcade.common.game_paths import (
     find_game_dir,
     game_settings_candidates,
 )
+
+YAML_EXTENSIONS = {".yml", ".yaml"}
 
 
 @dataclass
@@ -211,7 +217,7 @@ class Settings:
             if local_root is not None:
                 base = local_root / "settings" / "settings"
                 candidates.extend(
-                    [base.with_suffix(".yml"), base.with_suffix(".yaml")]
+                    [base.with_suffix(ext) for ext in YAML_EXTENSIONS]
                 )
             candidates.extend(
                 game_settings_candidates(
@@ -227,14 +233,11 @@ class Settings:
                 base = settings_root / "settings"
             else:
                 base = settings_root / cls._name_path(name)
-            return [base.with_suffix(".yml"), base.with_suffix(".yaml")]
+            return [base.with_suffix(ext) for ext in YAML_EXTENSIONS]
 
         # default repo-level settings file
         base = repo_root / "settings" / "settings"
-        return [
-            base.with_suffix(".yml"),
-            base.with_suffix(".yaml"),
-        ]
+        return [base.with_suffix(ext) for ext in YAML_EXTENSIONS]
 
     @classmethod
     def _default_candidates(
@@ -627,14 +630,14 @@ class Settings:
     def _deep_merge_dicts(
         base: dict[str, Any], override: dict[str, Any]
     ) -> dict[str, Any]:
-        out = Settings._deep_copy_dict(base)
+        output = Settings._deep_copy_dict(base)
         for key, value in override.items():
-            if isinstance(value, dict) and isinstance(out.get(key), dict):
-                out[key] = Settings._deep_merge_dicts(out[key], value)
+            if isinstance(value, dict) and isinstance(output.get(key), dict):
+                output[key] = Settings._deep_merge_dicts(output[key], value)
             elif isinstance(value, dict):
-                out[key] = Settings._deep_copy_dict(value)
+                output[key] = Settings._deep_copy_dict(value)
             elif isinstance(value, list):
-                out[key] = [
+                output[key] = [
                     (
                         Settings._deep_copy_dict(item)
                         if isinstance(item, dict)
@@ -643,8 +646,8 @@ class Settings:
                     for item in value
                 ]
             else:
-                out[key] = value
-        return out
+                output[key] = value
+        return output
 
     def _expand_tokens_in_value(self, value: Any) -> Any:
         if isinstance(value, dict):
@@ -726,44 +729,34 @@ class Settings:
         if not isinstance(src, dict):
             return {}
 
-        out: dict[str, Any] = {}
+        output: dict[str, Any] = {}
         difficulty = src.get("difficulty")
         if isinstance(difficulty, str):
-            out["difficulty"] = {"level": difficulty}
+            output["difficulty"] = {"level": difficulty}
         elif isinstance(difficulty, dict):
             level = difficulty.get("level", difficulty.get("default"))
             if level is not None:
-                out["difficulty"] = {"level": str(level)}
+                output["difficulty"] = {"level": str(level)}
 
         controls = src.get("controls")
         if isinstance(controls, dict):
-            out["controls"] = self._deep_copy_dict(controls)
+            output["controls"] = self._deep_copy_dict(controls)
 
         debug_overlay = src.get("debug_overlay")
         if isinstance(debug_overlay, dict):
-            out["debug_overlay"] = self._deep_copy_dict(debug_overlay)
+            output["debug_overlay"] = self._deep_copy_dict(debug_overlay)
         elif isinstance(debug_overlay, bool):
-            out["debug_overlay"] = bool(debug_overlay)
+            output["debug_overlay"] = bool(debug_overlay)
 
         scenes = src.get("scenes")
         if isinstance(scenes, dict):
-            out["scenes"] = self._deep_copy_dict(scenes)
+            output["scenes"] = self._deep_copy_dict(scenes)
 
-        return self._expand_tokens_in_value(out)
+        return self._expand_tokens_in_value(output)
 
-    def backend_defaults(
-        self, *, resolve_paths: bool = False
-    ) -> dict[str, Any]:
-        """
-        Backend settings defaults for backend-specific settings builders.
-        """
-        backend = self.section("backend")
-        if not resolve_paths:
-            return backend
-
-        out = self._deep_copy_dict(backend)
-
-        fonts = out.get("fonts")
+    def _resolve_fonts(
+        self, fonts: dict[str, Any] | list[dict[str, Any]]
+    ) -> dict[str, Path]:
         if isinstance(fonts, dict):
             path_ = fonts.get("path")
             if isinstance(path_, str):
@@ -776,17 +769,39 @@ class Settings:
                 if isinstance(path_, str):
                     item["path"] = str(self.resolve_path(path_))
 
-        audio = out.get("audio")
+    def _resolve_audio(self, audio: dict[str, Any]) -> dict[str, Path]:
         if isinstance(audio, dict):
             sounds = audio.get("sounds")
             if isinstance(sounds, dict):
-                for sound_id, sound_path in list(sounds.items()):
+                for sound_id, sound_path in sounds.items():
                     if isinstance(sound_path, str):
                         sounds[sound_id] = str(
                             self.resolve_asset_path(sound_path)
                         )
 
-        return out
+    def backend_defaults(
+        self, *, resolve_paths: bool = False
+    ) -> dict[str, Any]:
+        """
+        Backend settings defaults for backend-specific settings builders.
+        """
+        # 1) Backend section from settings file, with optional path resolution
+        backend = self.section("backend")
+        if not resolve_paths:
+            return backend
+
+        # 2) Deep copy with path resolution for any keys named "path" or under "fonts"/"sounds".
+        backend_copy = self._deep_copy_dict(backend)
+
+        # 3) Fonts: support both dict and list formats, with path resolution for any "path" keys.
+        fonts = backend_copy.get("fonts")
+        self._resolve_fonts(fonts)
+
+        # 4) Sounds: support dict format with path resolution for any "path" keys.
+        audio = backend_copy.get("audio")
+        self._resolve_audio(audio)
+
+        return backend_copy
 
     def as_dict(self) -> dict[str, Any]:
         """

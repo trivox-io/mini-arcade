@@ -37,6 +37,7 @@
         "MOUSEBUTTONDOWN",
         "MOUSEBUTTONUP",
         "MOUSEMOTION",
+        "postfx",
         "pyglet",
         "rects",
         "rtype",
