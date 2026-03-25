@@ -7,7 +7,7 @@ from __future__ import annotations
 import importlib
 from typing import Any
 
-from mini_arcade.modules.settings import (
+from mini_arcade.common.settings import (
     Settings,  # type: ignore[import-not-found]
 )
 from mini_arcade.utils.logging import logger  # type: ignore[import-not-found]

@@ -38,7 +38,7 @@ from mini_arcade.common.game_paths import (  # noqa: E402
     find_game_dir,
     game_settings_candidates,
 )
-from mini_arcade.modules.settings import Settings  # noqa: E402
+from mini_arcade.common.settings import Settings  # noqa: E402
 from mini_arcade_core.backend.events import Event, EventType  # noqa: E402
 from mini_arcade_core.backend.keys import Key  # noqa: E402
 from mini_arcade_core.engine.engine_config import (  # noqa: E402

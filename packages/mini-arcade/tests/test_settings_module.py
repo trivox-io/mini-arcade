@@ -8,7 +8,7 @@ SRC_ROOT = PACKAGE_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from mini_arcade.modules.settings import Settings, SettingsArgs
+from mini_arcade.common.settings import Settings, SettingsArgs
 
 
 def test_settings_accepts_settings_args_for_direct_instantiation(

@@ -134,7 +134,7 @@ Use this exact startup flow:
 from __future__ import annotations
 
 from mini_arcade.modules.backend_loader import BackendLoader
-from mini_arcade.modules.settings import Settings
+from mini_arcade.common.settings import Settings
 from mini_arcade_core import run_game
 
 

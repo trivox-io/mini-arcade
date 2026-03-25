@@ -12,7 +12,7 @@ from typing import Any
 
 from examples._shared.defaults import make_backend_factory
 from examples._shared.spec import ExampleSpec
-from mini_arcade.modules.settings import Settings
+from mini_arcade.common.settings import Settings
 from mini_arcade_core import EngineConfig
 from mini_arcade_core.engine.engine_config import PostFXConfig
 

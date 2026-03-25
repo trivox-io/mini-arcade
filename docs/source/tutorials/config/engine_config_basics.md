@@ -119,7 +119,7 @@ Reference flow from current games (`deja-bounce`, `asteroids`, `space-invaders`)
 
 ```python
 from mini_arcade.modules.backend_loader import BackendLoader
-from mini_arcade.modules.settings import Settings
+from mini_arcade.common.settings import Settings
 from mini_arcade_core import run_game
 
 settings = Settings.for_game("my-game", required=True)
