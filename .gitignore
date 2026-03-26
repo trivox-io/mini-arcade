@@ -210,3 +210,4 @@ games/*
 !games/snake/
 !games/space-invaders/
 !games/tetris/
+recordings/
