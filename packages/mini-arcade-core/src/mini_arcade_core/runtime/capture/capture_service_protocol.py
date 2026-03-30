@@ -4,10 +4,11 @@ Capture service protocol
 
 from __future__ import annotations
 
-from zipfile import Path
+from pathlib import Path
 
 from mini_arcade_core.backend import Backend
 from mini_arcade_core.runtime.capture.capture_settings import CaptureSettings
+from mini_arcade_core.runtime.capture.video_session import VideoSession
 from mini_arcade_core.runtime.capture.replay import (
     ReplayPlayer,
     ReplayRecorder,
@@ -135,8 +136,31 @@ class CaptureServicePort:
         :rtype: bool
         """
 
+    @property
+    def video_busy(self) -> bool:
+        """
+        Check if video capture is recording or still finalizing/encoding.
+
+        :return: True if the capture pipeline is busy, False otherwise.
+        :rtype: bool
+        """
+
+    @property
+    def current_video_session(self) -> VideoSession | None:
+        """
+        Current human-facing video session metadata, if any.
+
+        :return: Current session metadata or None.
+        :rtype: VideoSession | None
+        """
+
     def start_video_record(
-        self, *, fps: int = 60, capture_fps: int = 15
+        self,
+        *,
+        fps: int = 60,
+        capture_fps: int = 60,
+        label: str | None = None,
+        scene_id: str | None = None,
     ) -> Path:
         """
         Start recording video.
@@ -145,6 +169,10 @@ class CaptureServicePort:
         :type fps: int
         :param capture_fps: Frames per second to capture from the engine.
         :type capture_fps: int
+        :param label: Optional human-friendly label for the session folder.
+        :type label: str | None
+        :param scene_id: Optional scene id associated with the recording start.
+        :type scene_id: str | None
         :return: Path to the directory where video frames are saved.
         :rtype: Path
         """
@@ -152,10 +180,28 @@ class CaptureServicePort:
     def stop_video_record(self):
         """Stop recording video."""
 
-    def record_video_frame(self, *, frame_index: int):
+    def handle_quit_request(self) -> bool:
+        """
+        Handle a user quit request while video capture may be active.
+
+        :return: True if the engine may quit immediately, False otherwise.
+        :rtype: bool
+        """
+
+    def begin_video_frame(self, *, dt: float) -> None:
+        """
+        Advance the recording timeline to the current frame before scene logic runs.
+
+        :param dt: Real elapsed frame delta time in seconds.
+        :type dt: float
+        """
+
+    def record_video_frame(self, *, frame_index: int, dt: float):
         """
         Call this once per engine frame (from EngineRunner) AFTER render.
 
         :param frame_index: The index of the current frame.
         :type frame_index: int
+        :param dt: Real elapsed frame delta time in seconds.
+        :type dt: float
         """

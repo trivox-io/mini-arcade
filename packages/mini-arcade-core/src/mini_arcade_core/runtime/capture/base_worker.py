@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from queue import Empty, Queue
 from threading import Event, Thread
+from time import monotonic, sleep
 
 
 @dataclass(frozen=True)
@@ -63,6 +64,27 @@ class BaseWorker:
     def qsize(self) -> int:
         """Query the current size of the job queue."""
         return self._q.qsize()
+
+    def wait_until_idle(self, timeout_seconds: float | None = None) -> bool:
+        """
+        Block until the worker queue has finished processing all queued jobs.
+
+        :param timeout_seconds: Optional timeout in seconds.
+        :type timeout_seconds: float | None
+        :return: True if the queue drained before the timeout, False otherwise.
+        :rtype: bool
+        """
+        deadline = (
+            None
+            if timeout_seconds is None
+            else monotonic() + max(0.0, float(timeout_seconds))
+        )
+        while True:
+            if getattr(self._q, "unfinished_tasks", 0) <= 0:
+                return True
+            if deadline is not None and monotonic() >= deadline:
+                return False
+            sleep(0.01)
 
     def _run(self):
         while not self._stop.is_set():

@@ -25,3 +25,6 @@ class SDLAudioAdapter(AudioPort):
 
     def set_sound_volume(self, sound_id: str, volume: int):
         self.backend.audio.set_sound_volume(sound_id, volume)
+
+    def stop_all(self):
+        self.backend.audio.stop_all()

@@ -23,6 +23,7 @@ class CaptureSettings:
     :ivar video_codec: Video codec to use for encoding.
     :ivar video_crf: Constant Rate Factor for video quality.
     :ivar video_preset: Preset for video encoding speed/quality tradeoff.
+    :ivar video_interpolate: Whether ffmpeg should interpolate when upsampling fps.
     """
 
     screenshots_dir: str = "screenshots"
@@ -35,3 +36,4 @@ class CaptureSettings:
     video_codec: str = "libx264"
     video_crf: int = 18
     video_preset: str = "veryfast"
+    video_interpolate: bool = False

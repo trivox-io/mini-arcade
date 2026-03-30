@@ -7,7 +7,7 @@ from __future__ import annotations
 from time import sleep
 from typing import TYPE_CHECKING
 
-from mini_arcade_core.engine.commands import CommandContext, QuitCommand
+from mini_arcade_core.engine.commands import CommandContext
 from mini_arcade_core.engine.loop.config import RunnerConfig
 from mini_arcade_core.engine.loop.hooks import LoopHooks
 from mini_arcade_core.engine.loop.state import FrameState
@@ -16,6 +16,7 @@ from mini_arcade_core.engine.render.effects.base import EffectStack
 from mini_arcade_core.engine.render.frame_packet import FramePacket
 from mini_arcade_core.engine.render.packet import RenderPacket
 from mini_arcade_core.engine.render.pipeline import RenderPipeline
+from mini_arcade_core.runtime.capture.video_session import VideoSession
 from mini_arcade_core.runtime.input_frame import InputFrame
 from mini_arcade_core.utils import FrameTimer, logger
 
@@ -26,6 +27,84 @@ if TYPE_CHECKING:
 def _neutral_input(frame_index: int, dt: float) -> InputFrame:
     """Create a neutral InputFrame with no input events."""
     return InputFrame(frame_index=frame_index, dt=dt)
+
+
+def _capture_overlay_packet(
+    session: VideoSession,
+    *,
+    viewport_x: int,
+    viewport_y: int,
+    viewport_width: int,
+) -> RenderPacket:
+    """Small built-in capture status overlay shown while capture is busy."""
+
+    def draw(backend):
+        compact = session.state == "recording"
+        panel_w = min(
+            280 if not compact else 228,
+            max(176, viewport_width - 24),
+        )
+        panel_h = 42 if compact else 54
+        panel_x = viewport_x + viewport_width - panel_w - 12
+        panel_y = viewport_y + 12
+        accent = (240, 180, 41)
+        if session.state == "encoding":
+            accent = (232, 34, 74)
+
+        backend.render.draw_rect(
+            panel_x,
+            panel_y,
+            panel_w,
+            panel_h,
+            color=(12, 12, 20, 232),
+        )
+        backend.render.draw_rect(
+            panel_x,
+            panel_y,
+            5,
+            panel_h,
+            color=accent,
+        )
+        title = (
+            "RECORDING"
+            if session.state == "recording"
+            else "PROCESSING VIDEO"
+        )
+        backend.text.draw(
+            panel_x + 16,
+            panel_y + 8,
+            title,
+            color=(238, 240, 245),
+            font_size=12,
+        )
+        backend.text.draw(
+            panel_x + 16,
+            panel_y + 22,
+            session.message,
+            color=(238, 240, 245),
+            font_size=10,
+        )
+        progress = max(0.0, min(1.0, float(getattr(session, "progress", 0.0))))
+        if session.state == "encoding":
+            bar_x = panel_x + 16
+            bar_y = panel_y + panel_h - 11
+            bar_w = panel_w - 32
+            backend.render.draw_rect(
+                bar_x,
+                bar_y,
+                bar_w,
+                4,
+                color=(31, 31, 44),
+            )
+            backend.render.draw_rect(
+                bar_x,
+                bar_y,
+                max(1, int(round(bar_w * progress))),
+                4,
+                color=accent,
+            )
+
+    return RenderPacket(ops=(draw,))
 
 
 # Justification: This class has many attributes for managing the loop.
@@ -96,6 +175,7 @@ class EngineRunner:
                 timer.mark("frame_start")
 
             frame.step_time()
+            self.services.capture.begin_video_frame(dt=frame.dt)
 
             events = self._poll_events(timer)
             self._handle_events(events)
@@ -175,15 +255,14 @@ class EngineRunner:
         if timer:
             timer.mark("input_built")
 
-        if input_frame.quit:
-            self.managers.command_queue.push(QuitCommand())
-
         cap.record_input(input_frame)
         return input_frame
 
     def _should_quit(self, input_frame: InputFrame) -> bool:
         # Determine if the game should quit based on input.
-        return bool(input_frame.quit)
+        if not input_frame.quit:
+            return False
+        return bool(self.services.capture.handle_quit_request())
 
     def _input_entry(self):
         # Get the current input-focused scene entry.
@@ -259,6 +338,7 @@ class EngineRunner:
         vp = self.services.window.get_viewport()
 
         frame_packets: list[FramePacket] = []
+        presentation_packets: list[FramePacket] = []
         for entry in self.managers.scenes.visible_entries():
             scene = entry.scene
             packet = self._packet_cache.get(id(scene))
@@ -276,6 +356,24 @@ class EngineRunner:
                 )
             )
 
+        capture_session = self.services.capture.current_video_session
+        if (
+            capture_session is not None
+            and capture_session.state in {"recording", "finalizing", "encoding"}
+        ):
+            presentation_packets.append(
+                FramePacket(
+                    scene_id="capture_status_overlay",
+                    is_overlay=True,
+                    packet=_capture_overlay_packet(
+                        capture_session,
+                        viewport_x=vp.offset_x,
+                        viewport_y=vp.offset_y,
+                        viewport_width=vp.viewport_w,
+                    ),
+                )
+            )
+
         render_ctx = RenderContext(
             viewport=vp,
             debug_overlay=getattr(self.game.settings, "debug_overlay", False),
@@ -288,8 +386,17 @@ class EngineRunner:
         self.services.render.last_frame_ms = render_ctx.frame_ms
         self.services.render.last_stats = render_ctx.stats
 
-        self.pipeline.render_frame(self.backend, render_ctx, frame_packets)
-        self.services.capture.record_video_frame(frame_index=frame.frame_index)
+        self.pipeline.render_frame_content(self.backend, render_ctx, frame_packets)
+        self.services.capture.record_video_frame(
+            frame_index=frame.frame_index,
+            dt=frame.dt,
+        )
+        self.pipeline.render_presentation_overlays(
+            self.backend,
+            render_ctx,
+            presentation_packets,
+        )
+        self.pipeline.present_frame(self.backend, render_ctx)
 
         if timer:
             timer.mark("render_done")

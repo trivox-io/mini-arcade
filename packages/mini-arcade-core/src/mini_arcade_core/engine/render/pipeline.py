@@ -72,8 +72,46 @@ class RenderPipeline:
         :param packets: List of FramePackets to render.
         :type packets: list[FramePacket]
         """
+        self.render_frame_content(backend, ctx, packets)
+        self.present_frame(backend, ctx)
+
+    def render_frame_content(
+        self, backend: Backend, ctx: RenderContext, packets: list[FramePacket]
+    ) -> None:
+        """Render the frame contents without presenting them yet."""
         for p in self.passes:
+            if isinstance(p, EndFramePass):
+                continue
             p.run(backend, ctx, packets)
+
+    def render_presentation_overlays(
+        self, backend: Backend, ctx: RenderContext, packets: list[FramePacket]
+    ) -> None:
+        """Render presentation-only overlays after capture, before present."""
+        if not packets:
+            return
+
+        drew = False
+        for p in self.passes:
+            if not isinstance(p, UIPass):
+                continue
+            p.run(backend, ctx, packets)
+            drew = True
+
+        if not drew:
+            UIPass().run(backend, ctx, packets)
+
+    def present_frame(self, backend: Backend, ctx: RenderContext) -> None:
+        """Present the already-rendered frame to the user."""
+        ended = False
+        for p in self.passes:
+            if not isinstance(p, EndFramePass):
+                continue
+            p.run(backend, ctx, [])
+            ended = True
+
+        if not ended:
+            backend.render.end_frame()
 
     def draw_packet(
         self,

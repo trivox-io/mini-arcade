@@ -49,3 +49,8 @@ class AudioPort:
         :param volume: Volume level in the backend's native 0-128 range.
         :type volume: int
         """
+
+    def stop_all(self):
+        """
+        Stop all currently playing sounds.
+        """

@@ -38,9 +38,27 @@ def register_default_capture_event_handlers() -> None:
         ),
     )
     event_bus.on(
+        events.VIDEO_STATE_CHANGED,
+        lambda state, message, **_: logger.info(
+            f"[capture] video state -> {state}: {message}"
+        ),
+    )
+    event_bus.on(
+        events.VIDEO_FINALIZING,
+        lambda path, **_: logger.info(
+            f"[capture] video finalizing: {path}"
+        ),
+    )
+    event_bus.on(
         events.VIDEO_STOPPED,
         lambda path, **_: logger.info(
             f"[capture] video recording stopped: {path}"
+        ),
+    )
+    event_bus.on(
+        events.VIDEO_ENCODE_STARTED,
+        lambda path, **_: logger.info(
+            f"[capture] video encoding started: {path}"
         ),
     )
     event_bus.on(
@@ -52,6 +70,10 @@ def register_default_capture_event_handlers() -> None:
         lambda error, **_: logger.warning(
             f"[capture] video encode failed: {error}"
         ),
+    )
+    event_bus.on(
+        events.VIDEO_QUIT_BLOCKED,
+        lambda message, **_: logger.info(f"[capture] quit deferred: {message}"),
     )
     event_bus.on(
         events.REPLAY_RECORD_STARTED,

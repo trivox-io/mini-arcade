@@ -4,8 +4,10 @@ Video recording management.
 
 from __future__ import annotations
 
+from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
+import re
 from uuid import uuid4
 
 
@@ -22,7 +24,7 @@ class VideoRecordConfig:
     """
 
     fps: int = 60  # desired output fps in manifest
-    capture_fps: int = 15  # actual capture rate to reduce stalls
+    capture_fps: int = 60  # actual capture rate to reduce stalls
     ext: str = "png"
     frames_dir: str = "recordings"
     prefix: str = "run_"
@@ -40,11 +42,23 @@ class VideoRecorder:
         self.active: bool = False
         self.run_id: str = ""
         self.base_dir: Path | None = None
+        self.frames_dir_path: Path | None = None
 
         self._frame_index: int = 0
         self._every_n: int = 1
 
-    def start(self, *, out_dir: Path | None = None) -> Path:
+    @staticmethod
+    def _slugify(text: str) -> str:
+        slug = re.sub(r"[^a-z0-9]+", "-", str(text or "").strip().lower())
+        slug = slug.strip("-")
+        return slug or "capture"
+
+    def start(
+        self,
+        *,
+        out_dir: Path | None = None,
+        label: str | None = None,
+    ) -> Path:
         """
         Start video recording.
 
@@ -58,10 +72,17 @@ class VideoRecorder:
 
         self.active = True
         self.run_id = uuid4().hex
-        self.base_dir = (
-            out_dir or Path(self.cfg.frames_dir)
-        ) / f"{self.cfg.prefix}{self.run_id}"
+        timestamp = datetime.now()
+        dated_root = out_dir or Path(self.cfg.frames_dir)
+        folder_name = (
+            f"{timestamp.strftime('%Y%m%d-%H%M%S')}-"
+            f"{self._slugify(label or 'capture')}-"
+            f"{self.run_id[:6]}"
+        )
+        self.base_dir = dated_root / timestamp.strftime("%Y-%m-%d") / folder_name
         self.base_dir.mkdir(parents=True, exist_ok=True)
+        self.frames_dir_path = self.base_dir / "raw" / "frames"
+        self.frames_dir_path.mkdir(parents=True, exist_ok=True)
 
         # reduce load by capturing less frequently
         # example: game 60fps, capture_fps 15 => every 4 frames
@@ -76,6 +97,7 @@ class VideoRecorder:
         self.active = False
         self.run_id = ""
         self.base_dir = None
+        self.frames_dir_path = None
         self._frame_index = 0
 
     def should_capture(self, frame_index: int) -> bool:
@@ -99,11 +121,20 @@ class VideoRecorder:
         :type frame_index: int
         :raise: RuntimeError: If the recorder is not active.
         """
-        if not self.active or self.base_dir is None:
+        if (
+            not self.active
+            or self.base_dir is None
+            or self.frames_dir_path is None
+        ):
             raise RuntimeError("VideoRecorder is not active")
 
         out_frame = self._frame_index
         self._frame_index += 1
 
-        out_png = self.base_dir / f"frame_{out_frame:08d}.{self.cfg.ext}"
+        out_png = self.frames_dir_path / f"frame_{out_frame:08d}.{self.cfg.ext}"
         return out_png, out_frame
+
+    def rollback_last_frame(self) -> None:
+        """Undo the most recent reserved frame index if capture did not queue."""
+        if self._frame_index > 0:
+            self._frame_index -= 1

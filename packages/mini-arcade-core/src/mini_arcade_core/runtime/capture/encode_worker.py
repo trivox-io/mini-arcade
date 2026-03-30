@@ -28,7 +28,7 @@ class EncodeJob(BaseJob):
     :ivar ffmpeg_path (str): Path to the ffmpeg executable.
     :ivar frames_dir (Path): Directory containing the PNG frames to encode.
     :ivar output_path (Path): Destination path for the encoded video file.
-    :ivar input_fps (int): Frames per second of the input PNG sequence.
+    :ivar input_fps (float): Frames per second of the input PNG sequence.
     :ivar output_fps (int | None): Frames per second for the output video file.
     :ivar codec (str): Video codec to use for encoding.
     :ivar crf (int): Constant Rate Factor for video quality.
@@ -40,13 +40,15 @@ class EncodeJob(BaseJob):
     frames_dir: Path
     output_path: Path
     audio_path: Path | None
-    input_fps: int
+    input_fps: float
     output_fps: int | None
     codec: str
     crf: int
     preset: str
     keep_frames: bool
     video_interpolate: bool = True
+    expected_duration_seconds: float | None = None
+    frame_times_seconds: tuple[float, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -66,6 +68,16 @@ class EncodeResult:
     error: str | None = None
 
 
+@dataclass(frozen=True)
+class EncodeProgress:
+    """
+    Progress update for an encoding job.
+    """
+
+    job_id: str
+    progress: float
+
+
 @dataclass
 class EncodeWorkerConfig:
     """
@@ -80,6 +92,7 @@ class EncodeWorkerConfig:
 
     queue_size: int = 4
     on_done: Optional[Callable[[EncodeResult], None]] = None
+    on_progress: Optional[Callable[[EncodeProgress], None]] = None
     name: str = "encode-worker"
     daemon: bool = True
 
@@ -96,6 +109,7 @@ class EncodeWorker(BaseWorker):
         self._q: Queue[EncodeJob] = Queue(maxsize=cfg.queue_size)
         self._stop = Event()
         self._on_done = cfg.on_done
+        self._on_progress = cfg.on_progress
         self._thread = Thread(
             target=self._run, name=cfg.name, daemon=cfg.daemon
         )
@@ -108,6 +122,14 @@ class EncodeWorker(BaseWorker):
         """
         self._on_done = on_done
 
+    def set_on_progress(
+        self, on_progress: Optional[Callable[[EncodeProgress], None]]
+    ) -> None:
+        """
+        Replace the progress callback invoked while a job is encoding.
+        """
+        self._on_progress = on_progress
+
     def _process_job(self, job: EncodeJob) -> None:
         try:
             logger.info(f"[encode] job={job.job_id} start {job.output_path}")
@@ -118,6 +140,12 @@ class EncodeWorker(BaseWorker):
                 audio_path=job.audio_path,
                 input_fps=job.input_fps,
                 output_fps=job.output_fps,
+                video_interpolate=job.video_interpolate,
+                expected_duration_seconds=job.expected_duration_seconds,
+                frame_times_seconds=job.frame_times_seconds,
+                progress_callback=lambda progress: self._emit_progress(
+                    job.job_id, progress
+                ),
                 codec=job.codec,
                 crf=job.crf,
                 preset=job.preset,
@@ -151,3 +179,16 @@ class EncodeWorker(BaseWorker):
                 logger.warning("[encode] on_done callback failed")
 
         self._q.task_done()
+
+    def _emit_progress(self, job_id: str, progress: float) -> None:
+        if self._on_progress is None:
+            return
+        try:
+            self._on_progress(
+                EncodeProgress(
+                    job_id=job_id,
+                    progress=max(0.0, min(1.0, float(progress))),
+                )
+            )
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.warning("[encode] on_progress callback failed")

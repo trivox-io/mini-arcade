@@ -341,11 +341,16 @@ class StartVideoRecordCommand(Command):
     """
 
     fps: int = 60
-    capture_fps: int = 30
+    capture_fps: int = 60
 
     def execute(self, context: CommandContext):
+        scene_entry = context.services.scenes.input_entry()
+        scene_id = scene_entry.scene_id if scene_entry is not None else None
         context.services.capture.start_video_record(
-            fps=self.fps, capture_fps=self.capture_fps
+            fps=self.fps,
+            capture_fps=self.capture_fps,
+            label=scene_id,
+            scene_id=scene_id,
         )
 
 
@@ -367,11 +372,18 @@ class ToggleVideoRecordCommand(Command):
     """
 
     fps: int = 60
-    capture_fps: int = 30
+    capture_fps: int = 60
 
     def execute(self, context: CommandContext):
         cap = context.services.capture
         if cap.video_recording:
             cap.stop_video_record()
         else:
-            cap.start_video_record(fps=self.fps, capture_fps=self.capture_fps)
+            scene_entry = context.services.scenes.input_entry()
+            scene_id = scene_entry.scene_id if scene_entry is not None else None
+            cap.start_video_record(
+                fps=self.fps,
+                capture_fps=self.capture_fps,
+                label=scene_id,
+                scene_id=scene_id,
+            )
