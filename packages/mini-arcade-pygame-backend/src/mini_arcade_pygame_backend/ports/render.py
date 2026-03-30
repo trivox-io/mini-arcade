@@ -49,7 +49,7 @@ class RenderPort:
 
         surface = pygame.Surface(
             (int(clipped.width), int(clipped.height)),
-            pygame.SRCALPHA,
+            pygame.SRCALPHA,  # pylint: disable=no-member
         )
         local_offset = (-int(clipped.x), -int(clipped.y))
         draw_fn(surface, local_offset, color)

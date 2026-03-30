@@ -9,7 +9,9 @@ from mini_arcade_core.engine.render.packet import RenderPacket
 
 class _SceneStub:
     def tick(self, *_args, **_kwargs):
-        raise AssertionError("cached packets should be reused during this test")
+        raise AssertionError(
+            "cached packets should be reused during this test"
+        )
 
 
 class _SceneQueryStub:
@@ -72,8 +74,12 @@ def _build_runner(*, log, session):
         pipeline=_PipelineStub(log),
         effects_stack=object(),
     )
-    runner._packet_cache[id(arena_scene)] = RenderPacket.from_ops([lambda backend: None])
-    runner._packet_cache[id(hud_scene)] = RenderPacket.from_ops([lambda backend: None])
+    runner._packet_cache[id(arena_scene)] = RenderPacket.from_ops(
+        [lambda backend: None]
+    )
+    runner._packet_cache[id(hud_scene)] = RenderPacket.from_ops(
+        [lambda backend: None]
+    )
     return runner
 
 
@@ -86,7 +92,9 @@ def test_runner_draws_capture_overlay_only_after_frame_capture() -> None:
     )
     runner = _build_runner(log=log, session=session)
 
-    runner._render_frame(FrameState(frame_index=7, time_s=1.25, dt=1 / 60), timer=None)
+    runner._render_frame(
+        FrameState(frame_index=7, time_s=1.25, dt=1 / 60), timer=None
+    )
 
     assert log == [
         ("content", ["arena", "hud"]),
@@ -100,7 +108,9 @@ def test_runner_skips_presentation_overlay_when_capture_is_idle() -> None:
     log: list[tuple[object, ...]] = []
     runner = _build_runner(log=log, session=None)
 
-    runner._render_frame(FrameState(frame_index=3, time_s=0.5, dt=1 / 30), timer=None)
+    runner._render_frame(
+        FrameState(frame_index=3, time_s=0.5, dt=1 / 30), timer=None
+    )
 
     assert log == [
         ("content", ["arena", "hud"]),

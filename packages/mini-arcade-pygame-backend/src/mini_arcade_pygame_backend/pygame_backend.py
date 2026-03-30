@@ -50,6 +50,9 @@ class PygameBackend:
         Initialize the pygame backend.
         This method sets up the necessary components for the backend to function.
         """
+        # Justification: Disabling no-member checks for pygame attributes since they are
+        # dynamically added after initialization.
+        # pylint: disable=no-member
         # 1) pygame init
         pygame.init()
         pygame.font.init()

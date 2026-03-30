@@ -94,7 +94,7 @@ def _repo_root() -> Path:
     for candidate in here.parents:
         if (candidate / "packages").is_dir():
             return candidate
-    raise RuntimeError("Could not locate monorepo root from %s" % here)
+    raise RuntimeError(f"Could not locate monorepo root from {here}")
 
 
 def codebase_length(packages: list[str]) -> CodebaseStats:

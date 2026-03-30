@@ -25,6 +25,7 @@ class WindowPort:
         """
         self._title = title
         self._resizeable = resizable
+        # pylint: disable=no-member
         self._flags = pygame.RESIZABLE if resizable else 0
 
         self.screen = pygame.display.set_mode((width, height), self._flags)

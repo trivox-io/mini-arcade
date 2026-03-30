@@ -45,9 +45,7 @@ def register_default_capture_event_handlers() -> None:
     )
     event_bus.on(
         events.VIDEO_FINALIZING,
-        lambda path, **_: logger.info(
-            f"[capture] video finalizing: {path}"
-        ),
+        lambda path, **_: logger.info(f"[capture] video finalizing: {path}"),
     )
     event_bus.on(
         events.VIDEO_STOPPED,
@@ -73,7 +71,9 @@ def register_default_capture_event_handlers() -> None:
     )
     event_bus.on(
         events.VIDEO_QUIT_BLOCKED,
-        lambda message, **_: logger.info(f"[capture] quit deferred: {message}"),
+        lambda message, **_: logger.info(
+            f"[capture] quit deferred: {message}"
+        ),
     )
     event_bus.on(
         events.REPLAY_RECORD_STARTED,

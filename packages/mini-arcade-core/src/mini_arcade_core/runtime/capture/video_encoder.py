@@ -4,12 +4,12 @@ Video encoding utilities.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import traceback
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-import os
 
 from mini_arcade_core.utils import logger
 
@@ -29,7 +29,12 @@ class EncodeResult:
     error: str | None = None
 
 
-# pylint: disable=too-many-arguments
+# TODO: Consider breaking this function down into smaller helper functions if it becomes
+# more complex in the future.
+# Justification: This function is necessarily complex due to the nature of interfacing
+# with ffmpeg and handling various edge cases.
+# Breaking it down further would likely reduce readability and maintainability.
+# pylint: disable=too-many-arguments,too-many-branches,too-many-statements
 def encode_png_sequence_to_mp4(
     *,
     ffmpeg_path: str,
@@ -37,9 +42,7 @@ def encode_png_sequence_to_mp4(
     output_path: Path,
     audio_path: Path | None = None,
     input_fps: float,  # <-- effective capture fps
-    output_fps: (
-        int | None
-    ) = None,  # <-- optional container fps (e.g. 60)
+    output_fps: int | None = None,  # <-- optional container fps (e.g. 60)
     video_interpolate: bool = False,
     expected_duration_seconds: float | None = None,
     frame_times_seconds: tuple[float, ...] | None = None,
@@ -99,11 +102,11 @@ def encode_png_sequence_to_mp4(
         _write_concat_manifest(
             concat_path=concat_path,
             frame_paths=frame_paths,
-            frame_times_seconds=tuple(float(v) for v in frame_times_seconds or ()),
-            expected_duration_seconds=expected_duration_seconds,
-            fallback_frame_seconds=(
-                1.0 / max(1.0, float(input_fps))
+            frame_times_seconds=tuple(
+                float(v) for v in frame_times_seconds or ()
             ),
+            expected_duration_seconds=expected_duration_seconds,
+            fallback_frame_seconds=(1.0 / max(1.0, float(input_fps))),
         )
         cmd += [
             "-f",
@@ -171,6 +174,9 @@ def encode_png_sequence_to_mp4(
     ]
 
     try:
+        # Justification: Disabling the use of 'with' here because we need to read stdout
+        # line by line for progress updates, and 'with' would close the stream prematurely.
+        # pylint: disable=consider-using-with
         proc = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
@@ -199,7 +205,10 @@ def encode_png_sequence_to_mp4(
                     )
                     if progress_callback is not None:
                         progress_callback(
-                            min(0.99, seconds / float(expected_duration_seconds))
+                            min(
+                                0.99,
+                                seconds / float(expected_duration_seconds),
+                            )
                         )
         stderr_text = ""
         if proc.stderr is not None:
@@ -250,7 +259,8 @@ def _write_concat_manifest(
         if index < len(frame_paths) - 1:
             duration = max(
                 0.001,
-                float(frame_times_seconds[index + 1]) - float(frame_times_seconds[index]),
+                float(frame_times_seconds[index + 1])
+                - float(frame_times_seconds[index]),
             )
             lines.append(f"duration {duration:.9f}")
     final_duration = max(0.001, float(total_duration) - float(last_time))

@@ -8,7 +8,6 @@ from pathlib import Path
 
 from mini_arcade_core.backend import Backend
 from mini_arcade_core.runtime.capture.capture_settings import CaptureSettings
-from mini_arcade_core.runtime.capture.video_session import VideoSession
 from mini_arcade_core.runtime.capture.replay import (
     ReplayPlayer,
     ReplayRecorder,
@@ -17,6 +16,7 @@ from mini_arcade_core.runtime.capture.replay_format import ReplayHeader
 from mini_arcade_core.runtime.capture.screenshot_capturer import (
     ScreenshotCapturer,
 )
+from mini_arcade_core.runtime.capture.video_session import VideoSession
 from mini_arcade_core.runtime.input_frame import InputFrame
 
 

@@ -4,10 +4,10 @@ Video recording management.
 
 from __future__ import annotations
 
-from datetime import datetime
-from dataclasses import dataclass
-from pathlib import Path
 import re
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
 from uuid import uuid4
 
 
@@ -79,7 +79,9 @@ class VideoRecorder:
             f"{self._slugify(label or 'capture')}-"
             f"{self.run_id[:6]}"
         )
-        self.base_dir = dated_root / timestamp.strftime("%Y-%m-%d") / folder_name
+        self.base_dir = (
+            dated_root / timestamp.strftime("%Y-%m-%d") / folder_name
+        )
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self.frames_dir_path = self.base_dir / "raw" / "frames"
         self.frames_dir_path.mkdir(parents=True, exist_ok=True)
@@ -131,7 +133,9 @@ class VideoRecorder:
         out_frame = self._frame_index
         self._frame_index += 1
 
-        out_png = self.frames_dir_path / f"frame_{out_frame:08d}.{self.cfg.ext}"
+        out_png = (
+            self.frames_dir_path / f"frame_{out_frame:08d}.{self.cfg.ext}"
+        )
         return out_png, out_frame
 
     def rollback_last_frame(self) -> None:

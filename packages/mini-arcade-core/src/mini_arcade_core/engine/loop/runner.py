@@ -66,9 +66,7 @@ def _capture_overlay_packet(
             color=accent,
         )
         title = (
-            "RECORDING"
-            if session.state == "recording"
-            else "PROCESSING VIDEO"
+            "RECORDING" if session.state == "recording" else "PROCESSING VIDEO"
         )
         backend.text.draw(
             panel_x + 16,
@@ -357,10 +355,11 @@ class EngineRunner:
             )
 
         capture_session = self.services.capture.current_video_session
-        if (
-            capture_session is not None
-            and capture_session.state in {"recording", "finalizing", "encoding"}
-        ):
+        if capture_session is not None and capture_session.state in {
+            "recording",
+            "finalizing",
+            "encoding",
+        }:
             presentation_packets.append(
                 FramePacket(
                     scene_id="capture_status_overlay",
@@ -386,7 +385,9 @@ class EngineRunner:
         self.services.render.last_frame_ms = render_ctx.frame_ms
         self.services.render.last_stats = render_ctx.stats
 
-        self.pipeline.render_frame_content(self.backend, render_ctx, frame_packets)
+        self.pipeline.render_frame_content(
+            self.backend, render_ctx, frame_packets
+        )
         self.services.capture.record_video_frame(
             frame_index=frame.frame_index,
             dt=frame.dt,

@@ -3,6 +3,10 @@ Input port implementation for the pygame backend.
 Provides functionality to poll and map input events.
 """
 
+# Justification: Disabling no-member checks for pygame attributes since they are
+# dynamically added after initialization.
+# pylint: disable=no-member
+
 from __future__ import annotations
 
 import pygame

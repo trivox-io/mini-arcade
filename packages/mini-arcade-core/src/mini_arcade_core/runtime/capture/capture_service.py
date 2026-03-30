@@ -5,15 +5,15 @@ Capture service managing screenshots, replay, and video recording.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from threading import Thread
+from time import monotonic
 from typing import Optional
 from uuid import uuid4
-import re
-from time import monotonic
 
 from mini_arcade_core.backend import Backend
 from mini_arcade_core.bus import event_bus
@@ -217,9 +217,9 @@ class CaptureService(CaptureServicePort):
         """
         if not self.video.active:
             return
-        self._video_frame_target_seconds = (
-            float(self._video_elapsed_seconds) + max(0.0, float(dt))
-        )
+        self._video_frame_target_seconds = float(
+            self._video_elapsed_seconds
+        ) + max(0.0, float(dt))
 
     def start_video_record(
         self,
@@ -245,7 +245,9 @@ class CaptureService(CaptureServicePort):
         self._video_last_frame_index = None
         self._encode_started_at_seconds = None
 
-        recording_label = str(label or scene_id or "capture").strip() or "capture"
+        recording_label = (
+            str(label or scene_id or "capture").strip() or "capture"
+        )
         recording_scene_id = str(scene_id or "unknown").strip() or "unknown"
 
         base_dir = self.video.start(
@@ -260,7 +262,9 @@ class CaptureService(CaptureServicePort):
             duration_seconds=0.0,
             effective_capture_fps=float(capture_fps),
         )
-        frames_dir = self.video.frames_dir_path or (base_dir / "raw" / "frames")
+        frames_dir = self.video.frames_dir_path or (
+            base_dir / "raw" / "frames"
+        )
         self._video_session = VideoSession(
             run_id=self.video.run_id,
             label=recording_label,
@@ -301,7 +305,9 @@ class CaptureService(CaptureServicePort):
 
         base_dir = self.video.base_dir
         manifest = self._video_manifest
-        frames_dir = self.video.frames_dir_path or (base_dir / "raw" / "frames")
+        frames_dir = self.video.frames_dir_path or (
+            base_dir / "raw" / "frames"
+        )
         frame_times_seconds = tuple(self._video_frame_times_seconds)
         duration_seconds = float(self._video_elapsed_seconds)
         self._set_video_session_state(
@@ -441,10 +447,14 @@ class CaptureService(CaptureServicePort):
         manifest: VideoManifest,
     ) -> None:
         path = self._manifests_dir(base_dir) / "manifest.json"
-        path.write_text(json.dumps(asdict(manifest), indent=2), encoding="utf-8")
+        path.write_text(
+            json.dumps(asdict(manifest), indent=2), encoding="utf-8"
+        )
 
     def _write_frame_times(self, base_dir: Path) -> None:
-        self._write_frame_times_payload(base_dir, self._video_frame_times_seconds)
+        self._write_frame_times_payload(
+            base_dir, self._video_frame_times_seconds
+        )
 
     def _write_frame_times_payload(
         self,
@@ -506,7 +516,9 @@ class CaptureService(CaptureServicePort):
             frames_dir / f"frame_{index:08d}.png"
             for index in range(len(frames))
         ]
-        if all(path == expected for path, expected in zip(frames, expected_names)):
+        if all(
+            path == expected for path, expected in zip(frames, expected_names)
+        ):
             return len(frames)
 
         temp_paths: list[Path] = []
@@ -563,7 +575,9 @@ class CaptureService(CaptureServicePort):
             message=message,
             base_dir=session.base_dir,
             frames_dir=session.frames_dir,
-            output_path=output_path if output_path is not None else session.output_path,
+            output_path=(
+                output_path if output_path is not None else session.output_path
+            ),
             progress=(
                 max(0.0, min(1.0, float(progress)))
                 if progress is not None
@@ -771,7 +785,9 @@ class CaptureService(CaptureServicePort):
         session = self._video_session
         if session is None or session.state != "encoding":
             return
-        percent = int(round(max(0.0, min(1.0, float(result.progress))) * 100.0))
+        percent = int(
+            round(max(0.0, min(1.0, float(result.progress))) * 100.0)
+        )
         eta_text = ""
         if (
             self._encode_started_at_seconds is not None

@@ -380,7 +380,9 @@ class ToggleVideoRecordCommand(Command):
             cap.stop_video_record()
         else:
             scene_entry = context.services.scenes.input_entry()
-            scene_id = scene_entry.scene_id if scene_entry is not None else None
+            scene_id = (
+                scene_entry.scene_id if scene_entry is not None else None
+            )
             cap.start_video_record(
                 fps=self.fps,
                 capture_fps=self.capture_fps,
