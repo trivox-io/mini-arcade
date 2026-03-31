@@ -729,6 +729,7 @@ def test_ball_vs_ball_powerup_sandbox_spawned_pickup_is_indexed() -> None:
         _spawn_selected_pickup_at,
         build_powerup_sandbox_world,
     )
+
     from mini_arcade_core.engine.commands import CommandQueue
     from mini_arcade_core.runtime.input_frame import InputFrame
 
@@ -794,6 +795,7 @@ def test_knockout_bracket_progress_selection_uses_next_playable_match() -> (
         build_progress_system,
         build_seed_system,
     )
+
     from mini_arcade_core.engine.commands import CommandQueue
     from mini_arcade_core.runtime.input_frame import InputFrame
 
