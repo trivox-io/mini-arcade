@@ -32,9 +32,7 @@ class TargetResolver:
             if repo_root is not None
             else (Path.cwd() / GAMES_DIRNAME).resolve()
         )
-        self._locator = GameLocator(
-            dev_default_parent_dir=default_parent
-        )
+        self._locator = GameLocator(dev_default_parent_dir=default_parent)
 
     @property
     def parent_dir(self) -> Path:

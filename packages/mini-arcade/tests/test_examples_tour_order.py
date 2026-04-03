@@ -10,8 +10,8 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from mini_arcade.commands.eg.examples_tour import (
-    ExampleTourDiscoverer,
     ROADMAP_EXAMPLE_ORDER,
+    ExampleTourDiscoverer,
 )
 from mini_arcade.commands.eg.processors import ExamplesTourProcessor
 from mini_arcade.commands.game.processors import (

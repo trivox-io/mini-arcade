@@ -1,6 +1,5 @@
 """
-Defines the logic to run a process for a command processor,
-including handling of interrupts and timeouts.
+Subprocess execution helpers for command processors.
 """
 
 from __future__ import annotations
@@ -22,6 +21,9 @@ class SubprocessRunner:
     """
 
     def run(self, request: ExecutionRequest) -> ExecutionResult:
+        """
+        Run one subprocess request until completion or interruption.
+        """
         with subprocess.Popen(
             request.cmd,
             cwd=str(request.cwd),
@@ -41,6 +43,9 @@ class SubprocessRunner:
                 )
 
     def _stop_process(self, proc: subprocess.Popen) -> None:
+        """
+        Stop a running subprocess with graceful termination first.
+        """
         if proc.poll() is not None:
             return
 

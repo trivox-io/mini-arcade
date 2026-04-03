@@ -63,6 +63,14 @@ class SystemScaffoldTemplateBuilder:
     """
 
     def build(self, spec: SystemScaffoldSpec) -> dict[Path, str]:
+        """
+        Build the file templates for the given system scaffold specification.
+
+        :param spec: The system scaffold specification.
+        :type spec: SystemScaffoldSpec
+        :return: A mapping of file paths to their generated content.
+        :rtype: dict[Path, str]
+        """
         project_dir = spec.target_dir
         case_name = spec.case_name
         title = spec.title
@@ -243,7 +251,8 @@ class SystemScaffoldProcessor(BaseScaffoldProcessor[SystemScaffoldSpec]):
             case_name=case_name,
             title=title,
             target_dir=(
-                Path(self.kwargs.destination).expanduser().resolve() / system_id
+                Path(self.kwargs.destination).expanduser().resolve()
+                / system_id
             ),
             class_name=_class_name_from_system_id(system_id),
         )

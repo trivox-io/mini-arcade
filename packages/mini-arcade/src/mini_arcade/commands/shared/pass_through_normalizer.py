@@ -1,3 +1,7 @@
+"""
+Helpers for normalizing pass-through CLI arguments.
+"""
+
 from __future__ import annotations
 
 
@@ -8,6 +12,9 @@ class PassThroughNormalizer:
 
     @staticmethod
     def normalize(pass_through: str | list[str]) -> list[str]:
+        """
+        Normalize one pass-through value into a clean ``list[str]``.
+        """
         if not isinstance(pass_through, list):
             pass_through = [str(pass_through)]
         if pass_through and pass_through[0] == "--":

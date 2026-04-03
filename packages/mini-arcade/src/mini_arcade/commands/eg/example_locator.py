@@ -40,7 +40,7 @@ class ExampleLocator(BaseTargetLocator):
 
         The example_id is the path under examples root
         (e.g. config/engine_config_basics).
-        
+
         :param target_dir: The directory of the example target to validate.
         :type target_dir: Path
         :return: A TargetSpec if validation is successful.

@@ -11,6 +11,9 @@ from mini_arcade.commands.shared.base_target_locator import TargetSpec
 
 
 def _find_repo_root(start_dir: Path) -> Path | None:
+    """
+    Discover the workspace root by walking parents from ``start_dir``.
+    """
     start = start_dir.resolve()
     candidates = (start, *start.parents)
     for candidate in candidates:
@@ -21,6 +24,9 @@ def _find_repo_root(start_dir: Path) -> Path | None:
 
 
 def _workspace_source_roots(repo_root: Path | None) -> list[Path]:
+    """
+    Return package ``src`` roots under the workspace.
+    """
     if repo_root is None:
         return []
 
@@ -34,8 +40,13 @@ def _workspace_source_roots(repo_root: Path | None) -> list[Path]:
 
 
 def _build_pythonpath(spec: TargetSpec) -> str:
+    """
+    Build the effective ``PYTHONPATH`` for a resolved target.
+    """
     roots = spec.meta.get("source_roots") or ["src"]
-    if not isinstance(roots, list) or not all(isinstance(x, str) for x in roots):
+    if not isinstance(roots, list) or not all(
+        isinstance(x, str) for x in roots
+    ):
         roots = ["src"]
 
     abs_roots = [(spec.root_dir / r).resolve() for r in roots]
@@ -76,6 +87,9 @@ class ExecutionEnvironmentBuilder:
     """
 
     def build(self, spec: TargetSpec) -> dict[str, str]:
+        """
+        Build the environment variables for executing one resolved target.
+        """
         env = os.environ.copy()
         env["PYTHONPATH"] = _build_pythonpath(spec)
 
@@ -86,6 +100,9 @@ class ExecutionEnvironmentBuilder:
         return env
 
     def _resolve_settings_path(self, spec: TargetSpec) -> Path | None:
+        """
+        Resolve the game settings file to inject into the child process env.
+        """
         if spec.kind != "game":
             return None
 

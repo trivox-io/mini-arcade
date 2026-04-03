@@ -9,7 +9,7 @@ from mini_arcade.cli.argument_type import ArgumentType
 
 class PassThroughArgument(ArgumentType):
     """
-    Custom argument type for pass-through args that forwards all remaining args as a list.
+    Argument definition for forwarding remaining args to a child entrypoint.
     """
 
     def __init__(self):
@@ -24,3 +24,6 @@ class PassThroughArgument(ArgumentType):
             nargs="...",
             default=[],
         )
+
+
+__all__ = ["PassThroughArgument"]

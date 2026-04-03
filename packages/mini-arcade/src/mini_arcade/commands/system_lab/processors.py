@@ -7,7 +7,6 @@ from __future__ import annotations
 import importlib
 import json
 import sys
-from dataclasses import dataclass
 from typing import Any
 
 from mini_arcade.cli.base_command_processor import BaseCommandProcessor
@@ -24,6 +23,9 @@ class SystemModuleImporter:
     """
 
     def import_modules(self, module_names: list[str]) -> None:
+        """
+        Import and refresh the requested registry modules.
+        """
         for module_name in module_names:
             if module_name in sys.modules:
                 sys.modules.pop(module_name, None)
@@ -35,7 +37,12 @@ class SystemOutputPresenter:
     Handles human-readable and JSON output for the system domain.
     """
 
-    def print_case_list(self, case_names: list[str], *, json_output: bool) -> int:
+    def print_case_list(
+        self, case_names: list[str], *, json_output: bool
+    ) -> int:
+        """
+        Print registered case names in JSON or human-readable form.
+        """
         if json_output:
             print(json.dumps({"cases": case_names}, indent=2))
             return 0
@@ -49,6 +56,16 @@ class SystemOutputPresenter:
         *,
         json_output: bool,
     ) -> int:
+        """
+        Print the summary payload from a headless system case execution.
+
+        :param payload: The summary payload to print.
+        :type payload: dict[str, Any]
+        :param json_output: Whether to print the payload as JSON or in a human-readable format.
+        :type json_output: bool
+        :return: The exit code to return from the command.
+        :rtype: int
+        """
         if json_output:
             print(json.dumps(payload, indent=2, sort_keys=True, default=str))
             return 0
@@ -66,6 +83,15 @@ class SystemCaseResolver:
         self.kwargs = kwargs
 
     def resolve_case_name(self) -> str:
+        """
+        Resolve the name of the system case to execute based on the provided
+        command-line arguments.
+
+        :return: The name of the system case to execute.
+        :rtype: str
+        :raises CommandException: If the case cannot be resolved due to missing
+            or conflicting arguments.
+        """
         if self.kwargs.case is not None:
             return self.kwargs.case
 
@@ -111,6 +137,11 @@ class SystemCaseExecutor:
                 f"{SystemCaseResolver(self.kwargs).resolve_case_name()}"
             )
 
+        # Justification: Disabling this warning because the visual runner is a separate process
+        # that needs to be launched with a command string, and f-strings are the most
+        # straightforward way to construct that command. The visual runner is also a
+        # trusted internal component, so the risk of code injection is minimal in this context.
+        # pylint: disable=import-outside-toplevel
         from .visual_runner import run_system_lab_visual_case
 
         return run_system_lab_visual_case(
@@ -151,6 +182,15 @@ class SystemCaseExecutor:
         return payload
 
     def execute(self) -> int | dict[str, Any]:
+        """
+        Execute the resolved system case and return either an exit code or a
+        summary payload.
+
+        :return: Either an exit code or a summary payload.
+        :rtype: int | dict[str, Any]
+        :raises CommandException: If execution fails due to misconfiguration or
+            runtime errors.
+        """
         case = self._resolve_case()
         if self.kwargs.visual:
             return self._run_visual(case)

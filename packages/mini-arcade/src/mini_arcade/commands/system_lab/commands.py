@@ -57,14 +57,20 @@ class SystemCommand(BaseCommand):
         ArgumentType(
             "visual",
             bool,
-            "Launch the case's interactive visual runner instead of stepping it headlessly.",
+            (
+                "Launch the case's interactive visual runner "
+                "instead of stepping it headlessly."
+            ),
             required=False,
             default=False,
         ),
         ArgumentType(
             "backend",
             str,
-            "Override the visual runner backend provider (for example: pygame or native).",
+            (
+                "Override the visual runner backend provider "
+                "(for example: pygame or native)."
+            ),
             required=False,
             default=None,
         ),
@@ -134,7 +140,10 @@ class ScaffoldSystemCommand(BaseCommand):
         ArgumentType(
             "destination",
             str,
-            "Parent directory where the new experiment folder will be created. Defaults to ./experiments.",
+            (
+                "Parent directory where the new experiment folder "
+                "will be created. Defaults to ./experiments."
+            ),
             required=False,
             default="experiments",
         ),

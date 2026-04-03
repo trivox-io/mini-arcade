@@ -42,6 +42,9 @@ def _load_tool_table(project_dir: Path) -> dict[str, Any]:
 
 
 def load_game_meta(game_dir: Path) -> dict[str, Any]:
+    """
+    Load the ``[tool.mini-arcade.game]`` metadata for one game directory.
+    """
     mini_arcade_tool = _load_tool_table(game_dir)
     game = mini_arcade_tool.get("game")
     if not isinstance(game, dict):
@@ -59,6 +62,9 @@ class GameLocator(BaseTargetLocator):
     kind = "game"
 
     def find_dir(self, parent_dir: Path, target_id: str) -> Path:
+        """
+        Find one game directory under the resolved parent directory.
+        """
         target_dir = find_game_dir_under(parent_dir, target_id)
         if target_dir is None:
             raise ValueError(

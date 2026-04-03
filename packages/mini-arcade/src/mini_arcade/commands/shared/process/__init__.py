@@ -1,3 +1,7 @@
+"""
+Public shared subprocess helpers used by command processors.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -14,6 +18,9 @@ def run_child_process(
     cwd: Path,
     env: dict[str, str],
 ) -> tuple[int, bool]:
+    """
+    Run one child process and return ``(exit_code, interrupted)``.
+    """
     request = ExecutionRequest(
         cmd=cmd,
         cwd=cwd,

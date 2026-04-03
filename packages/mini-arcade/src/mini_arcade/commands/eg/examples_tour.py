@@ -30,10 +30,7 @@ ROADMAP_EXAMPLE_ORDER: tuple[str, ...] = (
 
 class ExampleTourDiscoverer:
     """
-    Discovers example ids for the tour command based on the presence of main.py files.
-
-    :param examples_parent: The parent directory where examples are located.
-    :type examples_parent: Path
+    Discover example ids for the tour command from ``main.py`` files.
     """
 
     def __init__(self, examples_parent: Path):
@@ -56,15 +53,12 @@ class ExampleTourDiscoverer:
 
     def discover_example_ids(self) -> list[str]:
         """
-        Discovers example ids by looking for main.py files under the examples parent directory.
-
-        :return: A list of example ids discovered.
-        :rtype: list[str]
-        :raises ValueError: If the examples parent directory does not exist or is not a directory.
+        Discover example ids under the configured examples parent directory.
         """
         if not self.base.exists() or not self.base.is_dir():
             raise ValueError(
-                f"Examples parent directory does not exist or is not a directory: {self.base}"
+                "Examples parent directory does not exist or is not a "
+                f"directory: {self.base}"
             )
 
         ids: list[str] = []
@@ -83,31 +77,21 @@ class ExampleTourDiscoverer:
 
 class ExampleTourBus:
     """
-    Simple event bus for the examples tour, allowing subscribers to listen to tour events.
+    Minimal event bus used by the examples tour reporter flow.
     """
 
     def __init__(self):
         self._subscribers: dict[str, list[Callable[..., None]]] = {}
 
-    def on(self, event_type: str, handler: Callable[..., None]):
+    def on(self, event_type: str, handler: Callable[..., None]) -> None:
         """
-        Subscribes a handler to a specific event type.
-
-        :param event_type: The type of event to subscribe to.
-        :type event_type: str
-        :param handler: The function to call when the event is emitted.
-        :type handler: Callable[..., None]
+        Subscribe one handler to one event type.
         """
         self._subscribers.setdefault(event_type, []).append(handler)
 
-    def emit(self, event_type: str, **kwargs):
+    def emit(self, event_type: str, **kwargs) -> None:
         """
-        Emits an event to all subscribed handlers.
-
-        :param event_type: The type of event to emit.
-        :type event_type: str
-        :param kwargs: Additional keyword arguments to pass to the handlers.
-        :type kwargs: dict
+        Emit one event to all subscribed handlers.
         """
         for handler in self._subscribers.get(event_type, []):
             handler(**kwargs)
@@ -115,13 +99,7 @@ class ExampleTourBus:
 
 class TourEvents:
     """
-    Defines event types for the examples tour.
-
-    :cvar SESSION_STARTED: Emitted when the tour session starts, with total examples and their ids.
-    :cvar EXAMPLE_STARTED: Emitted when an example starts, with index, total, example_id, and command.
-    :cvar EXAMPLE_FINISHED: Emitted when an example finishes, with index, total, example_id, and exit_code.
-    :cvar EXAMPLE_FAILED: Emitted when an example fails, with index, total, example_id, and error message.
-    :cvar SESSION_FINISHED: Emitted when the tour session finishes, with total examples, passed count, failed count, and whether it was stopped early.
+    Event names used by the examples tour.
     """
 
     SESSION_STARTED = "session_started"
@@ -133,10 +111,7 @@ class TourEvents:
 
 class ConsoleTourReporter:
     """
-    Example tour reporter that listens to tour events and prints updates to the console.
-
-    :param bus: The event bus to listen to.
-    :type bus: ExampleTourBus
+    Print tour progress by listening to bus events.
     """
 
     def __init__(self, bus: ExampleTourBus):
@@ -146,7 +121,7 @@ class ConsoleTourReporter:
         bus.on(TourEvents.EXAMPLE_FAILED, self._on_example_failed)
         bus.on(TourEvents.SESSION_FINISHED, self._on_session_finished)
 
-    def _on_session_started(self, *, total: int, examples: list[str]):
+    def _on_session_started(self, *, total: int, examples: list[str]) -> None:
         print(f"Starting examples tour ({total} examples).")
         if examples:
             print("Order:")
@@ -160,7 +135,7 @@ class ConsoleTourReporter:
         total: int,
         example_id: str,
         cmd: str,
-    ):
+    ) -> None:
         print(f"[{index}/{total}] Starting: {example_id}")
         print(f"cmd={' '.join(cmd.split()) if isinstance(cmd, str) else cmd}")
 
@@ -171,7 +146,7 @@ class ConsoleTourReporter:
         total: int,
         example_id: str,
         exit_code: int,
-    ):
+    ) -> None:
         print(f"[{index}/{total}] Finished: {example_id} (exit={exit_code})")
 
     def _on_example_failed(
@@ -181,7 +156,7 @@ class ConsoleTourReporter:
         total: int,
         example_id: str,
         error: str,
-    ):
+    ) -> None:
         print(f"[{index}/{total}] Failed: {example_id} ({error})")
 
     def _on_session_finished(
@@ -191,7 +166,7 @@ class ConsoleTourReporter:
         passed: int,
         failed: int,
         stopped: bool,
-    ):
+    ) -> None:
         status = "stopped early" if stopped else "completed"
         print(
             f"Examples tour {status}: total={total}, passed={passed}, "
@@ -202,12 +177,7 @@ class ConsoleTourReporter:
 @dataclass(frozen=True)
 class ExampleTourContext:
     """
-    Context information for an example being run in the tour.
-
-    :ivar parent_dir (Path | None): The parent directory where the example is located.
-    :ivar example_id (str | None): The id of the example being run.
-    :ivar index (int | None): The index of the example in the tour (1-based).
-    :ivar total (int | None): The total number of examples in the tour.
+    Context for one example execution within a tour.
     """
 
     parent_dir: Path | None = None

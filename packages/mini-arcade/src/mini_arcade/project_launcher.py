@@ -21,6 +21,10 @@ def run_project_entrypoint(
 
     args = list(sys.argv[1:] if argv is None else argv)
     if args:
+        # Justification: This import must stay lazy so project-local manage.py
+        # can dispatch to the shared CLI without importing the local game app
+        # and its runtime dependencies first.
+        # pylint: disable=import-outside-toplevel
         from mini_arcade.main import main as cli_main
 
         cli_main(args)

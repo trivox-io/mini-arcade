@@ -7,7 +7,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Union
 
-
 SystemKwargsType = Union["SystemKwargs", "SystemScaffoldKwargs"]
 
 
@@ -27,6 +26,9 @@ class SystemKwargs:
 
     @staticmethod
     def from_dict(kwargs: dict) -> SystemKwargs:
+        """
+        Build ``SystemKwargs`` from parsed CLI kwargs.
+        """
         modules = kwargs.get("module") or []
         return SystemKwargs(
             module=list(modules),
@@ -54,6 +56,9 @@ class SystemScaffoldKwargs:
 
     @staticmethod
     def from_dict(kwargs: dict) -> SystemScaffoldKwargs:
+        """
+        Build ``SystemScaffoldKwargs`` from parsed CLI kwargs.
+        """
         return SystemScaffoldKwargs(
             id=kwargs["id"],
             case_name=kwargs.get("case_name"),

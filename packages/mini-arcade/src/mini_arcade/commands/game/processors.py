@@ -45,6 +45,8 @@ class BaseGameProcessor(BaseCommandProcessor):
     Base processor for game commands, providing shared utilities.
     """
 
+    kwargs: GameKwargs
+
     def __init__(self):
         self._target_resolver = TargetResolver(self.kwargs)
         self._env_builder = ExecutionEnvironmentBuilder()

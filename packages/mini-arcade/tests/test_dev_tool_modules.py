@@ -75,7 +75,12 @@ def test_cli_parses_runnable_group_commands() -> None:
     eg_args = cli.parse_args(["eg", "--id", "scene/minimal_scene"])
     game_args = cli.parse_args(["game", "--name", "pong"])
     system_args = cli.parse_args(
-        ["system", "--module", "experiments.procedural_fire_lab.system_lab_case", "--list"]
+        [
+            "system",
+            "--module",
+            "experiments.procedural_fire_lab.system_lab_case",
+            "--list",
+        ]
     )
 
     assert eg_args.id == "scene/minimal_scene"
@@ -265,7 +270,9 @@ class CounterCase(BaseSystemLabCase):
     monkeypatch.syspath_prepend(str(tmp_path))
 
     assert (
-        SystemRunnerProcessor(module=["labcases.sample_cases"], list=True).run()
+        SystemRunnerProcessor(
+            module=["labcases.sample_cases"], list=True
+        ).run()
         == 0
     )
     assert "counter_case" in capsys.readouterr().out

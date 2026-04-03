@@ -30,9 +30,7 @@ class TargetResolver:
             if repo_root is not None
             else (Path.cwd() / "examples" / "catalog").resolve()
         )
-        self._locator = ExampleLocator(
-            dev_default_parent_dir=default_parent
-        )
+        self._locator = ExampleLocator(dev_default_parent_dir=default_parent)
 
     @property
     def parent_dir(self) -> Path:

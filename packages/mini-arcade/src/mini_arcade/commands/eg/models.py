@@ -1,5 +1,5 @@
 """
-Example processors aligned with the stable target architecture.
+Example command models aligned with the stable target architecture.
 """
 
 from __future__ import annotations
@@ -20,11 +20,9 @@ class ExampleKwargs:
     """
     Keyword arguments for the example command.
 
-    :ivar id (str): The example id or folder path (e.g. "config/engine_config_basics").
-    :ivar examples_dir (str | None): Optional parent folder where examples live
-        (defaults to "./examples/catalog" in dev).
-    :ivar pass_through (list[str]): List of additional args to forward to the
-        example entrypoint.
+    :ivar id (str): The example id or folder path.
+    :ivar examples_dir (str | None): Optional parent folder where examples live.
+    :ivar pass_through (list[str]): Additional args forwarded to the entrypoint.
     """
 
     id: str
@@ -32,14 +30,9 @@ class ExampleKwargs:
     pass_through: list[str]
 
     @staticmethod
-    def from_dict(kwargs: dict) -> ExampleKwargs:
+    def from_dict(kwargs: dict) -> "ExampleKwargs":
         """
-        Creates an ExampleKwargs instance from a dictionary of keyword arguments.
-
-        :param kwargs: Dictionary of keyword arguments.
-        :type kwargs: dict
-        :return: An ExampleKwargs instance.
-        :rtype: ExampleKwargs
+        Build ``ExampleKwargs`` from parsed CLI kwargs.
         """
         return ExampleKwargs(
             id=kwargs["id"],
@@ -54,19 +47,6 @@ class ExampleKwargs:
 class ExampleTourKwargs:
     """
     Keyword arguments for the example tour command.
-
-    :ivar examples_dir (str | None): Optional parent folder where examples live
-        (defaults to "./examples/catalog" in dev).
-    :ivar group (str | None): Optional group id to filter examples
-        (e.g. "config", "scene", "window").
-    :ivar from_example (str | None): Optional example id to start the tour from.
-    :ivar to_example (str | None): Optional example id to end the tour at.
-    :ivar stop_on_fail (bool): Whether to stop the tour if an example fails
-        (defaults to False).
-    :ivar list_only (bool): Whether to only list the examples without running them
-        (defaults to False).
-    :ivar pass_through (list[str]): List of additional args to forward to the
-        example entrypoint.
     """
 
     examples_dir: str | None
@@ -78,14 +58,9 @@ class ExampleTourKwargs:
     pass_through: list[str]
 
     @staticmethod
-    def from_dict(kwargs: dict) -> ExampleTourKwargs:
+    def from_dict(kwargs: dict) -> "ExampleTourKwargs":
         """
-        Creates an ExampleTourKwargs instance from a dictionary of keyword arguments.
-
-        :param kwargs: Dictionary of keyword arguments.
-        :type kwargs: dict
-        :return: An ExampleTourKwargs instance.
-        :rtype: ExampleTourKwargs
+        Build ``ExampleTourKwargs`` from parsed CLI kwargs.
         """
         return ExampleTourKwargs(
             examples_dir=kwargs.get("examples_dir"),

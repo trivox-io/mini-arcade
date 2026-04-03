@@ -70,6 +70,9 @@ class GameScaffoldTemplateBuilder:
     """
 
     def build(self, spec: GameScaffoldSpec) -> dict[Path, str]:
+        """
+        Build the generated file map for one game scaffold.
+        """
         game_id = spec.game_id
         package = spec.package
         title = spec.title
@@ -514,7 +517,9 @@ class GameScaffoldProcessor(BaseScaffoldProcessor[GameScaffoldSpec]):
         )
         title = (self.kwargs.title or _default_title(game_id)).strip()
         target_dir = (
-            Path(self.kwargs.destination or GAMES_DIRNAME).expanduser().resolve()
+            Path(self.kwargs.destination or GAMES_DIRNAME)
+            .expanduser()
+            .resolve()
             / game_id
         )
         dependency_series = _dependency_series(APP.version)

@@ -1,5 +1,5 @@
 """
-Defines the data models for the execution request and result of a command processor.
+Data models for shared subprocess execution helpers.
 """
 
 from __future__ import annotations
@@ -10,6 +10,10 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class ExecutionRequest:
+    """
+    One subprocess execution request.
+    """
+
     cmd: list[str]
     cwd: Path
     env: dict[str, str]
@@ -17,5 +21,9 @@ class ExecutionRequest:
 
 @dataclass(frozen=True)
 class ExecutionResult:
+    """
+    One subprocess execution result.
+    """
+
     exit_code: int
     interrupted: bool = False
