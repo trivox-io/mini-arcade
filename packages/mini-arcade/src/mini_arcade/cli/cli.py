@@ -7,6 +7,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import traceback
 from dataclasses import dataclass
 from typing import Any, Iterable, List, Optional, Type
 
@@ -14,6 +15,7 @@ from mini_arcade.cli.argument_type import ArgumentType, coerce_type
 from mini_arcade.cli.base_command import BaseCommand
 from mini_arcade.cli.exceptions import CommandException
 from mini_arcade.cli.registry import CommandRegistry
+from mini_arcade.utils.logging import logger
 
 
 @dataclass
@@ -281,6 +283,7 @@ class BaseCLIApp:
     """
 
     _commands: dict = {}
+    _meta_prefix = "_cli_"
 
     def __init__(self, config: CLIConfig):
         """
@@ -288,6 +291,7 @@ class BaseCLIApp:
         :type gui_callback: Optional[callable]
         """
         self.config = config
+        self._commands = {}
 
         self.parser = self._create_main_parser()
         self.args: Optional[argparse.Namespace] = None
@@ -325,14 +329,165 @@ class BaseCLIApp:
         """
         return parser.add_subparsers(dest="command", help="Available commands")
 
-    def _register_command(self, command_cls: Type[BaseCommand]):
+    def _register_command(
+        self,
+        command_id: str,
+        command_cls: Type[BaseCommand],
+    ):
         """
         Register a command class to the CLI application.
+
+        :param command_id: The registry key for the command.
+        :type command_id: str
 
         :param command_cls: The command class to register.
         :type command_cls: Type[BaseCommand]
         """
-        self._commands[command_cls.name] = command_cls
+        self._commands[command_id] = command_cls
+
+    def _visible_command_name(
+        self,
+        command_id: str,
+        command_cls: Type[BaseCommand],
+    ) -> str:
+        """
+        Return the CLI-visible name for a command.
+
+        This allows the registry key to stay globally unique while the command
+        name can be reused under different parents.
+
+        :param command_id: The registry key for the command.
+        :type command_id: str
+
+        :param command_cls: The command class.
+        :type command_cls: Type[BaseCommand]
+
+        :return: CLI-visible name for the parser.
+        :rtype: str
+        """
+        return command_cls.name or command_id
+
+    def _command_summary(
+        self,
+        command_cls: Type[BaseCommand],
+    ) -> str | None:
+        """
+        Resolve the short help summary for a command.
+
+        :param command_cls: The command class.
+        :type command_cls: Type[BaseCommand]
+
+        :return: Summary text for help output.
+        :rtype: Optional[str]
+        """
+        doc = (command_cls.__doc__ or "").strip()
+        if command_cls.summary:
+            return command_cls.summary
+        if doc:
+            return doc.splitlines()[0]
+        return None
+
+    def _subcommand_dest(self, command_id: str) -> str:
+        """
+        Build a private argparse destination name for nested subcommands.
+
+        :param command_id: The registry key for the parent command.
+        :type command_id: str
+
+        :return: argparse destination key.
+        :rtype: str
+        """
+        normalized = command_id.replace("-", "_")
+        return f"{self._meta_prefix}subcommand_{normalized}"
+
+    def _validate_command_tree(self) -> None:
+        """
+        Validate nested command relationships before building the parser tree.
+
+        :raises KeyError: If a child references an unknown parent.
+        :raises ValueError: If a child references a non-group parent.
+        """
+        for command_id in CommandRegistry.names():
+            command_cls = CommandRegistry.get(command_id)
+            parent = getattr(command_cls, "parent", None)
+            if parent is None:
+                continue
+
+            parent_id = CommandRegistry.resolve_name(parent)
+            if not CommandRegistry.contains(parent_id):
+                raise KeyError(
+                    f"Command '{command_id}' references unknown parent '{parent}'"
+                )
+
+            parent_cls = CommandRegistry.get(parent_id)
+            if not getattr(parent_cls, "is_group", False):
+                raise ValueError(
+                    f"Command '{command_id}' parent '{parent_id}' must set is_group=True"
+                )
+
+    def _add_command_parser(
+        self,
+        subparsers: argparse._SubParsersAction,
+        command_id: str,
+        ancestry: tuple[str, ...] = (),
+    ) -> None:
+        """
+        Add one command parser and recursively attach any child commands.
+
+        :param subparsers: The subparsers collection to attach to.
+        :type subparsers: argparse._SubParsersAction
+
+        :param command_id: The registry key for the command.
+        :type command_id: str
+
+        :param ancestry: Registry path used to detect parent cycles.
+        :type ancestry: tuple[str, ...]
+        """
+        if command_id in ancestry:
+            cycle = " -> ".join((*ancestry, command_id))
+            raise ValueError(f"Detected command parent cycle: {cycle}")
+
+        command_cls = CommandRegistry.get(command_id)
+        if command_id in self._commands:
+            return
+
+        doc = (command_cls.__doc__ or "").strip()
+        summary = self._command_summary(command_cls)
+        command_parser = subparsers.add_parser(
+            self._visible_command_name(command_id, command_cls),
+            help=summary,
+            description=doc or summary,
+            epilog=command_cls.epilog,
+            aliases=getattr(command_cls, "aliases", ()),
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+        )
+        command_parser.set_defaults(
+            **{f"{self._meta_prefix}parser": command_parser}
+        )
+
+        child_ids = CommandRegistry.child_names(command_id)
+        self.define_command_arguments(command_parser, command_cls)
+        command_parser.set_defaults(
+            **{f"{self._meta_prefix}command_cls": command_cls}
+        )
+
+        if getattr(command_cls, "is_group", False):
+            group_subparsers = command_parser.add_subparsers(
+                dest=self._subcommand_dest(command_id),
+                help="Available commands",
+            )
+            for child_id in child_ids:
+                self._add_command_parser(
+                    group_subparsers,
+                    child_id,
+                    ancestry=(*ancestry, command_id),
+                )
+        elif child_ids:
+            raise ValueError(
+                f"Command '{command_id}' has child commands but is_group is False"
+            )
+
+        self._register_command(command_id, command_cls)
 
     def add_custom_commands(self, subparsers: argparse._SubParsersAction):
         """
@@ -341,28 +496,9 @@ class BaseCLIApp:
         :param subparsers: The subparsers for the main parser.
         :type subparsers: argparse._SubParsersAction
         """
-        for command_name in CommandRegistry.names():
-            command_cls = CommandRegistry.get(command_name)
-            if command_cls.name in self._commands:
-                continue
-
-            # ---- description/summary handling ----
-            doc = (command_cls.__doc__ or "").strip()
-
-            summary = command_cls.summary or (
-                doc.splitlines()[0] if doc else None
-            )
-
-            command_parser = subparsers.add_parser(
-                command_cls.name,
-                help=summary,
-                description=doc or summary,
-                epilog=command_cls.epilog,
-                aliases=getattr(command_cls, "aliases", ()),
-                formatter_class=argparse.RawDescriptionHelpFormatter,
-            )
-            self.define_command_arguments(command_parser, command_cls)
-            self._register_command(command_cls)
+        self._validate_command_tree()
+        for command_id in CommandRegistry.root_names():
+            self._add_command_parser(subparsers, command_id)
 
     def _get_kwargs_for_command(self, arg: ArgumentType):
         default = arg.default
@@ -450,21 +586,27 @@ class BaseCLIApp:
         :param run_callback: The callback function to run the command.
         :type run_callback: callable
         """
-        if not getattr(args, "command", None):
-            self.parser.print_help()
-            return 1
-
-        command_cls = CommandRegistry.get(args.command)
+        logger.debug(f"Running command with args: {args}")
+        parser = getattr(args, f"{self._meta_prefix}parser", self.parser)
+        command_cls = getattr(
+            args,
+            f"{self._meta_prefix}command_cls",
+            None,
+        )
         if not command_cls:
-            self.parser.print_help()
+            logger.debug("No runnable command resolved, printing help.")
+            parser.print_help()
             return 1
 
-        command_instance: BaseCommand = command_cls()
         cmd_args = vars(args).copy()
-        cmd_args.pop("command", None)
+        command_instance: BaseCommand = command_cls()
+        for key in list(cmd_args):
+            if key == "command" or key.startswith(self._meta_prefix):
+                cmd_args.pop(key, None)
         try:
+            logger.debug(f"Validating command arguments: {cmd_args}")
             command_instance.validate(**cmd_args)
             return command_instance.execute(**cmd_args) or 0
         except CommandException as e:
-            # logger.error(f"Error: {e}", file=sys.stderr)
+            logger.exception(traceback.format_exc())
             return e.exit_code

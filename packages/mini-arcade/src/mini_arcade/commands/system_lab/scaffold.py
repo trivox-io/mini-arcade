@@ -1,5 +1,5 @@
 """
-Processor for scaffolding minimal reusable system lab experiments.
+System scaffold implementation owned by the system command domain.
 """
 
 from __future__ import annotations
@@ -8,15 +8,20 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from mini_arcade.cli.base_command_processor import BaseCommandProcessor
 from mini_arcade.cli.exceptions import CommandException
+from mini_arcade.commands.shared.scaffold import (
+    BaseScaffoldProcessor,
+    BaseScaffoldSpec,
+)
+
+from .models import SystemScaffoldKwargs
 
 
-def _normalize_lab_id(lab_id: str) -> str:
-    normalized = str(lab_id).strip().lower().replace("-", "_")
+def _normalize_system_id(system_id: str) -> str:
+    normalized = str(system_id).strip().lower().replace("-", "_")
     if not re.fullmatch(r"[a-z][a-z0-9_]*", normalized):
         raise CommandException(
-            "lab-id must start with a letter and use only letters, "
+            "id must start with a letter and use only letters, "
             "numbers, hyphens, or underscores"
         )
     return normalized
@@ -32,38 +37,42 @@ def _normalize_case_name(case_name: str) -> str:
     return normalized
 
 
-def _default_title(lab_id: str) -> str:
-    return lab_id.replace("_", " ").title()
+def _default_title(system_id: str) -> str:
+    return system_id.replace("_", " ").title()
 
 
-def _class_name_from_lab_id(lab_id: str) -> str:
-    return "".join(part.capitalize() for part in lab_id.split("_"))
+def _class_name_from_system_id(system_id: str) -> str:
+    return "".join(part.capitalize() for part in system_id.split("_"))
 
 
 @dataclass(frozen=True)
-class SystemLabScaffoldSpec:
+class SystemScaffoldSpec(BaseScaffoldSpec):
     """
-    Specification for generating a minimal system lab scaffold.
+    Specification for generating a minimal system experiment scaffold.
     """
 
-    lab_id: str
+    system_id: str
     case_name: str
     title: str
-    target_dir: Path
     class_name: str
 
 
-def _template_files(spec: SystemLabScaffoldSpec) -> dict[Path, str]:
-    project_dir = spec.target_dir
-    case_name = spec.case_name
-    title = spec.title
-    class_name = spec.class_name
+class SystemScaffoldTemplateBuilder:
+    """
+    Builds the generated file set for a system scaffold.
+    """
 
-    return {
-        project_dir
-        / "__init__.py": '"""\nGenerated system lab experiment.\n"""\n',
-        project_dir
-        / "manage.py": f"""\"\"\"Launch the {title} experiment directly.\"\"\"
+    def build(self, spec: SystemScaffoldSpec) -> dict[Path, str]:
+        project_dir = spec.target_dir
+        case_name = spec.case_name
+        title = spec.title
+        class_name = spec.class_name
+
+        return {
+            project_dir
+            / "__init__.py": '"""\nGenerated system experiment.\n"""\n',
+            project_dir
+            / "manage.py": f"""\"\"\"Launch the {title} experiment directly.\"\"\"
 
 from __future__ import annotations
 
@@ -106,7 +115,7 @@ _bootstrap_paths()
 
 # Justification: local path bootstrap must run before importing mini_arcade.
 # pylint: disable=wrong-import-position
-from mini_arcade.commands.system_lab.processors import SystemLabProcessor
+from mini_arcade.commands.system_lab.processors import SystemRunnerProcessor
 # pylint: enable=wrong-import-position
 
 
@@ -125,7 +134,7 @@ def _parse_args() -> argparse.Namespace:
 if __name__ == "__main__":
     args = _parse_args()
     raise SystemExit(
-        SystemLabProcessor(
+        SystemRunnerProcessor(
             module=["system_lab_case"],
             case="{case_name}",
             visual=True,
@@ -133,8 +142,8 @@ if __name__ == "__main__":
         ).run()
     )
 """,
-        project_dir
-        / "system_lab_case.py": f"""\"\"\"Minimal reusable system lab scaffold for {title}.\"\"\"
+            project_dir
+            / "system_lab_case.py": f"""\"\"\"Minimal reusable system scaffold for {title}.\"\"\"
 
 from __future__ import annotations
 
@@ -190,7 +199,6 @@ class {class_name}System(BaseSystem[{class_name}Context]):
             color=(150, 166, 188),
             font_size=16,
         )
-        # TODO: add your simulation/update logic here.
 
 
 @SystemLabRegistry.implementation("{case_name}")
@@ -209,93 +217,76 @@ class {class_name}Case(BaseSystemLabCase):
             commands=CommandQueue(),
         )
 """,
-    }
+        }
 
 
-@dataclass(init=False)
-class SystemLabScaffoldProcessor(BaseCommandProcessor):
+class SystemScaffoldProcessor(BaseScaffoldProcessor[SystemScaffoldSpec]):
     """
-    Processor for creating minimal reusable system lab experiments.
+    Processor for creating minimal reusable system experiments.
     """
-
-    lab_id: str
-    case_name: str | None = None
-    title: str | None = None
-    destination: str = "experiments"
-    force: bool = False
-    dry_run: bool = False
 
     def __init__(self, **kwargs):
-        self.lab_id = kwargs.get("lab_id")
-        self.case_name = kwargs.get("case_name")
-        self.title = kwargs.get("title")
-        self.destination = kwargs.get("destination", "experiments")
-        self.force = bool(kwargs.get("force", False))
-        self.dry_run = bool(kwargs.get("dry_run", False))
+        self.kwargs = SystemScaffoldKwargs.from_dict(kwargs)
+        self.force = bool(self.kwargs.force)
+        self.dry_run = bool(self.kwargs.dry_run)
+        self._template_builder = SystemScaffoldTemplateBuilder()
 
-    def _build_spec(self) -> SystemLabScaffoldSpec:
-        lab_id = _normalize_lab_id(self.lab_id)
-        case_name = _normalize_case_name(self.case_name or lab_id)
-        title = (self.title or _default_title(lab_id)).strip()
+    def _build_spec(self) -> SystemScaffoldSpec:
+        system_id = _normalize_system_id(self.kwargs.id)
+        case_name = _normalize_case_name(self.kwargs.case_name or system_id)
+        title = (self.kwargs.title or _default_title(system_id)).strip()
         if not title:
             raise CommandException("title must not be empty")
 
-        return SystemLabScaffoldSpec(
-            lab_id=lab_id,
+        return SystemScaffoldSpec(
+            system_id=system_id,
             case_name=case_name,
             title=title,
-            target_dir=Path(self.destination).expanduser().resolve() / lab_id,
-            class_name=_class_name_from_lab_id(lab_id),
+            target_dir=(
+                Path(self.kwargs.destination).expanduser().resolve() / system_id
+            ),
+            class_name=_class_name_from_system_id(system_id),
         )
 
-    def _write_files(self, files: dict[Path, str], *, force: bool) -> None:
-        for path, content in files.items():
-            path.parent.mkdir(parents=True, exist_ok=True)
-            if path.exists() and not force:
-                raise CommandException(
-                    f"Refusing to overwrite existing file: {path}"
-                )
-            path.write_text(content, encoding="utf-8")
+    def _template_files(
+        self,
+        spec: SystemScaffoldSpec,
+    ) -> dict[Path, str]:
+        return self._template_builder.build(spec)
 
-    def run(self) -> int:
-        spec = self._build_spec()
-        files = _template_files(spec)
-
-        if spec.target_dir.exists() and not self.force and not self.dry_run:
-            raise CommandException(
-                f"Target directory already exists: {spec.target_dir}"
-            )
-
-        if self.dry_run:
-            print(f"Scaffold target: {spec.target_dir}")
-            for path in sorted(files):
-                print(path.relative_to(spec.target_dir.parent))
-            print(
-                "Run with: "
-                f"python .\\manage.py system-lab --module "
-                f"experiments.{spec.lab_id}.system_lab_case --visual"
-            )
-            print(
-                "Swap backend with: "
-                f"python .\\manage.py system-lab --module "
-                f"experiments.{spec.lab_id}.system_lab_case --visual "
-                "--backend native"
-            )
-            return 0
-
-        spec.target_dir.mkdir(parents=True, exist_ok=True)
-        self._write_files(files, force=self.force)
-        print(f"Created system lab scaffold at {spec.target_dir}")
-        print(
+    def _run_help(self, spec: SystemScaffoldSpec) -> str:
+        return (
             "Run with: "
-            f"python .\\manage.py system-lab --module "
-            f"experiments.{spec.lab_id}.system_lab_case --visual"
+            f"python .\\manage.py system --module "
+            f"experiments.{spec.system_id}.system_lab_case --visual"
         )
-        print(
+
+    def _backend_help(self, spec: SystemScaffoldSpec) -> str:
+        return (
             "Swap backend with: "
-            f"python .\\manage.py system-lab --module "
-            f"experiments.{spec.lab_id}.system_lab_case --visual "
+            f"python .\\manage.py system --module "
+            f"experiments.{spec.system_id}.system_lab_case --visual "
             "--backend native"
         )
-        print(f"Or: python .\\experiments\\{spec.lab_id}\\manage.py")
-        return 0
+
+    def _dry_run_messages(self, spec: SystemScaffoldSpec) -> list[str]:
+        return [
+            self._run_help(spec),
+            self._backend_help(spec),
+        ]
+
+    def _success_messages(self, spec: SystemScaffoldSpec) -> list[str]:
+        return [
+            self._run_help(spec),
+            self._backend_help(spec),
+            f"Or: python .\\experiments\\{spec.system_id}\\manage.py",
+        ]
+
+    def _created_message(self, spec: SystemScaffoldSpec) -> str:
+        return f"Created system scaffold at {spec.target_dir}"
+
+
+__all__ = [
+    "SystemScaffoldProcessor",
+    "SystemScaffoldSpec",
+]

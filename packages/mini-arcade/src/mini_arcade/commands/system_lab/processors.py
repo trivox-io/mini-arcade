@@ -1,5 +1,5 @@
 """
-Processor for isolated system lab cases.
+Processors for isolated system cases.
 """
 
 from __future__ import annotations
@@ -7,79 +7,76 @@ from __future__ import annotations
 import importlib
 import json
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from mini_arcade.cli.base_command_processor import BaseCommandProcessor
 from mini_arcade.cli.exceptions import CommandException
 
-from .registry import SystemLabRegistry
+from .models import SystemKwargs
+from .registry import BaseSystemLabCase, SystemLabRegistry
+from .scaffold import SystemScaffoldProcessor
 
 
-def _import_case_modules(module_names: list[str]) -> None:
-    for module_name in module_names:
-        if module_name in sys.modules:
-            sys.modules.pop(module_name, None)
-        importlib.import_module(module_name)
-
-
-@dataclass(init=False)
-class SystemLabProcessor(BaseCommandProcessor):
+class SystemModuleImporter:
     """
-    Command processor for running isolated system lab cases.
-
-    :ivar module (list[str]): List of registry module names to import before listing or
-        running cases.
-    :ivar case (str | None): Registered system lab case name to execute. If not provided,
-        the processor will attempt to infer the case to run based on the number of registered
-        cases (e.g. if exactly one case is registered, it will be run).
-    :ivar list (bool): Whether to list registered cases and exit instead of running a case.
-    :ivar steps (int): How many times to call system.step(ctx) when running a case (default is 1).
-    :ivar json (bool): Whether to emit machine-readable JSON summary output instead of
-        human-readable text.
-    :ivar visual (bool): Whether to launch the case's interactive visual runner instead of
-        stepping it headlessly.
+    Imports registry modules so system cases register themselves.
     """
 
-    module: list[str] = field(default_factory=list)
-    case: str | None = None
-    list: bool = False
-    steps: int = 1
-    json: bool = False
-    visual: bool = False
-    backend: str | None = None
+    def import_modules(self, module_names: list[str]) -> None:
+        for module_name in module_names:
+            if module_name in sys.modules:
+                sys.modules.pop(module_name, None)
+            importlib.import_module(module_name)
 
-    def __init__(self, **kwargs):
-        modules = kwargs.get("module") or []
-        self.module = list(modules)
-        self.case = kwargs.get("case")
-        self.list = bool(kwargs.get("list", False))
-        self.steps = int(kwargs.get("steps", 1))
-        self.json = bool(kwargs.get("json", False))
-        self.visual = bool(kwargs.get("visual", False))
-        self.backend = kwargs.get("backend")
 
-    def _print_case_list(self) -> int:
-        names = sorted(SystemLabRegistry.names())
-        if self.json:
-            print(json.dumps({"cases": names}, indent=2))
+class SystemOutputPresenter:
+    """
+    Handles human-readable and JSON output for the system domain.
+    """
+
+    def print_case_list(self, case_names: list[str], *, json_output: bool) -> int:
+        if json_output:
+            print(json.dumps({"cases": case_names}, indent=2))
             return 0
-        for name in names:
+        for name in case_names:
             print(name)
         return 0
 
-    def _resolve_case_name(self) -> str:
-        if self.case is not None:
-            return self.case
+    def print_summary(
+        self,
+        payload: dict[str, Any],
+        *,
+        json_output: bool,
+    ) -> int:
+        if json_output:
+            print(json.dumps(payload, indent=2, sort_keys=True, default=str))
+            return 0
+        for key, value in payload.items():
+            print(f"{key}: {value}")
+        return 0
+
+
+class SystemCaseResolver:
+    """
+    Resolves which registered system case should be executed.
+    """
+
+    def __init__(self, kwargs: SystemKwargs):
+        self.kwargs = kwargs
+
+    def resolve_case_name(self) -> str:
+        if self.kwargs.case is not None:
+            return self.kwargs.case
 
         names = sorted(SystemLabRegistry.names())
-        if self.visual and len(names) == 1:
+        if self.kwargs.visual and len(names) == 1:
             return names[0]
 
-        if self.visual and not names:
-            raise CommandException("No system lab cases are registered")
+        if self.kwargs.visual and not names:
+            raise CommandException("No system cases are registered")
 
-        if self.visual:
+        if self.kwargs.visual:
             joined = ", ".join(names)
             raise CommandException(
                 "Missing --case for visual run; available cases: " f"{joined}"
@@ -87,38 +84,48 @@ class SystemLabProcessor(BaseCommandProcessor):
 
         raise CommandException("Missing --case")
 
-    def _run_case(self) -> int:
-        case_name = self._resolve_case_name()
+
+class SystemCaseExecutor:
+    """
+    Executes one resolved system case either headlessly or visually.
+    """
+
+    def __init__(self, kwargs: SystemKwargs):
+        self.kwargs = kwargs
+
+    def _resolve_case(self) -> BaseSystemLabCase:
+        case_name = SystemCaseResolver(self.kwargs).resolve_case_name()
         if not SystemLabRegistry.contains(case_name):
-            raise CommandException(f"Unknown system lab case: {case_name}")
+            raise CommandException(f"Unknown system case: {case_name}")
+        return SystemLabRegistry.instantiate(case_name)
 
-        case = SystemLabRegistry.instantiate(case_name)
-        if self.visual:
-            result = case.run_visual()
-            if result is None:
-                spec = case.build_visual_spec()
-                if spec is None:
-                    raise CommandException(
-                        "System lab case does not provide a visual runner: "
-                        f"{case_name}"
-                    )
-                # pylint: disable=import-outside-toplevel
-                from .visual_runner import run_system_lab_visual_case
-
-                # pylint: enable=import-outside-toplevel
-
-                return run_system_lab_visual_case(
-                    case,
-                    spec,
-                    module_names=tuple(self.module),
-                    backend_provider_override=self.backend,
-                )
+    def _run_visual(self, case: BaseSystemLabCase) -> int:
+        result = case.run_visual()
+        if result is not None:
             return int(result)
 
+        spec = case.build_visual_spec()
+        if spec is None:
+            raise CommandException(
+                "System case does not provide a visual runner: "
+                f"{SystemCaseResolver(self.kwargs).resolve_case_name()}"
+            )
+
+        from .visual_runner import run_system_lab_visual_case
+
+        return run_system_lab_visual_case(
+            case,
+            spec,
+            module_names=tuple(self.kwargs.module),
+            backend_provider_override=self.kwargs.backend,
+        )
+
+    def _run_headless(self, case: BaseSystemLabCase) -> dict[str, Any]:
+        case_name = SystemCaseResolver(self.kwargs).resolve_case_name()
         system = case.build_system()
         ctx = case.build_context()
 
-        for step_index in range(int(self.steps)):
+        for step_index in range(int(self.kwargs.steps)):
             case.before_step(step_index=step_index, system=system, ctx=ctx)
             step = getattr(system, "step", None)
             if not callable(step):
@@ -130,24 +137,73 @@ class SystemLabProcessor(BaseCommandProcessor):
 
         payload: dict[str, Any] = {
             "case": case_name,
-            "steps": int(self.steps),
+            "steps": int(self.kwargs.steps),
             "system": getattr(system, "name", system.__class__.__name__),
             "context_type": ctx.__class__.__name__,
         }
         payload.update(
-            case.summarize(system=system, ctx=ctx, steps=int(self.steps))
+            case.summarize(
+                system=system,
+                ctx=ctx,
+                steps=int(self.kwargs.steps),
+            )
         )
+        return payload
 
-        if self.json:
-            print(json.dumps(payload, indent=2, sort_keys=True, default=str))
-        else:
-            for key, value in payload.items():
-                print(f"{key}: {value}")
-        return 0
+    def execute(self) -> int | dict[str, Any]:
+        case = self._resolve_case()
+        if self.kwargs.visual:
+            return self._run_visual(case)
+        return self._run_headless(case)
+
+
+class BaseSystemProcessor(BaseCommandProcessor):
+    """
+    Base processor for the system command domain.
+    """
+
+    def __init__(self):
+        self._module_importer = SystemModuleImporter()
+        self._presenter = SystemOutputPresenter()
+
+
+class SystemRunnerProcessor(BaseSystemProcessor):
+    """
+    Processor for listing or running isolated system cases.
+    """
+
+    def __init__(self, **kwargs):
+        self.kwargs = SystemKwargs.from_dict(kwargs)
+        super().__init__()
+        self._executor = SystemCaseExecutor(self.kwargs)
 
     def run(self) -> int:
         SystemLabRegistry.clear()
-        _import_case_modules(list(self.module))
-        if self.list:
-            return self._print_case_list()
-        return self._run_case()
+        self._module_importer.import_modules(list(self.kwargs.module))
+
+        if self.kwargs.list:
+            return self._presenter.print_case_list(
+                sorted(SystemLabRegistry.names()),
+                json_output=self.kwargs.json,
+            )
+
+        result = self._executor.execute()
+        if isinstance(result, int):
+            return result
+        return self._presenter.print_summary(
+            result,
+            json_output=self.kwargs.json,
+        )
+
+
+SystemLabProcessor = SystemRunnerProcessor
+SystemLabScaffoldProcessor = SystemScaffoldProcessor
+
+
+__all__ = [
+    "BaseSystemProcessor",
+    "SystemRunnerProcessor",
+    "SystemScaffoldProcessor",
+    "SystemLabProcessor",
+    "SystemLabScaffoldProcessor",
+]

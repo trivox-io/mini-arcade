@@ -3,7 +3,7 @@ Settings module for mini-arcade.
 
 Example settings files can be found under `examples/settings/` in the monorepo, and
 are loaded automatically when running examples using
-`mini-arcade run --example <example_id>`.
+`mini-arcade eg --id <example_id>`.
 
 ```python
     print("Loaded settings:")
@@ -554,7 +554,7 @@ class Settings:
             resolved = find_game_dir(repo_root, self._name)
             if resolved is not None:
                 return resolved
-            return (repo_root / "originals" / str(self._name)).resolve()
+            return (repo_root / "games" / str(self._name)).resolve()
         if self._scope == "example" and self._name:
             rel = str(self._name).replace("\\", "/").strip("/")
             return (repo_root / "examples" / "catalog" / rel).resolve()

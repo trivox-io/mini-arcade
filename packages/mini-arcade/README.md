@@ -5,7 +5,7 @@
 It provides:
 
 - the CLI entrypoint (`mini-arcade`)
-- runner modules for `--game` and `--example`
+- grouped commands for examples, games, and systems
 - integration helpers that connect settings, backends, and runtime launch
 
 ## Install
@@ -18,26 +18,27 @@ pip install mini-arcade
 
 ```bash
 mini-arcade --help
-mini-arcade run --game deja-bounce
-mini-arcade run --example config/engine_config_basics
-mini-arcade run --example config/backend_swap --pass-through --backend native --fps 72
-mini-arcade scaffold-system-lab --lab-id orbit_lab
-mini-arcade system-lab --module experiments.orbit_lab.system_lab_case --visual
-mini-arcade run tour
-mini-arcade run tour --group scene
+mini-arcade game --name deja-bounce
+mini-arcade eg --id config/engine_config_basics
+mini-arcade eg --id config/backend_swap --pass-through --backend native --fps 72
+mini-arcade game scaffold --id orbit-garden
+mini-arcade system scaffold --id orbit_lab
+mini-arcade system --module experiments.orbit_lab.system_lab_case --visual
+mini-arcade eg tour
+mini-arcade eg tour --group scene
 ```
 
 Equivalent module invocation:
 
 ```bash
-python -m mini_arcade.main run --game deja-bounce
+python -m mini_arcade.main game --name deja-bounce
 ```
 
 In the monorepo, prefer the root runner:
 
 ```powershell
-python .\manage.py run --game deja-bounce
-python .\manage.py run --example config/backend_swap
+python .\manage.py game --name deja-bounce
+python .\manage.py eg --id config/backend_swap
 ```
 
 That path wires local workspace sources ahead of installed packages.

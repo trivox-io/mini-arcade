@@ -17,22 +17,8 @@ from mini_arcade.cli.cli import (
     apply_global_flags,
 )
 from mini_arcade.constants import APP, CLI
+from mini_arcade.utils.logging import logger
 from mini_arcade.utils.module_loader import load_command_packages
-
-
-def _normalize_legacy_run_alias(argv: list[str]) -> list[str]:
-    """
-    Backward-compatible command rewrite.
-
-    Allows:
-        mini-arcade run tour [options...]
-
-    by rewriting to:
-        mini-arcade tour [options...]
-    """
-    if len(argv) >= 2 and argv[0] == "run" and argv[1] == "tour":
-        return ["tour", *argv[2:]]
-    return argv
 
 
 def main(argv: Optional[list[str]] = None):
@@ -52,10 +38,9 @@ def main(argv: Optional[list[str]] = None):
     global_args: argparse.Namespace
     remaining_argv: list[str]
     global_args, remaining_argv = global_parser.parse_known_args(argv)
-    # TODO: Add command for tours, and remove this legacy alias handling.
-    remaining_argv = _normalize_legacy_run_alias(remaining_argv)
 
     apply_global_flags(global_args)
+    logger.debug(f"Applied global flags, logging level is now: {logger.level}")
 
     commands_dir = Path(commands_pkg.__file__).parent
 
@@ -63,6 +48,7 @@ def main(argv: Optional[list[str]] = None):
         base_namespace="mini_arcade.commands",
         base_dir=commands_dir,
     )
+    logger.debug("Loaded command packages successfully.")
 
     cli_app = MiniArcadeCLI(
         config=CLIConfig(

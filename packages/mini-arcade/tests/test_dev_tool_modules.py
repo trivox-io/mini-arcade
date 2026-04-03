@@ -24,18 +24,23 @@ import mini_arcade.commands as commands_pkg
 from mini_arcade.app import MiniArcadeCLI
 from mini_arcade.cli.cli import CLIConfig, GlobalParserBuilder
 from mini_arcade.cli.registry import CommandRegistry
-from mini_arcade.commands.game_scaffold.commands import ScaffoldGameCommand
-from mini_arcade.commands.game_scaffold.processors import GameScaffoldProcessor
-from mini_arcade.commands.system_lab.commands import SystemLabCommand
-from mini_arcade.commands.system_lab.processors import SystemLabProcessor
+from mini_arcade.commands.eg.commands import ExampleRunnerCommand
+from mini_arcade.commands.game.commands import (
+    GameRunnerCommand,
+    ScaffoldGameCommand,
+)
+from mini_arcade.commands.game.processors import GameScaffoldProcessor
+from mini_arcade.commands.system_lab.commands import (
+    ScaffoldSystemCommand,
+    SystemCommand,
+)
+from mini_arcade.commands.system_lab.processors import (
+    SystemRunnerProcessor,
+    SystemScaffoldProcessor,
+)
 from mini_arcade.commands.system_lab.registry import SystemLabRegistry
-from mini_arcade.commands.system_lab_scaffold.commands import (
-    ScaffoldSystemLabCommand,
-)
-from mini_arcade.commands.system_lab_scaffold.processors import (
-    SystemLabScaffoldProcessor,
-)
 from mini_arcade.constants import APP, CLI
+from mini_arcade.project_launcher import run_project_entrypoint
 from mini_arcade.utils.module_loader import load_command_packages
 
 
@@ -56,14 +61,45 @@ def _build_cli() -> MiniArcadeCLI:
 
 
 def test_scaffold_game_command_registers() -> None:
-    assert CommandRegistry.contains(ScaffoldGameCommand.name)
-    assert CommandRegistry.contains(SystemLabCommand.name)
-    assert CommandRegistry.contains(ScaffoldSystemLabCommand.name)
+    assert CommandRegistry.contains("game")
+    assert CommandRegistry.contains("game-scaffold")
+    assert CommandRegistry.contains(ExampleRunnerCommand.name)
+    assert CommandRegistry.contains("eg-tour")
+    assert CommandRegistry.contains("system")
+    assert CommandRegistry.contains("system-scaffold")
+
+
+def test_cli_parses_runnable_group_commands() -> None:
+    cli = _build_cli()
+
+    eg_args = cli.parse_args(["eg", "--id", "scene/minimal_scene"])
+    game_args = cli.parse_args(["game", "--name", "pong"])
+    system_args = cli.parse_args(
+        ["system", "--module", "experiments.procedural_fire_lab.system_lab_case", "--list"]
+    )
+
+    assert eg_args.id == "scene/minimal_scene"
+    assert game_args.name == "pong"
+    assert system_args.module == [
+        "experiments.procedural_fire_lab.system_lab_case"
+    ]
+
+
+def test_cli_parses_nested_scaffold_subcommands() -> None:
+    cli = _build_cli()
+
+    game_args = cli.parse_args(["game", "scaffold", "--id", "laser-garden"])
+    system_args = cli.parse_args(["system", "scaffold", "--id", "orbit-lab"])
+    eg_args = cli.parse_args(["eg", "tour", "--group", "scene"])
+
+    assert game_args.id == "laser-garden"
+    assert system_args.id == "orbit-lab"
+    assert eg_args.group == "scene"
 
 
 def test_game_scaffold_creates_current_project_layout(tmp_path: Path) -> None:
     processor = GameScaffoldProcessor(
-        game_id="laser-garden",
+        id="laser-garden",
         destination=str(tmp_path),
     )
 
@@ -102,7 +138,7 @@ def test_game_scaffold_command_ignores_global_cli_kwargs(
 
     assert (
         command.execute(
-            game_id="ball-vs-ball",
+            id="ball-vs-ball",
             package="bvb",
             title="Ball vs Ball",
             destination=str(tmp_path),
@@ -117,23 +153,9 @@ def test_game_scaffold_defaults_to_games_directory(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    (tmp_path / "originals").mkdir()
     monkeypatch.chdir(tmp_path)
 
-    processor = GameScaffoldProcessor(game_id="laser-garden")
-
-    assert processor.run() == 0
-    assert (tmp_path / "originals" / "laser-garden" / "manage.py").exists()
-
-
-def test_game_scaffold_clone_flag_defaults_to_games_directory(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    (tmp_path / "games").mkdir()
-    monkeypatch.chdir(tmp_path)
-
-    processor = GameScaffoldProcessor(game_id="laser-garden", clone=True)
+    processor = GameScaffoldProcessor(id="laser-garden")
 
     assert processor.run() == 0
     assert (tmp_path / "games" / "laser-garden" / "manage.py").exists()
@@ -144,7 +166,7 @@ def test_game_scaffold_dry_run_does_not_write_files(
     capsys,
 ) -> None:
     processor = GameScaffoldProcessor(
-        game_id="laser-garden",
+        id="laser-garden",
         destination=str(tmp_path),
         dry_run=True,
     )
@@ -154,9 +176,9 @@ def test_game_scaffold_dry_run_does_not_write_files(
     assert "laser-garden" in capsys.readouterr().out
 
 
-def test_system_lab_scaffold_creates_minimal_layout(tmp_path: Path) -> None:
-    processor = SystemLabScaffoldProcessor(
-        lab_id="orbit-lab",
+def test_system_scaffold_creates_minimal_layout(tmp_path: Path) -> None:
+    processor = SystemScaffoldProcessor(
+        id="orbit-lab",
         destination=str(tmp_path),
     )
 
@@ -174,14 +196,14 @@ def test_system_lab_scaffold_creates_minimal_layout(tmp_path: Path) -> None:
     assert "F5 reloads this lab after edits." in case_text
 
 
-def test_system_lab_scaffold_command_ignores_global_cli_kwargs(
+def test_system_scaffold_command_ignores_global_cli_kwargs(
     tmp_path: Path,
 ) -> None:
-    command = ScaffoldSystemLabCommand()
+    command = ScaffoldSystemCommand()
 
     assert (
         command.execute(
-            lab_id="signal_lab",
+            id="signal_lab",
             destination=str(tmp_path),
             verbose=1,
         )
@@ -190,12 +212,12 @@ def test_system_lab_scaffold_command_ignores_global_cli_kwargs(
     assert (tmp_path / "signal_lab" / "manage.py").exists()
 
 
-def test_system_lab_scaffold_dry_run_does_not_write_files(
+def test_system_scaffold_dry_run_does_not_write_files(
     tmp_path: Path,
     capsys,
 ) -> None:
-    processor = SystemLabScaffoldProcessor(
-        lab_id="signal-lab",
+    processor = SystemScaffoldProcessor(
+        id="signal-lab",
         destination=str(tmp_path),
         dry_run=True,
     )
@@ -207,7 +229,7 @@ def test_system_lab_scaffold_dry_run_does_not_write_files(
     assert "experiments.signal_lab.system_lab_case" in output
 
 
-def test_system_lab_lists_and_runs_registered_case(
+def test_system_lists_and_runs_registered_case(
     tmp_path: Path,
     monkeypatch,
     capsys,
@@ -243,13 +265,13 @@ class CounterCase(BaseSystemLabCase):
     monkeypatch.syspath_prepend(str(tmp_path))
 
     assert (
-        SystemLabProcessor(module=["labcases.sample_cases"], list=True).run()
+        SystemRunnerProcessor(module=["labcases.sample_cases"], list=True).run()
         == 0
     )
     assert "counter_case" in capsys.readouterr().out
 
     assert (
-        SystemLabProcessor(
+        SystemRunnerProcessor(
             module=["labcases.sample_cases"],
             case="counter_case",
             steps=3,
@@ -262,7 +284,7 @@ class CounterCase(BaseSystemLabCase):
     assert '"value": 7' in output
 
 
-def test_system_lab_command_ignores_global_cli_kwargs(
+def test_system_command_ignores_global_cli_kwargs(
     tmp_path: Path,
     monkeypatch,
     capsys,
@@ -292,7 +314,7 @@ class CounterCase(BaseSystemLabCase):
     )
     monkeypatch.syspath_prepend(str(tmp_path))
 
-    command = SystemLabCommand()
+    command = SystemCommand()
     assert (
         command.execute(
             module=["labcases.sample_cases"],
@@ -304,12 +326,12 @@ class CounterCase(BaseSystemLabCase):
     assert "counter_case" in capsys.readouterr().out
 
 
-def test_system_lab_cli_parses_module_without_swallowing_flags() -> None:
+def test_system_cli_parses_module_without_swallowing_flags() -> None:
     cli = _build_cli()
 
     args = cli.parse_args(
         [
-            "system-lab",
+            "system",
             "--module",
             "experiments.procedural_fire_lab.system_lab_case",
             "--list",
@@ -322,8 +344,8 @@ def test_system_lab_cli_parses_module_without_swallowing_flags() -> None:
     assert args.json is True
 
 
-def test_system_lab_cli_parses_visual_backend_override() -> None:
-    command = SystemLabCommand()
+def test_system_cli_parses_visual_backend_override() -> None:
+    command = SystemCommand()
 
     command.validate(
         module=["experiments.procedural_fire_lab.system_lab_case"],
@@ -332,7 +354,7 @@ def test_system_lab_cli_parses_visual_backend_override() -> None:
     )
 
 
-def test_system_lab_visual_runner_path(
+def test_system_visual_runner_path(
     tmp_path: Path,
     monkeypatch,
     capsys,
@@ -362,7 +384,7 @@ class VisualCase(BaseSystemLabCase):
     monkeypatch.syspath_prepend(str(tmp_path))
 
     assert (
-        SystemLabProcessor(
+        SystemRunnerProcessor(
             module=["labcases_visual.sample_cases"],
             case="visual_case",
             visual=True,
@@ -372,7 +394,7 @@ class VisualCase(BaseSystemLabCase):
     assert "visual runner launched" in capsys.readouterr().out
 
 
-def test_system_lab_visual_runner_auto_selects_single_case(
+def test_system_visual_runner_auto_selects_single_case(
     tmp_path: Path,
     monkeypatch,
     capsys,
@@ -402,7 +424,7 @@ class VisualCase(BaseSystemLabCase):
     monkeypatch.syspath_prepend(str(tmp_path))
 
     assert (
-        SystemLabProcessor(
+        SystemRunnerProcessor(
             module=["labcases_visual_auto.sample_cases"],
             visual=True,
         ).run()
@@ -411,7 +433,7 @@ class VisualCase(BaseSystemLabCase):
     assert "visual auto runner launched" in capsys.readouterr().out
 
 
-def test_system_lab_default_visual_runner_uses_builtin_lab(
+def test_system_default_visual_runner_uses_builtin_lab(
     tmp_path: Path,
     monkeypatch,
     capsys,
@@ -474,7 +496,7 @@ class VisualCase(BaseSystemLabCase):
     )
 
     assert (
-        SystemLabProcessor(
+        SystemRunnerProcessor(
             module=["labcases_builtin_visual.sample_cases"],
             case="visual_case",
             visual=True,
@@ -494,7 +516,7 @@ class VisualCase(BaseSystemLabCase):
     assert captured["backend_provider_override"] is None
 
 
-def test_system_lab_visual_backend_override_reaches_visual_runner(
+def test_system_visual_backend_override_reaches_visual_runner(
     tmp_path: Path,
     monkeypatch,
     capsys,
@@ -555,7 +577,7 @@ class VisualCase(BaseSystemLabCase):
     )
 
     assert (
-        SystemLabProcessor(
+        SystemRunnerProcessor(
             module=["labcases_backend_override.sample_cases"],
             case="visual_case",
             visual=True,
@@ -570,7 +592,7 @@ class VisualCase(BaseSystemLabCase):
     assert captured["backend_provider_override"] == "native"
 
 
-def test_system_lab_visual_runner_discovers_watch_paths(
+def test_system_visual_runner_discovers_watch_paths(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -603,7 +625,7 @@ def test_procedural_fire_lab_case_runs_headless(capsys) -> None:
     SystemLabRegistry.clear()
 
     assert (
-        SystemLabProcessor(
+        SystemRunnerProcessor(
             module=["experiments.procedural_fire_lab.system_lab_case"],
             case="procedural_fire_stats",
             steps=2,
@@ -632,7 +654,7 @@ def test_bouncing_balls_case_runs_headless(capsys) -> None:
     SystemLabRegistry.clear()
 
     assert (
-        SystemLabProcessor(
+        SystemRunnerProcessor(
             module=["experiments.bouncing_balls.system_lab_case"],
             case="bouncing_balls",
             steps=3,
@@ -651,7 +673,7 @@ def test_bounce_box_stress_case_runs_headless(capsys) -> None:
     SystemLabRegistry.clear()
 
     assert (
-        SystemLabProcessor(
+        SystemRunnerProcessor(
             module=["experiments.bounce_box_stress_lab.system_lab_case"],
             case="bounce_box_stress",
             steps=3,
@@ -670,7 +692,7 @@ def test_camera_lab_case_runs_headless(capsys) -> None:
     SystemLabRegistry.clear()
 
     assert (
-        SystemLabProcessor(
+        SystemRunnerProcessor(
             module=["experiments.camera_lab.system_lab_case"],
             case="camera_lab",
             steps=3,
@@ -688,7 +710,7 @@ def test_ball_vs_ball_combat_lab_runs_headless(capsys) -> None:
     SystemLabRegistry.clear()
 
     assert (
-        SystemLabProcessor(
+        SystemRunnerProcessor(
             module=["experiments.ball_vs_ball_combat.system_lab_case"],
             case="ball_vs_ball_combat",
             steps=240,
@@ -706,7 +728,7 @@ def test_ball_vs_ball_powerup_sandbox_runs_headless(capsys) -> None:
     SystemLabRegistry.clear()
 
     assert (
-        SystemLabProcessor(
+        SystemRunnerProcessor(
             module=[
                 "experiments.ball_vs_ball_powerup_sandbox.system_lab_case"
             ],
@@ -752,7 +774,7 @@ def test_knockout_bracket_seed_lab_runs_headless(capsys) -> None:
     SystemLabRegistry.clear()
 
     assert (
-        SystemLabProcessor(
+        SystemRunnerProcessor(
             module=["experiments.knockout_bracket_seed_lab.system_lab_case"],
             case="knockout_bracket_seed",
             steps=1,
@@ -770,7 +792,7 @@ def test_knockout_bracket_progress_lab_runs_headless(capsys) -> None:
     SystemLabRegistry.clear()
 
     assert (
-        SystemLabProcessor(
+        SystemRunnerProcessor(
             module=[
                 "experiments.knockout_bracket_progress_lab.system_lab_case"
             ],
@@ -880,3 +902,35 @@ class TempLightCommand(BaseCommand):
         "demo_pkg.commands.light_cmd"
     ]
     assert CommandRegistry.contains("temp-light-cmd")
+
+
+def test_project_launcher_runs_local_entrypoint_when_no_args() -> None:
+    seen: list[str] = []
+
+    def _local_run():
+        seen.append("ran")
+        return None
+
+    assert run_project_entrypoint(_local_run, argv=[]) == 0
+    assert seen == ["ran"]
+
+
+def test_project_launcher_dispatches_to_cli_when_args_present(
+    monkeypatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def _fake_cli_main(argv):
+        captured["argv"] = list(argv)
+
+    monkeypatch.setattr("mini_arcade.main.main", _fake_cli_main)
+
+    assert (
+        run_project_entrypoint(
+            lambda: captured.setdefault("local", True),
+            argv=["eg", "tour"],
+        )
+        == 0
+    )
+    assert captured["argv"] == ["eg", "tour"]
+    assert "local" not in captured

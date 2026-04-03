@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple
 
 from mini_arcade.cli.base_command_processor import BaseCommandProcessor
+from mini_arcade.utils.logging import logger
 
 from .argument_type import ArgumentType
 from .exceptions import CommandException
@@ -34,6 +35,8 @@ class BaseCommand(ABC):
     Subclasses should implement the execute(...) method as the main entrypoint.
 
     :ivar name: Optional[str]: Command name (for registry); defaults to class name lowercased.
+    :ivar parent: Optional[str]: Parent command registry key for nested commands.
+    :ivar is_group: bool: Whether the command is a non-runnable command group.
     :ivar aliases: Tuple[str, ...]: Optional command aliases.
     :ivar summary: Optional[str]: Short description of the command.
     :ivar epilog: Optional[str]: Additional help text for the command.
@@ -45,6 +48,8 @@ class BaseCommand(ABC):
 
     # Metadata read by CommandRegistry.implementation(...)
     name: Optional[str] = None
+    parent: Optional[str] = None
+    is_group: bool = False
     aliases: Tuple[str, ...] = ()
     summary: Optional[str] = None
     epilog: Optional[str] = None
@@ -88,9 +93,13 @@ class BaseCommand(ABC):
     def _run(self, **kwargs):
         """Internal run (pre-exec)."""
         if not self.processor:
+            logger.error("Processor not set for command")
             raise CommandException("Processor must be set")
 
         processor_instance: BaseCommandProcessor = self.processor(**kwargs)
+        logger.debug(
+            f"Running processor {self.processor} with kwargs: {kwargs}"
+        )
         return processor_instance.run()
 
     @abstractmethod
@@ -99,6 +108,9 @@ class BaseCommand(ABC):
 
     def execute(self, **kwargs):
         """External command entrypoint."""
+        logger.debug(
+            f"Executing command {self.__class__.__name__} with args: {kwargs}"
+        )
         return self._execute(**kwargs)
 
 

@@ -4,7 +4,8 @@ Mini Arcade Constants
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 
 from mini_arcade.utils.codebase_length import CodebaseStats, codebase_length
 from mini_arcade.utils.get_package_version import get_package_version
@@ -22,7 +23,9 @@ _PACKAGES = [
 @dataclass(frozen=True)
 class _App:
     version: str = get_package_version(PACKAGE_NAME)
-    codebase: CodebaseStats = codebase_length(_PACKAGES)
+    codebase: CodebaseStats = field(
+        default_factory=lambda: codebase_length(_PACKAGES)
+    )
 
 
 @dataclass(frozen=True)
@@ -34,3 +37,5 @@ class _Cli:
 
 APP = _App()
 CLI = _Cli()
+
+ROOT_DIR = Path.cwd().resolve()

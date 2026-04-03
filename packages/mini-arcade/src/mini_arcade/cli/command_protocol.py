@@ -13,6 +13,8 @@ class CommandProtocol(Protocol):
     """
 
     :ivar name: Optional[str]: Command name (for registry); defaults to class name lowercased.
+    :ivar parent: Optional[str]: Optional parent command registry key for nested commands.
+    :ivar is_group: bool: Whether this command owns subcommands.
     :ivar aliases: Tuple[str, ...]: Optional command aliases.
     :ivar summary: Optional[str]: Short description of the command.
     :ivar epilog: Optional[str]: Additional help text for the command.
@@ -22,6 +24,8 @@ class CommandProtocol(Protocol):
 
     # Metadata read by CommandRegistry.implementation(...)
     name: Optional[str]
+    parent: Optional[str]
+    is_group: bool
     aliases: Tuple[str, ...] = ()
     summary: Optional[str]
     epilog: Optional[str]

@@ -20,7 +20,7 @@ class DiscoveredPackage:
     Represents a discovered package.
 
     :ivar import_name: The import name of the package
-        (e.g. "mini_arcade.modules.game_runner")."
+        (e.g. "mini_arcade.modules.game")."
     :ivar path: The filesystem path to the package.
     """
 

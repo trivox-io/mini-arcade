@@ -6,10 +6,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-CLONE_GAMES_DIRNAME = "games"
+GAMES_DIRNAME = "games"
+CLONE_GAMES_DIRNAME = GAMES_DIRNAME
 ORIGINAL_GAMES_DIRNAME = "originals"
-LEGACY_GAME_COLLECTION_DIRS: tuple[str, ...] = ("clones", "originals")
-DEFAULT_GAME_SCAFFOLD_DESTINATION = ORIGINAL_GAMES_DIRNAME
+DEFAULT_GAME_SCAFFOLD_DESTINATION = GAMES_DIRNAME
+LEGACY_GAME_COLLECTION_DIRS = frozenset(
+    {
+        "clones",
+        ORIGINAL_GAMES_DIRNAME,
+    }
+)
 PYPROJECT_FILENAME = "pyproject.toml"
 
 
@@ -75,11 +81,11 @@ def iter_repo_game_dirs(
     clone: bool | None = None,
 ) -> tuple[Path, ...]:
     """
-    Return all known game roots across repo-level clone and original roots.
+    Return all known game roots across repo-level game roots.
 
     ``clone=True`` limits discovery to ``games/``.
-    ``clone=False`` limits discovery to ``originals/``.
-    ``clone=None`` searches originals first, then clones.
+    ``clone=False`` limits discovery to the legacy ``originals/`` tree.
+    ``clone=None`` searches both legacy locations for compatibility.
 
     :param repo_root: Root of the monorepo.
     :type repo_root: Path
@@ -208,8 +214,8 @@ def iter_repo_game_source_roots(
     Return ``src`` roots for all discovered games across repo-level roots.
 
         ``clone=True`` limits discovery to ``games/``.
-        ``clone=False`` limits discovery to ``originals/``.
-        ``clone=None`` searches originals first, then clones.
+        ``clone=False`` limits discovery to the legacy ``originals/`` tree.
+        ``clone=None`` searches both legacy locations for compatibility.
 
     :param repo_root: Root of the monorepo.
     :type repo_root: Path

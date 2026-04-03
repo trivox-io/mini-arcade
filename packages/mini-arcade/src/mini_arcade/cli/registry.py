@@ -131,6 +131,19 @@ class CommandRegistry(ImplementationRegistry[CommandProtocol]):
         return cls._alias_map.get(name_or_alias, name_or_alias)
 
     @classmethod
+    def resolve_name(cls, name_or_alias: str) -> str:
+        """
+        Resolve a primary command name from a primary name or alias.
+
+        :param name_or_alias: The primary name or alias of the command.
+        :type name_or_alias: str
+
+        :return: The resolved primary command name.
+        :rtype: str
+        """
+        return cls._resolve_primary(name_or_alias)
+
+    @classmethod
     def get(cls, name: str) -> Type[CommandProtocol]:
         """
         Get a command class by primary name or alias.
@@ -181,6 +194,44 @@ class CommandRegistry(ImplementationRegistry[CommandProtocol]):
         :rtype: list[str]
         """
         return super().names()
+
+    @classmethod
+    def root_names(cls) -> list[str]:
+        """
+        Return primary names for commands without a parent.
+
+        :return: List of root command primary names.
+        :rtype: list[str]
+        """
+        return [
+            name
+            for name in cls.names()
+            if getattr(cls._registry[name], "parent", None) is None
+        ]
+
+    @classmethod
+    def child_names(cls, parent_name: str) -> list[str]:
+        """
+        Return primary names for commands whose parent matches ``parent_name``.
+
+        Parent references are resolved through aliases before comparison.
+
+        :param parent_name: Parent command primary name or alias.
+        :type parent_name: str
+
+        :return: List of child command primary names.
+        :rtype: list[str]
+        """
+        primary_parent = cls._resolve_primary(parent_name)
+        children: list[str] = []
+        for name in cls.names():
+            command_cls = cls._registry[name]
+            parent = getattr(command_cls, "parent", None)
+            if parent is None:
+                continue
+            if cls._resolve_primary(parent) == primary_parent:
+                children.append(name)
+        return children
 
     @classmethod
     def all_with_aliases(cls) -> Mapping[str, Type[CommandProtocol]]:

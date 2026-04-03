@@ -31,8 +31,8 @@ _bootstrap_repo_imports()
 from examples._shared import runner as example_runner  # noqa: E402
 from examples._shared.runner import load_example_spec  # noqa: E402
 from examples._shared.spec import ExampleSpec  # noqa: E402
-from mini_arcade.commands.game_runner.processors import (  # noqa: E402
-    _discover_example_ids,
+from mini_arcade.commands.eg.examples_tour import (  # noqa: E402
+    ExampleTourDiscoverer,
 )
 from mini_arcade.common.game_paths import (  # noqa: E402
     find_game_dir,
@@ -57,7 +57,9 @@ from mini_arcade_core.scenes.registry import SceneRegistry  # noqa: E402
 from mini_arcade_core.scenes.sim_scene import SimScene  # noqa: E402
 
 EXAMPLE_IDS = tuple(
-    _discover_example_ids(_repo_root() / "examples" / "catalog")
+    ExampleTourDiscoverer(
+        _repo_root() / "examples" / "catalog"
+    ).discover_example_ids()
 )
 LEGACY_KEY_PATTERN = re.compile(r"\bKey\.(?:RETURN|K_[0-9]+)\b")
 

@@ -163,7 +163,7 @@ def _watch_state_changed(
 
 
 def _restart_current_process(reason: str) -> None:
-    print(f"[system-lab] {reason}; restarting...")
+    print(f"[system] {reason}; restarting...")
     sys.stdout.flush()
     sys.stderr.flush()
     os.execv(sys.executable, [sys.executable, *sys.argv])
@@ -222,7 +222,7 @@ class _SystemLabPacketFinalizeSystem(BaseSystem[object]):
 @dataclass
 class _SystemLabHotReloadSystem(BaseSystem[object]):
     """
-    Restart the current system-lab process when source files change.
+    Restart the current system process when source files change.
     """
 
     watch_paths: tuple[Path, ...]
