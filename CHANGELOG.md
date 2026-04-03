@@ -6,6 +6,30 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.4] - 2026-03-31
+
+### Changed
+- Organize imports in test_dev_tool_modules.py for better readability
+- Improve code readability by formatting and organizing conditional statements and imports
+- Enhance video capture settings and encoding process
+- Update .gitignore to include recordings directory and add sable_collision_architecture document to contributing guide
+- Update .gitignore to include game directories while preserving existing structure
+- Update subproject commits for asteroids, breakout, pacman, pong, snake, space-invaders, and tetris to latest versions
+- Move BackendLoader to common module and update imports across the codebase
+- Update subproject commits for all games to latest versions
+- Update settings and game subproject commits for consistency and maintainability
+- Move Settings and SettingsArgs to common package
+- Update game path functions to use PYPROJECT_FILENAME constant and enhance docstrings
+- Move game path helpers to common module and update imports
+- Simplify path resolution and enhance logging record handling
+- Enhance pylint configuration and add codebase length utility
+- Move commands to their own module.
+
+### Other
+- docs: Add Sable module ownership document to clarify domain responsibilities Closes #2
+- docs: Add contributing document for Sable target architecture
+- Merge branch 'main' of https://github.com/trivox-io/mini-arcade
+
 ## [1.6.3] - 2026-03-24
 
 ### Added
