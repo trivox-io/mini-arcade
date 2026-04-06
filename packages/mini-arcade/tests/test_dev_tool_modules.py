@@ -5,6 +5,9 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+from jinja2 import UndefinedError
+
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = PACKAGE_ROOT / "src"
 REPO_ROOT = PACKAGE_ROOT.parents[1]
@@ -30,6 +33,7 @@ from mini_arcade.commands.game.commands import (
     ScaffoldGameCommand,
 )
 from mini_arcade.commands.game.processors import GameScaffoldProcessor
+from mini_arcade.commands.shared.scaffold import render_template_tree
 from mini_arcade.commands.system_lab.commands import (
     ScaffoldSystemCommand,
     SystemCommand,
@@ -102,6 +106,61 @@ def test_cli_parses_nested_scaffold_subcommands() -> None:
     assert eg_args.group == "scene"
 
 
+def test_render_template_tree_renders_paths_and_strips_jinja_suffix(
+    tmp_path: Path,
+) -> None:
+    files = render_template_tree(
+        "game",
+        tmp_path,
+        {
+            "dependency_series": "1.6",
+            "game_id": "laser-garden",
+            "package": "laser_garden",
+            "title": "Laser Garden",
+        },
+    )
+
+    assert tmp_path / "pyproject.toml" in files
+    assert tmp_path / "manage.py" in files
+    assert (
+        tmp_path
+        / "src"
+        / "laser_garden"
+        / "scenes"
+        / "play"
+        / "systems"
+        / "render.py"
+    ) in files
+    assert tmp_path / "__init__.py" not in files
+
+
+def test_render_template_tree_copies_static_files_and_fails_on_missing_variables(
+    tmp_path: Path,
+) -> None:
+    files = render_template_tree(
+        "game",
+        tmp_path,
+        {
+            "dependency_series": "1.6",
+            "game_id": "laser-garden",
+            "package": "laser_garden",
+            "title": "Laser Garden",
+        },
+    )
+
+    assert files[tmp_path / "src" / "laser_garden" / "__init__.py"] == ""
+    assert files[tmp_path / "assets" / "sprites" / ".gitkeep"].strip() == ""
+
+    with pytest.raises(UndefinedError):
+        render_template_tree(
+            "game",
+            tmp_path,
+            {
+                "package": "laser_garden",
+            },
+        )
+
+
 def test_game_scaffold_creates_current_project_layout(tmp_path: Path) -> None:
     processor = GameScaffoldProcessor(
         id="laser-garden",
@@ -111,6 +170,8 @@ def test_game_scaffold_creates_current_project_layout(tmp_path: Path) -> None:
     assert processor.run() == 0
 
     root = tmp_path / "laser-garden"
+    dependency_series = ".".join(APP.version.split(".")[:2])
+    assert (root / "pyproject.toml").exists()
     assert (root / "manage.py").exists()
     assert (root / "settings" / "settings.yml").exists()
     assert (
@@ -122,8 +183,14 @@ def test_game_scaffold_creates_current_project_layout(tmp_path: Path) -> None:
     scene_text = (
         root / "src" / "laser_garden" / "scenes" / "play" / "scene.py"
     ).read_text(encoding="utf-8")
+    pyproject_text = (root / "pyproject.toml").read_text(encoding="utf-8")
+    pipeline_text = (
+        root / "src" / "laser_garden" / "scenes" / "play" / "pipeline.py"
+    ).read_text(encoding="utf-8")
     assert 'controls_scene_key="play"' in scene_text
     assert "build_play_systems()" in scene_text
+    assert "mini-arcade-core~=" + dependency_series in pyproject_text
+    assert 'from .systems import PlayRenderSystem, PlayRulesSystem' in pipeline_text
     assert (
         (root / "src" / "laser_garden" / "scenes" / "menu.py")
         .read_text(encoding="utf-8")
@@ -134,6 +201,27 @@ def test_game_scaffold_creates_current_project_layout(tmp_path: Path) -> None:
         .read_text(encoding="utf-8")
         .startswith("from __future__ import annotations")
     )
+    assert (
+        root
+        / "src"
+        / "laser_garden"
+        / "scenes"
+        / "play"
+        / "systems"
+        / "render.py"
+    ).exists()
+    assert (
+        root
+        / "src"
+        / "laser_garden"
+        / "scenes"
+        / "play"
+        / "systems"
+        / "rules.py"
+    ).exists()
+    assert (root / "assets" / "sprites" / ".gitkeep").exists()
+    assert (root / "assets" / "fonts" / ".gitkeep").exists()
+    assert (root / "assets" / "sfx" / ".gitkeep").exists()
 
 
 def test_game_scaffold_command_ignores_global_cli_kwargs(
@@ -194,9 +282,14 @@ def test_system_scaffold_creates_minimal_layout(tmp_path: Path) -> None:
     assert (root / "manage.py").exists()
     assert (root / "system_lab_case.py").exists()
 
+    manage_text = (root / "manage.py").read_text(encoding="utf-8")
     case_text = (root / "system_lab_case.py").read_text(encoding="utf-8")
+    assert 'description="Launch the Orbit Lab experiment directly."' in manage_text
+    assert 'case="orbit_lab"' in manage_text
     assert '@SystemLabRegistry.implementation("orbit_lab")' in case_text
     assert "BaseSystemLabCase" in case_text
+    assert "class OrbitLabSystem" in case_text
+    assert 'text="Orbit Lab"' in case_text
     assert "Replace OrbitLabSystem.step() with your experiment." in case_text
     assert "F5 reloads this lab after edits." in case_text
 

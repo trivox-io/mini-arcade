@@ -1,0 +1,12 @@
+from __future__ import annotations
+
+from .models import PlayWorld
+
+
+def build_play_world(*, viewport: tuple[float, float]) -> PlayWorld:
+    vw, _ = viewport
+    return PlayWorld(
+        entities=[],
+        viewport=viewport,
+        player_x=vw * 0.5,
+    )

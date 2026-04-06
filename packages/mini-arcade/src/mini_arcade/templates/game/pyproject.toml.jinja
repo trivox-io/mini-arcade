@@ -1,0 +1,26 @@
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+name = "{{game_id}}"
+version = "0.1.0"
+description = "{{title}} built with Mini Arcade."
+requires-python = ">=3.9,<3.12"
+dependencies = [
+  "mini-arcade-core~={{dependency_series}}",
+  "mini-arcade~={{dependency_series}}",
+  "mini-arcade-pygame-backend~={{dependency_series}}",
+  "mini-arcade-native-backend~={{dependency_series}}",
+]
+
+[tool.poetry]
+packages = [{include = "{{package}}", from = "src" }]
+
+[project.scripts]
+{{game_id}} = "{{package}}.app:run"
+
+[tool.mini-arcade.game]
+id = "{{game_id}}"
+entrypoint = "manage.py"
+source_roots = ["src"]

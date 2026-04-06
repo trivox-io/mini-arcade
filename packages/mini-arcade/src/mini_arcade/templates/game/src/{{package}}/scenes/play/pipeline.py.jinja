@@ -1,0 +1,10 @@
+from __future__ import annotations
+
+from .systems import PlayRenderSystem, PlayRulesSystem
+
+
+def build_play_systems() -> tuple[object, ...]:
+    return (
+        PlayRulesSystem(),
+        PlayRenderSystem(),
+    )

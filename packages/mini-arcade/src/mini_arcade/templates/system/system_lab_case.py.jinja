@@ -1,0 +1,73 @@
+"""Minimal reusable system scaffold for {{ title }}."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from mini_arcade.commands.system_lab import (
+    BaseSystemLabCase,
+    SystemLabRegistry,
+)
+from mini_arcade_core.engine.commands import CommandQueue
+from mini_arcade_core.runtime.input_frame import InputFrame
+from mini_arcade_core.scenes.sim_scene import BaseTickContext, BaseWorld
+from mini_arcade_core.scenes.systems.base_system import BaseSystem
+from mini_arcade_core.scenes.systems.phases import SystemPhase
+
+
+@dataclass
+class {{ class_name }}World(BaseWorld):
+    viewport: tuple[float, float] = (800.0, 600.0)
+
+
+@dataclass
+class {{ class_name }}Context(BaseTickContext[{{ class_name }}World, object]):
+    pass
+
+
+@dataclass
+class {{ class_name }}System(BaseSystem[{{ class_name }}Context]):
+    name: str = "{{ case_name }}"
+    phase: int = SystemPhase.SIMULATION
+    order: int = 20
+
+    def step(self, ctx: {{ class_name }}Context) -> None:
+        ctx.render_queue.clear()
+        ctx.render_queue.text(
+            x=24.0,
+            y=24.0,
+            text="{{ title }}",
+            color=(235, 235, 235),
+            font_size=20,
+        )
+        ctx.render_queue.text(
+            x=24.0,
+            y=52.0,
+            text="Replace {{ class_name }}System.step() with your experiment.",
+            color=(180, 196, 220),
+            font_size=18,
+        )
+        ctx.render_queue.text(
+            x=24.0,
+            y=78.0,
+            text="F5 reloads this lab after edits.",
+            color=(150, 166, 188),
+            font_size=16,
+        )
+
+
+@SystemLabRegistry.implementation("{{ case_name }}")
+class {{ class_name }}Case(BaseSystemLabCase):
+    visual_title = "{{ title }}"
+    visual_debug_overlay_title = "{{ title }}"
+
+    def build_system(self) -> object:
+        return {{ class_name }}System()
+
+    def build_context(self) -> object:
+        return {{ class_name }}Context(
+            input_frame=InputFrame(frame_index=0, dt=1.0 / 60.0),
+            dt=1.0 / 60.0,
+            world={{ class_name }}World(entities=[]),
+            commands=CommandQueue(),
+        )

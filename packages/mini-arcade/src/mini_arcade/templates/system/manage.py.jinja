@@ -1,0 +1,69 @@
+"""Launch the {{ title }} experiment directly."""
+
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+import sys
+
+
+def _find_repo_root(start: Path) -> Path | None:
+    for candidate in (start, *start.parents):
+        marker = candidate / "packages" / "mini-arcade" / "src"
+        if marker.exists():
+            return candidate
+    return None
+
+
+def _bootstrap_paths() -> None:
+    project_root = Path(__file__).resolve().parent
+    repo_root = _find_repo_root(project_root)
+    paths = [project_root]
+
+    if repo_root is not None:
+        paths.extend(
+            [
+                repo_root,
+                repo_root / "packages" / "mini-arcade" / "src",
+                repo_root / "packages" / "mini-arcade-core" / "src",
+                repo_root / "packages" / "mini-arcade-pygame-backend" / "src",
+                repo_root / "packages" / "mini-arcade-native-backend" / "src",
+            ]
+        )
+
+    for path in reversed(paths):
+        value = str(path)
+        if value not in sys.path:
+            sys.path.insert(0, value)
+
+
+_bootstrap_paths()
+
+# Justification: local path bootstrap must run before importing mini_arcade.
+# pylint: disable=wrong-import-position
+from mini_arcade.commands.system_lab.processors import SystemRunnerProcessor
+# pylint: enable=wrong-import-position
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Launch the {{ title }} experiment directly.",
+    )
+    parser.add_argument(
+        "--backend",
+        default=None,
+        help="Override the visual backend provider (for example: pygame or native).",
+    )
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = _parse_args()
+    raise SystemExit(
+        SystemRunnerProcessor(
+            module=["system_lab_case"],
+            case="{{ case_name }}",
+            visual=True,
+            backend=args.backend,
+        ).run()
+    )

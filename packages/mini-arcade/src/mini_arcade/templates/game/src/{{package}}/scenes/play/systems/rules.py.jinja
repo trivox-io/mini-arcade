@@ -1,0 +1,21 @@
+from dataclasses import dataclass
+
+from mini_arcade_core.scenes.systems.base_system import BaseSystem
+from mini_arcade_core.scenes.systems.phases import SystemPhase
+
+from ..models import PlayTickContext
+
+
+@dataclass
+class PlayRulesSystem(BaseSystem[PlayTickContext]):
+    name: str = "play_rules"
+    phase: int = SystemPhase.SIMULATION
+    order: int = 20
+
+    def step(self, ctx: PlayTickContext):
+        if ctx.intent is None:
+            return
+
+        world = ctx.world
+        world.player_x += ctx.intent.move_x * world.player_speed * ctx.dt
+        world.player_x = max(20.0, min(world.viewport[0] - 20.0, world.player_x))

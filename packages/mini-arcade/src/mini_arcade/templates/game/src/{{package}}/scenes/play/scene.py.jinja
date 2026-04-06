@@ -1,0 +1,42 @@
+from __future__ import annotations
+
+from mini_arcade_core.scenes.autoreg import register_scene
+from mini_arcade_core.scenes.bootstrap import scene_viewport
+from mini_arcade_core.scenes.game_scene import GameScene, GameSceneSystemsConfig
+
+from {{package}}.scenes.commands import PauseGameCommand
+from {{package}}.scenes.play.bootstrap import build_play_world
+from {{package}}.scenes.play.models import PlayIntent, PlayTickContext, PlayWorld
+from {{package}}.scenes.play.pipeline import build_play_systems
+
+
+def _build_play_intent(actions, _ctx: PlayTickContext) -> PlayIntent:
+    return PlayIntent(
+        move_x=actions.value("move_x"),
+        pause=actions.pressed("pause"),
+    )
+
+
+@register_scene("play")
+class PlayScene(GameScene[PlayTickContext, PlayWorld]):
+    tick_context_type = PlayTickContext
+    systems_config = GameSceneSystemsConfig(
+        controls_scene_key="play",
+        intent_factory=_build_play_intent,
+        input_fallback_bindings={
+            "move_x": {
+                "type": "axis",
+                "negative_keys": ["LEFT", "A"],
+                "positive_keys": ["RIGHT", "D"],
+            },
+            "pause": {
+                "type": "digital",
+                "keys": ["ESCAPE"],
+            },
+        },
+        pause_command_factory=lambda _ctx: PauseGameCommand(),
+    )
+
+    def on_enter(self):
+        self.world = build_play_world(viewport=scene_viewport(self))
+        self.systems.extend(build_play_systems())

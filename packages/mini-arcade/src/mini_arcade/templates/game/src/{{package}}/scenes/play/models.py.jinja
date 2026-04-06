@@ -1,0 +1,21 @@
+from dataclasses import dataclass
+
+from mini_arcade_core.scenes.sim_scene import BaseIntent, BaseTickContext, BaseWorld
+
+
+@dataclass
+class PlayWorld(BaseWorld):
+    viewport: tuple[float, float]
+    player_x: float = 100.0
+    player_speed: float = 260.0
+
+
+@dataclass(frozen=True)
+class PlayIntent(BaseIntent):
+    move_x: float = 0.0
+    pause: bool = False
+
+
+@dataclass
+class PlayTickContext(BaseTickContext[PlayWorld, PlayIntent]):
+    pass

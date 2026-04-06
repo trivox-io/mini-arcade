@@ -1,0 +1,37 @@
+from dataclasses import dataclass
+
+from mini_arcade_core.engine.render.packet import RenderPacket
+from mini_arcade_core.scenes.systems.base_system import BaseSystem
+from mini_arcade_core.scenes.systems.phases import SystemPhase
+
+from ..models import PlayTickContext
+
+
+@dataclass
+class PlayRenderSystem(BaseSystem[PlayTickContext]):
+    name: str = "play_render"
+    phase: int = SystemPhase.RENDERING
+    order: int = 100
+
+    def step(self, ctx: PlayTickContext):
+        world = ctx.world
+        vw, vh = world.viewport
+
+        def draw(backend):
+            backend.render.draw_rect(0, 0, int(vw), int(vh), color=(12, 14, 20))
+            backend.render.draw_rect(
+                int(world.player_x) - 20,
+                int(vh) - 60,
+                40,
+                20,
+                color=(240, 240, 240),
+            )
+            backend.text.draw(
+                16,
+                16,
+                "Arrows or A/D to move | Esc pause",
+                color=(220, 220, 220),
+                font_size=18,
+            )
+
+        ctx.packet = RenderPacket.from_ops([draw])
