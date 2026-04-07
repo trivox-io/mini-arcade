@@ -51,7 +51,7 @@ def test_gameplay_settings_preserve_scene_specific_data():
                         }
                     },
                 }
-            }
+            },
         }
     )
 
@@ -60,9 +60,7 @@ def test_gameplay_settings_preserve_scene_specific_data():
     assert scene_cfg is not None
     assert scene_cfg.escape is not None
     assert scene_cfg.escape.scene_id == "menu"
-    assert (
-        settings.get("presentation.hud.score_font") == "pixel-score"
-    )
+    assert settings.get("presentation.hud.score_font") == "pixel-score"
     assert scene_cfg.get("entities", {})["right_paddle"]["transform"][
         "position"
     ]["x"] == {"anchor": "right", "offset": 20.0}

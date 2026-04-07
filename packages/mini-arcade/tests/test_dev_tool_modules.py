@@ -190,7 +190,10 @@ def test_game_scaffold_creates_current_project_layout(tmp_path: Path) -> None:
     assert 'controls_scene_key="play"' in scene_text
     assert "build_play_systems()" in scene_text
     assert "mini-arcade-core~=" + dependency_series in pyproject_text
-    assert 'from .systems import PlayRenderSystem, PlayRulesSystem' in pipeline_text
+    assert (
+        "from .systems import PlayRenderSystem, PlayRulesSystem"
+        in pipeline_text
+    )
     assert (
         (root / "src" / "laser_garden" / "scenes" / "menu.py")
         .read_text(encoding="utf-8")
@@ -284,7 +287,10 @@ def test_system_scaffold_creates_minimal_layout(tmp_path: Path) -> None:
 
     manage_text = (root / "manage.py").read_text(encoding="utf-8")
     case_text = (root / "system_lab_case.py").read_text(encoding="utf-8")
-    assert 'description="Launch the Orbit Lab experiment directly."' in manage_text
+    assert (
+        'description="Launch the Orbit Lab experiment directly."'
+        in manage_text
+    )
     assert 'case="orbit_lab"' in manage_text
     assert '@SystemLabRegistry.implementation("orbit_lab")' in case_text
     assert "BaseSystemLabCase" in case_text
@@ -851,7 +857,6 @@ def test_ball_vs_ball_powerup_sandbox_spawned_pickup_is_indexed() -> None:
         _spawn_selected_pickup_at,
         build_powerup_sandbox_world,
     )
-
     from mini_arcade_core.engine.commands import CommandQueue
     from mini_arcade_core.runtime.input_frame import InputFrame
 
@@ -917,7 +922,6 @@ def test_knockout_bracket_progress_selection_uses_next_playable_match() -> (
         build_progress_system,
         build_seed_system,
     )
-
     from mini_arcade_core.engine.commands import CommandQueue
     from mini_arcade_core.runtime.input_frame import InputFrame
 

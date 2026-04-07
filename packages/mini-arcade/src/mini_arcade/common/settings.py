@@ -424,7 +424,9 @@ class Settings:
         with open(path, "r", encoding="utf-8") as file:
             data = yaml.safe_load(file) or {}
         if not isinstance(data, dict):
-            raise ValueError(f"{kind} at {path} must be a mapping/dict at root.")
+            raise ValueError(
+                f"{kind} at {path} must be a mapping/dict at root."
+            )
         return data
 
     def _build_effective_gameplay(self, *, required: bool) -> dict[str, Any]:

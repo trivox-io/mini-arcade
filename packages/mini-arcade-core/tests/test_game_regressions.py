@@ -59,6 +59,7 @@ from asteroids.scenes.asteroids.systems import (  # noqa: E402
 )
 from deja_bounce.entities import DottedLine
 from deja_bounce.entities import EntityId as PongEntityId  # noqa: E402
+from pong.scenes.play.bootstrap import build_play_world  # noqa: E402
 from space_invaders.entities import (  # noqa: E402
     Alien,
     EntityId,
@@ -82,6 +83,7 @@ from space_invaders.scenes.space_invaders.systems import (  # noqa: E402
     RoundStateSystem,
 )
 
+from mini_arcade.common.settings import Settings  # noqa: E402
 from mini_arcade_core.engine.commands import CommandQueue  # noqa: E402
 from mini_arcade_core.engine.entities import BaseEntity  # noqa: E402
 from mini_arcade_core.engine.gameplay_settings import (  # noqa: E402
@@ -94,8 +96,6 @@ from mini_arcade_core.scenes.sim_scene import (  # noqa: E402
     EntityIdDomain,
 )
 from mini_arcade_core.spaces.geometry.bounds import Size2D  # noqa: E402
-from mini_arcade.common.settings import Settings  # noqa: E402
-from pong.scenes.play.bootstrap import build_play_world  # noqa: E402
 
 
 def _runtime_context() -> RuntimeContext:
@@ -163,7 +163,9 @@ def test_pong_dotted_line_template_spans_full_viewport_height() -> None:
 
 
 def test_deja_bounce_manifest_exposes_cpu_and_presentation_data() -> None:
-    settings = Settings.for_game("deja-bounce", required=True, force_reload=True)
+    settings = Settings.for_game(
+        "deja-bounce", required=True, force_reload=True
+    )
     gameplay_settings = GamePlaySettings.from_dict(
         settings.gameplay_defaults()
     )
@@ -183,7 +185,9 @@ def test_pong_play_world_uses_manifest_scene_payload() -> None:
         settings.gameplay_defaults()
     )
 
-    assert gameplay_settings.get("controls.play.bindings.pause.type") == "digital"
+    assert (
+        gameplay_settings.get("controls.play.bindings.pause.type") == "digital"
+    )
 
     scene_cfg = gameplay_settings.scene_settings("play")
 

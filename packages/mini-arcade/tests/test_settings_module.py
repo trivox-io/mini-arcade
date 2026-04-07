@@ -166,10 +166,9 @@ def test_gameplay_manifests_merge_and_inline_overrides(tmp_path: Path) -> None:
     gameplay_defaults = settings.gameplay_defaults()
 
     assert gameplay_defaults["difficulty"]["level"] == "hard"
-    assert (
-        gameplay_defaults["data"]["presentation"]["hud"]["score_font"]
-        == str((project_root / "assets" / "fonts" / "score.ttf").resolve())
-    )
+    assert gameplay_defaults["data"]["presentation"]["hud"][
+        "score_font"
+    ] == str((project_root / "assets" / "fonts" / "score.ttf").resolve())
     assert gameplay_defaults["data"]["title"] == "Inline Override"
     assert settings.as_dict()["gameplay"]["data"]["title"] == "Inline Override"
 
