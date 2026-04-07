@@ -94,6 +94,8 @@ from mini_arcade_core.scenes.sim_scene import (  # noqa: E402
     EntityIdDomain,
 )
 from mini_arcade_core.spaces.geometry.bounds import Size2D  # noqa: E402
+from mini_arcade.common.settings import Settings  # noqa: E402
+from pong.scenes.play.bootstrap import build_play_world  # noqa: E402
 
 
 def _runtime_context() -> RuntimeContext:
@@ -158,6 +160,42 @@ def test_pong_dotted_line_template_spans_full_viewport_height() -> None:
 
     assert line.shape.a.y == 0.0
     assert line.shape.b.y == 600.0
+
+
+def test_deja_bounce_manifest_exposes_cpu_and_presentation_data() -> None:
+    settings = Settings.for_game("deja-bounce", required=True, force_reload=True)
+    gameplay_settings = GamePlaySettings.from_dict(
+        settings.gameplay_defaults()
+    )
+
+    assert gameplay_settings.get("cpu_presets.hard.max_speed") == 300.0
+
+    scene_cfg = gameplay_settings.scene_settings("pong")
+
+    assert scene_cfg is not None
+    assert scene_cfg.get("presentation.score.font_size") == 42
+    assert scene_cfg.get("gameplay.trail.max_samples") == 30
+
+
+def test_pong_play_world_uses_manifest_scene_payload() -> None:
+    settings = Settings.for_game("pong", required=True, force_reload=True)
+    gameplay_settings = GamePlaySettings.from_dict(
+        settings.gameplay_defaults()
+    )
+
+    assert gameplay_settings.get("controls.play.bindings.pause.type") == "digital"
+
+    scene_cfg = gameplay_settings.scene_settings("play")
+
+    assert scene_cfg is not None
+    assert scene_cfg.get("presentation.ready_message") == "READY"
+
+    world = build_play_world(viewport=(800.0, 600.0), config=scene_cfg.data)
+
+    assert world.winning_score == 11
+    assert world.serve_speed_x == 340.0
+    assert world.serve_speed_y == 190.0
+    assert world.config["presentation"]["pause_hint"] == "ESC PAUSE"
 
 
 def test_space_invaders_shelter_template_keeps_sprite_texture() -> None:

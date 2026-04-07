@@ -21,6 +21,7 @@ _DEFAULT_DEBUG_SECTIONS = (
     "stack",
     "scene",
 )
+_MISSING = object()
 
 
 def _normalize_difficulty(value: Any) -> DifficultyType:
@@ -55,6 +56,20 @@ def _normalize_color(value: Any, default: tuple[int, ...]) -> tuple[int, ...]:
         except (TypeError, ValueError):
             return default
     return tuple(out)
+
+
+def _dotted_get(data: Any, key: str, default: Any = None) -> Any:
+    if key == "":
+        return data
+
+    current = data
+    for part in str(key).split("."):
+        if not isinstance(current, dict):
+            return default
+        if part not in current:
+            return default
+        current = current[part]
+    return current
 
 
 @dataclass
@@ -286,7 +301,10 @@ class SceneRuntimeSettings:
             or the default if not found.
         :rtype: Any
         """
-        return deepcopy(self.data.get(key, default))
+        value = _dotted_get(self.data, key, _MISSING)
+        if value is _MISSING:
+            return deepcopy(default)
+        return deepcopy(value)
 
 
 @dataclass
@@ -304,6 +322,7 @@ class GamePlaySettings:
         default_factory=DebugOverlaySettings
     )
     scenes: dict[str, SceneRuntimeSettings] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> "GamePlaySettings":
@@ -343,6 +362,10 @@ class GamePlaySettings:
                 if str(scene_id).strip()
             }
 
+        raw_data = data.get("data")
+        if isinstance(raw_data, dict):
+            settings.data = deepcopy(raw_data)
+
         return settings
 
     def scene_settings(self, scene_id: str) -> SceneRuntimeSettings | None:
@@ -350,3 +373,59 @@ class GamePlaySettings:
         Resolve runtime scene settings by registered scene id.
         """
         return self.scenes.get(str(scene_id))
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """
+        Resolve global gameplay data via dotted paths.
+        Tries ``data`` first, then falls back to the structured settings model.
+        """
+        value = _dotted_get(self.data, key, _MISSING)
+        if value is not _MISSING:
+            return deepcopy(value)
+
+        fallback = {
+            "difficulty": {"level": self.difficulty.level},
+            "controls": self.controls,
+            "debug_overlay": {
+                "enabled": self.debug_overlay.enabled,
+                "start_visible": self.debug_overlay.start_visible,
+                "scene_id": self.debug_overlay.scene_id,
+                "toggle_key": self.debug_overlay.toggle_key,
+                "title": self.debug_overlay.title,
+                "sections": self.debug_overlay.sections,
+                "static_lines": self.debug_overlay.static_lines,
+                "style": {
+                    "x": self.debug_overlay.style.x,
+                    "y": self.debug_overlay.style.y,
+                    "width": self.debug_overlay.style.width,
+                    "padding": self.debug_overlay.style.padding,
+                    "line_height": self.debug_overlay.style.line_height,
+                    "font_size": self.debug_overlay.style.font_size,
+                    "panel_color": self.debug_overlay.style.panel_color,
+                    "text_color": self.debug_overlay.style.text_color,
+                },
+            },
+            "scenes": {
+                scene_id: scene_cfg.data
+                for scene_id, scene_cfg in self.scenes.items()
+            },
+            "data": self.data,
+        }
+        value = _dotted_get(fallback, key, _MISSING)
+        if value is _MISSING:
+            return deepcopy(default)
+        return deepcopy(value)
+
+    def scene_value(
+        self,
+        scene_id: str,
+        key: str,
+        default: Any = None,
+    ) -> Any:
+        """
+        Resolve one dotted path from a specific scene runtime payload.
+        """
+        scene_cfg = self.scene_settings(scene_id)
+        if scene_cfg is None:
+            return deepcopy(default)
+        return scene_cfg.get(key, default)

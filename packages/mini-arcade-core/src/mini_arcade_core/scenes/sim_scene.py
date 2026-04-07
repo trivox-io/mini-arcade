@@ -673,6 +673,7 @@ class RenderQueue:
         text: str,
         color: Color = (255, 255, 255, 255),
         font_size: int | None = None,
+        font_name: str | None = None,
         align: Literal["left", "center", "right"] = "left",
         layer: Layer = "ui",
         z: int = 0,
@@ -701,7 +702,7 @@ class RenderQueue:
             "draw_text",
             layer,
             z,
-            (x, y, text, color, font_size, align),
+            (x, y, text, color, font_size, font_name, align),
         )
 
     def custom(
@@ -938,7 +939,7 @@ class SubmitRenderQueue(Drawable[BaseTickContext]):
                 )
 
             elif op.kind == "draw_text":
-                x, y, text, color, font_size, align = op.payload
+                x, y, text, color, font_size, font_name, align = op.payload
                 draw_x = int(x)
                 draw_y = int(y)
 
@@ -948,6 +949,7 @@ class SubmitRenderQueue(Drawable[BaseTickContext]):
                         font_size=(
                             int(font_size) if font_size is not None else None
                         ),
+                        font_name=font_name,
                     )
                     if align == "center":
                         draw_x -= text_w // 2
@@ -962,6 +964,7 @@ class SubmitRenderQueue(Drawable[BaseTickContext]):
                     font_size=(
                         int(font_size) if font_size is not None else None
                     ),
+                    font_name=font_name,
                 )
 
             elif op.kind == "draw_poly":

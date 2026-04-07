@@ -102,6 +102,7 @@ class Settings:
     _config_path: Path | None
     _scope: str | None
     _name: str | None
+    _effective_gameplay: dict[str, Any]
     _TOKEN_RE = re.compile(r"\$\{([A-Za-z0-9_.-]+)\}")
 
     @staticmethod
@@ -139,6 +140,7 @@ class Settings:
             inst._config_path = None
             inst._scope = args.scope
             inst._name = args.name
+            inst._effective_gameplay = {}
             inst._load_settings(
                 config_path=args.config_path,
                 scope=args.scope,
@@ -378,6 +380,7 @@ class Settings:
                 )
             self._settings = {}
             self._config_path = None
+            self._effective_gameplay = {}
             return
 
         merged: dict[str, Any] = {}
@@ -389,6 +392,7 @@ class Settings:
                     )
                 self._settings = {}
                 self._config_path = None
+                self._effective_gameplay = {}
                 return
 
             with open(resolved, "r", encoding="utf-8") as file:
@@ -401,6 +405,56 @@ class Settings:
 
         self._settings = merged
         self._config_path = resolved_paths[-1]
+        self._effective_gameplay = self._build_effective_gameplay(
+            required=required
+        )
+
+    def _load_yaml_mapping(
+        self,
+        path: Path,
+        *,
+        required: bool,
+        kind: str,
+    ) -> dict[str, Any]:
+        if not path.exists():
+            if required:
+                raise FileNotFoundError(f"{kind} not found: {path}")
+            return {}
+
+        with open(path, "r", encoding="utf-8") as file:
+            data = yaml.safe_load(file) or {}
+        if not isinstance(data, dict):
+            raise ValueError(f"{kind} at {path} must be a mapping/dict at root.")
+        return data
+
+    def _build_effective_gameplay(self, *, required: bool) -> dict[str, Any]:
+        raw_gameplay = self._settings.get("gameplay", {})
+        if not isinstance(raw_gameplay, dict):
+            return {}
+
+        manifests = raw_gameplay.get("manifests", [])
+        if manifests is None:
+            manifests = []
+        if not isinstance(manifests, list):
+            raise ValueError("gameplay.manifests must be a list of paths")
+
+        merged: dict[str, Any] = {}
+        for raw_manifest in manifests:
+            if not isinstance(raw_manifest, str) or not raw_manifest.strip():
+                raise ValueError(
+                    "gameplay.manifests entries must be non-empty strings"
+                )
+            manifest_path = self.resolve_path(raw_manifest)
+            manifest_data = self._load_yaml_mapping(
+                manifest_path,
+                required=required,
+                kind="Gameplay manifest",
+            )
+            merged = self._deep_merge_dicts(merged, manifest_data)
+
+        inline_gameplay = self._deep_copy_dict(raw_gameplay)
+        inline_gameplay.pop("manifests", None)
+        return self._deep_merge_dicts(merged, inline_gameplay)
 
     @classmethod
     def for_game(
@@ -455,8 +509,17 @@ class Settings:
         """
         Get nested key using dot notation.
         """
-        data: Any = self._settings
-        for part in key_.split("."):
+        parts = key_.split(".")
+        if parts and parts[0] == "gameplay":
+            data: Any = self._effective_gameplay
+            parts = parts[1:]
+        else:
+            data = self._settings
+
+        if not parts:
+            return data
+
+        for part in parts:
             if not isinstance(data, dict):
                 return default
             data = data.get(part, default)
@@ -752,6 +815,10 @@ class Settings:
         if isinstance(scenes, dict):
             output["scenes"] = self._deep_copy_dict(scenes)
 
+        data = src.get("data")
+        if isinstance(data, dict):
+            output["data"] = self._deep_copy_dict(data)
+
         return self._expand_tokens_in_value(output)
 
     def _resolve_fonts(
@@ -807,7 +874,9 @@ class Settings:
         """
         Return full settings dictionary.
         """
-        return dict(self._settings)
+        output = self._deep_copy_dict(self._settings)
+        output["gameplay"] = self._deep_copy_dict(self._effective_gameplay)
+        return output
 
 
 # Lazy-by-default global settings object (no exception if file is missing).
