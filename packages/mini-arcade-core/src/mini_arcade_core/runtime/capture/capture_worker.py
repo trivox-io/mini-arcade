@@ -70,7 +70,7 @@ class WorkerConfig:
     on_done: Optional[Callable[[CaptureResult], None]] = None
     name: str = "capture-worker"
     daemon: bool = True
-    delete_temp: bool = True
+    delete_temp: bool = False
 
 
 class CaptureWorker(BaseWorker):

@@ -211,3 +211,6 @@ games/*
 !games/space-invaders/
 !games/tetris/
 recordings/
+
+.codex
+.claude/
