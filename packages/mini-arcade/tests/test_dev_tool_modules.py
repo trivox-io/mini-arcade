@@ -1024,8 +1024,9 @@ def test_project_launcher_dispatches_to_cli_when_args_present(
 ) -> None:
     captured: dict[str, object] = {}
 
-    def _fake_cli_main(argv):
+    def _fake_cli_main(argv, *, extra_command_modules=()):
         captured["argv"] = list(argv)
+        captured["extra_command_modules"] = tuple(extra_command_modules)
 
     monkeypatch.setattr("mini_arcade.main.main", _fake_cli_main)
 
@@ -1033,8 +1034,10 @@ def test_project_launcher_dispatches_to_cli_when_args_present(
         run_project_entrypoint(
             lambda: captured.setdefault("local", True),
             argv=["eg", "tour"],
+            extra_command_modules=("ballistic.commands",),
         )
         == 0
     )
     assert captured["argv"] == ["eg", "tour"]
+    assert captured["extra_command_modules"] == ("ballistic.commands",)
     assert "local" not in captured

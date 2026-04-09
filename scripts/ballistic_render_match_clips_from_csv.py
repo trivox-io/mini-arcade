@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 from dataclasses import dataclass
+import json
 import os
 from pathlib import Path
 import sys
@@ -10,7 +11,7 @@ import time
 
 DEFAULT_PROJECT_NAME = "Ballistic Content"
 DEFAULT_CONTENT_DIR = Path(
-    "C:/Users/USUARIO/work/mini-arcade/originals/ball-vs-ball-cup/.mini-arcade/content"
+    "C:/Users/USUARIO/work/mini-arcade/games/ballistic/.mini-arcade/content"
 )
 
 
@@ -177,6 +178,18 @@ def _seconds_to_frame(seconds: float, fps: float) -> int:
 
 
 def _default_output_dir(csv_path: Path) -> Path:
+    manifest_path = csv_path.with_suffix(".json")
+    if manifest_path.is_file():
+        try:
+            payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            payload = {}
+        render_root = str(payload.get("render_root") or "").strip()
+        if render_root:
+            candidate = Path(render_root)
+            if candidate.is_absolute():
+                return candidate
+            return (csv_path.parent.parent.parent / candidate).resolve()
     run_name = csv_path.stem
     return csv_path.parent.parent / "renders" / run_name
 
@@ -269,7 +282,7 @@ def main() -> int:
     parser.add_argument(
         "--output-dir",
         default=None,
-        help="Output directory. Defaults to .mini-arcade/renders/<csv-stem>.",
+        help="Output directory. Defaults to the manifest render_root when available.",
     )
     parser.add_argument(
         "--queue-only",

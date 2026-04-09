@@ -5,9 +5,10 @@ Mini Arcade CLI entry point.
 from __future__ import annotations
 
 import argparse
+import importlib
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Iterable, Optional
 
 import mini_arcade.commands as commands_pkg
 from mini_arcade.app import MiniArcadeCLI
@@ -21,7 +22,11 @@ from mini_arcade.utils.logging import logger
 from mini_arcade.utils.module_loader import load_command_packages
 
 
-def main(argv: Optional[list[str]] = None):
+def main(
+    argv: Optional[list[str]] = None,
+    *,
+    extra_command_modules: Iterable[str] = (),
+):
     """
     Main entry point for the Mini Arcade CLI.
 
@@ -48,6 +53,8 @@ def main(argv: Optional[list[str]] = None):
         base_namespace="mini_arcade.commands",
         base_dir=commands_dir,
     )
+    for module_name in extra_command_modules:
+        importlib.import_module(str(module_name))
     logger.debug("Loaded command packages successfully.")
 
     cli_app = MiniArcadeCLI(

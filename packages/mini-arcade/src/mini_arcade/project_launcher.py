@@ -5,12 +5,14 @@ Helpers for project-local ``manage.py`` entrypoints.
 from __future__ import annotations
 
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 
 
 def run_project_entrypoint(
     local_run: Callable[[], object],
     argv: Sequence[str] | None = None,
+    *,
+    extra_command_modules: Iterable[str] = (),
 ) -> int:
     """
     Run a project-local entrypoint.
@@ -27,7 +29,7 @@ def run_project_entrypoint(
         # pylint: disable=import-outside-toplevel
         from mini_arcade.main import main as cli_main
 
-        cli_main(args)
+        cli_main(args, extra_command_modules=extra_command_modules)
         return 0
 
     result = local_run()
