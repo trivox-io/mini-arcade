@@ -1,5 +1,7 @@
 # mini-arcade-pygame-backend
 
+**DEPRECATED**
+
 Pygame backend for Mini Arcade.
 
 This package implements the shared Mini Arcade backend protocol with pygame and

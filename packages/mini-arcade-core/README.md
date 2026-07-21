@@ -1,5 +1,7 @@
 # mini-arcade-core
 
+**DEPRECATED**
+
 `mini-arcade-core` is the simulation-first core of Mini Arcade.
 
 It is backend-agnostic and focuses on:

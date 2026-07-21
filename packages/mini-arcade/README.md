@@ -1,5 +1,7 @@
 # mini-arcade
 
+**DEPRECATED**
+
 `mini-arcade` is the user-facing package for running Mini Arcade games and examples.
 
 It provides:

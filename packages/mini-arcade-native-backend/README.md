@@ -1,5 +1,7 @@
 # mini-arcade-native-backend
 
+**DEPRECATED**
+
 Native SDL2 backend for `mini-arcade-core`.
 
 This package combines:
